@@ -1,0 +1,14 @@
+.pybuild/
+.coverage
+/.tox
+*.egg-info
+*.py[coe]
+.#*
+.*.swp
+pip-wheel-metadata
+docs/build
+docs/source/generated
+build/
+dist/
+.idea/
+venvs/

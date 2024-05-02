@@ -1,0 +1,9 @@
+# requirements for a development environment
+pytest
+pytest-cov
+coverage
+
+# requirements for a document building
+sphinx
+sphinx_rtd_theme
+sphinx_copybutton
