@@ -6,8 +6,11 @@
 [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
 
 
+**This code is a POC, that means: code does not
+thoroughly validate inputs, names might be inconsistent.**
+
 This is a naive datalad compute extension that serves as a playground for
-the datalad remake-project.
+the datalad remake-project. 
 
 It contains an annex remote that can compute content on demand. It uses template
 files that specify the operations and per-data file parameters that are encoded
