@@ -3,10 +3,9 @@
 __docformat__ = 'restructuredtext'
 
 import logging
-import time
-from base64 import urlsafe_b64encode
 from os.path import curdir
 from os.path import abspath
+from urllib.parse import quote
 
 from datalad_next.commands import (
     EnsureCommandParameterization,
@@ -50,9 +49,6 @@ class Compute(ValidatedInterface):
             action="store_true",
             doc="""Don't perform the computation, register an URL-key
             instead"""),
-        url_id=Parameter(
-            args=('-i', '--id'),
-            doc="""Use <id> as URL-id for the computation URLs"""),
         template=Parameter(
             args=('template',),
             doc="""Name of the computing template (template should be present
@@ -73,22 +69,12 @@ class Compute(ValidatedInterface):
     # additional generic arguments are added by decorators
     def __call__(dataset,
                  url_only=False,
-                 url_id=None,
                  template=None,
                  output=None,
                  parameters=None
                  ):
 
         dataset = dataset.ds
-        print(f'dataset={dataset}')
-        print(f'url_only={url_only}')
-        print(f'url_id={url_id}')
-        print(f'template={template}')
-        print(f'output={output}')
-        print(f'parameters={parameters}')
-
-        if not url_id:
-            url_id = str(time.time())
 
         if not url_only:
             parameter_dict = {
@@ -100,21 +86,20 @@ class Compute(ValidatedInterface):
             dataset.save()
 
         relaxed = ['--relaxed'] if url_only else []
-        urls = get_urls(url_id, template, parameters)
-        for url in urls:
-            dataset.repo.call_annex(['addurl', url, '--file', output] + relaxed)
+        url = get_url(template, parameters)
+        dataset.repo.call_annex(['addurl', url, '--file', output] + relaxed)
 
         yield get_status_dict(
                 action='compute',
                 path=abspath(curdir),
                 status='ok',
-                message=f'added urls: {urls!r} to {output!r}',
+                message=f'added url: {url!r} to {output!r}',
             )
 
 
-def get_urls(url_id, template_name: str, parameters: list[str]):
-    method_url = 'compute://' + url_id + '/method/' + urlsafe_b64encode(template_name.encode()).decode()
-    parameter_url = 'compute://' + url_id + '/parameter/' + urlsafe_b64encode(';'.join(parameters).encode()).decode()
-    dependencies_url = 'compute://' + url_id + '/dependencies/' + urlsafe_b64encode('none'.encode()).decode()
-
-    return [method_url, parameter_url, dependencies_url]
+def get_url(template_name: str, parameters: list[str]) -> str:
+    url_params = '&'.join(
+        f'{assignment.split("=", 1)[0]}={quote(assignment.split("=", 1)[1])}'
+        for assignment in parameters
+    )
+    return f'compute:///?dep=&method={template_name}&' + url_params
