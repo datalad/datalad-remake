@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 from urllib.parse import (
     unquote,
     urlparse,
@@ -16,6 +17,8 @@ from datalad_compute.utils.compute import compute
 
 
 class ComputeRemote(SpecialRemote):
+    template_path = Path('.datalad/compute/methods')
+
     def __init__(self, annex: Master):
         super().__init__(annex)
 
@@ -52,25 +55,37 @@ class ComputeRemote(SpecialRemote):
         self.annex.debug(f'GETCOST')
         return 100
 
-    def transfer_retrieve(self, key: str, file_name: str) -> None:
-        self.annex.debug(f'TRANSFER RETRIEVE {key!r} {file_name!r}')
+    def get_url_encoded_info(self, url: str) -> tuple[str, str, str]:
+        parts = urlparse(url).query.split('&', 2)
+        return parts[0], parts[1], parts[2]
 
+    def get_url_for_key(self, key: str) -> str:
         urls = self.annex.geturls(key, 'compute:')
         self.annex.debug(f'TRANSFER RETRIEVE urls({key!r}, "compute"): {urls!r}')
-        assert len(urls) == 1
+        return urls[0]
 
-        dependencies, method, parameters = urlparse(urls[0]).query.split('&', 2)
-        compute_info = {
-            'dependencies': dependencies.split('=', 1)[1],
-            'method': Path(self.annex.getgitdir()).parent / '.datalad' / 'compute' / 'methods' / method.split('=', 1)[1],
+    def get_compute_info(self, key: str) -> dict[str, Any]:
+        def get_assignment_value(assignment: str) -> str:
+            return assignment.split('=', 1)[1]
+
+        dependencies, method, parameters = self.get_url_encoded_info(
+            self.get_url_for_key(key)
+        )
+        return {
+            'dependencies': get_assignment_value(dependencies),
+            'method': Path(self.annex.getgitdir()).parent
+                / self.template_path
+                / get_assignment_value(method),
             'parameter': {
-                assignment.split('=')[0]: unquote(assignment.split('=')[1])
-                for assignment in parameters.split('&')
+                name: unquote(value)
+                for name, value in map(lambda s: s.split('=', 1), parameters.split('&'))
             }
         }
+
+    def transfer_retrieve(self, key: str, file_name: str) -> None:
+        compute_info = self.get_compute_info(key)
         self.annex.debug(f'TRANSFER RETRIEVE {key!r}: compute_info: {compute_info!r}, file_name: {file_name!r}')
         compute(compute_info['method'], compute_info['parameter'], file_name)
-
 
     def checkpresent(self, key: str) -> bool:
         # See if any compute: URL is present
