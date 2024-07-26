@@ -28,7 +28,7 @@ Install the extension, create a dataset, configure it to use `compute`-URLs
 ```bash
 > datalad create compute-test-1
 > cd compute-test-1
-> git config annex.security.allowed-url-schemes compute
+> git config annex.security.allowed-url-schemes datalad-make
 > git config annex.security.allowed-ip-addresses all
 > git config annex.security.allow-unverified-downloads ACKTHPPT
 ```
@@ -90,7 +90,7 @@ is done by giving the `-u` option (url-only) to `datalad compute`.
 > cat text-2.txt      # this will fail, because the computation has not yet been performed
 ```
 
-`ls -l text-2.txt` will show a link to a non-existent URL-KEY with a time-stamp identifier.
+`ls -l text-2.txt` will show a link to a non-existent URL-KEY.
 `git annex whereis text-2.txt` will show the associated URLs. No computation has been
 performed yet, `datalad compute` just creates an URL-KEY and associates the method-,
 parameters-, and dependencies-URLs with the URL-KEY.
