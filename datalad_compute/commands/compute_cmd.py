@@ -18,6 +18,10 @@ from datalad_next.commands import (
 )
 from datalad_next.constraints import EnsureDataset
 
+from datalad_compute import (
+    template_dir,
+    url_scheme,
+)
 from datalad_compute.utils.compute import compute
 
 
@@ -81,7 +85,7 @@ class Compute(ValidatedInterface):
                 parameter.split('=')[0]: parameter.split('=')[1]
                 for parameter in parameters
             }
-            template_path = dataset.pathobj / '.datalad' / 'compute' / 'methods' / template
+            template_path = dataset.pathobj / template_dir / template
             compute(template_path, parameter_dict, output)
             dataset.save()
 
@@ -99,7 +103,7 @@ class Compute(ValidatedInterface):
 
 def get_url(template_name: str, parameters: list[str]) -> str:
     url_params = '&'.join(
-        f'{assignment.split("=", 1)[0]}={quote(assignment.split("=", 1)[1])}'
-        for assignment in parameters
+        f'{name}={quote(value)}'
+        for name, value in map(lambda s: s.split('=', 1), parameters)
     )
-    return f'compute:///?dep=&method={template_name}&' + url_params
+    return f'{url_scheme}:///?dep=&method={template_name}&' + url_params

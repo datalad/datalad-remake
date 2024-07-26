@@ -13,11 +13,14 @@ from datalad_next.annexremotes import (
     super_main
 )
 
+from datalad_compute import (
+    template_dir,
+    url_scheme,
+)
 from datalad_compute.utils.compute import compute
 
 
 class ComputeRemote(SpecialRemote):
-    template_path = Path('.datalad/compute/methods')
 
     def __init__(self, annex: Master):
         super().__init__(annex)
@@ -29,7 +32,7 @@ class ComputeRemote(SpecialRemote):
         pass
 
     def _check_url(self, url: str) -> bool:
-        return url.startswith('URL--compute:') or url.startswith('compute:')
+        return url.startswith(f'URL--{url_scheme}:') or url.startswith(f'{url_scheme}:')
 
     def prepare(self):
         self.annex.debug(f'PREPARE')
@@ -60,8 +63,8 @@ class ComputeRemote(SpecialRemote):
         return parts[0], parts[1], parts[2]
 
     def get_url_for_key(self, key: str) -> str:
-        urls = self.annex.geturls(key, 'compute:')
-        self.annex.debug(f'TRANSFER RETRIEVE urls({key!r}, "compute"): {urls!r}')
+        urls = self.annex.geturls(key, f'{url_scheme}:')
+        self.annex.debug(f'TRANSFER RETRIEVE urls({key!r}, "{url_scheme}"): {urls!r}')
         return urls[0]
 
     def get_compute_info(self, key: str) -> dict[str, Any]:
@@ -74,7 +77,7 @@ class ComputeRemote(SpecialRemote):
         return {
             'dependencies': get_assignment_value(dependencies),
             'method': Path(self.annex.getgitdir()).parent
-                / self.template_path
+                / template_dir
                 / get_assignment_value(method),
             'parameter': {
                 name: unquote(value)
@@ -88,8 +91,8 @@ class ComputeRemote(SpecialRemote):
         compute(compute_info['method'], compute_info['parameter'], file_name)
 
     def checkpresent(self, key: str) -> bool:
-        # See if any compute: URL is present
-        return self.annex.geturls(key, 'compute:') != []
+        # See if at least one URL with the compute url-scheme is present
+        return self.annex.geturls(key, f'{url_scheme}:') != []
 
 
 def main():

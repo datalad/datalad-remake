@@ -28,3 +28,7 @@ command_suite = (
 
 from . import _version
 __version__ = _version.get_versions()['version']
+
+
+url_scheme = 'datalad-make'
+template_dir = '.datalad/compute/methods'
