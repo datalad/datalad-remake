@@ -7,7 +7,8 @@
 
 
 **This code is a POC, that means: code does not
-thoroughly validate inputs, names might be inconsistent.**
+thoroughly validate inputs, names might be inconsistent. Tests do mostly
+not exist.**
 
 This is a naive datalad compute extension that serves as a playground for
 the datalad remake-project. 
