@@ -6,9 +6,9 @@
 [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
 
 
-**This code is a POC, that means: code does not
-thoroughly validate inputs, names might be inconsistent. Tests do mostly
-not exist.**
+**This code is a POC, that means: ncode does not
+thoroughly validate inputs, names might be inconsistent, little docs.
+Tests do mostly not exist.**
 
 This is a naive datalad compute extension that serves as a playground for
 the datalad remake-project. 
@@ -83,7 +83,8 @@ Drop the content of `text-1.txt`, verify it is gone, recreate it via
 ``` 
 
 Generate a speculative computation, i.e. do not perform the computation but generate an
-URL-KEY with associated URLs that describe the computation that should be performed. This
+URL-KEY with an associated URL that describes the computation that should be performed (a
+"computation description URL"). This
 is done by giving the `-u` option (url-only) to `datalad compute`.
 
 ```bash
@@ -91,10 +92,10 @@ is done by giving the `-u` option (url-only) to `datalad compute`.
 > cat text-2.txt      # this will fail, because the computation has not yet been performed
 ```
 
-`ls -l text-2.txt` will show a link to a non-existent URL-KEY.
-`git annex whereis text-2.txt` will show the associated URLs. No computation has been
-performed yet, `datalad compute` just creates an URL-KEY and associates the method-,
-parameters-, and dependencies-URLs with the URL-KEY.
+`ls -l text-2.txt` will show a link to a not-downloaded URL-KEY.
+`git annex whereis text-2.txt` will show the associated computation description URL.
+No computation has been performed yet, `datalad compute` just creates an URL-KEY and
+associates a computation description URL with the URL-KEY.
 
 Use `datalad get` to perform the computation for the first time and receive the result::
 ```bash
