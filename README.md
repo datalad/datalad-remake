@@ -88,7 +88,7 @@ URL-KEY with an associated URL that describes the computation that should be per
 is done by giving the `-u` option (url-only) to `datalad compute`.
 
 ```bash
-> datalad compute params_to_text -u text-2.txt points=303 label=dreihunderdrei
+> datalad compute params_to_text -u text-2.txt points=303 label=dreihundertdrei
 > cat text-2.txt      # this will fail, because the computation has not yet been performed
 ```
 
