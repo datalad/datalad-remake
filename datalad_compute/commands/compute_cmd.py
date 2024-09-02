@@ -52,18 +52,19 @@ class Compute(ValidatedInterface):
             args=('-u', '--url-only'),
             action="store_true",
             doc="""Don't perform the computation, register an URL-key
-            instead"""),
+            instead. A `git annex get <file>` will trigger the computation"""),
         template=Parameter(
             args=('template',),
             doc="""Name of the computing template (template should be present
             in $DATASET/.datalad/compute/methods)"""),
-        output=Parameter(
-            args=('output',),
-            doc="""name of the output file"""),
+        outputs=Parameter(
+            args=('--output',),
+            action='append',
+            doc="""Name of an output file"""),
         parameters=Parameter(
-            args=('parameters',),
-            doc="""parameters in the form <name>=<value>""",
-            nargs='*'),
+            args=('--parameter',),
+            action='append',
+            doc="""Input parameter in the form <name>=<value>"""),
     )
 
     @staticmethod
@@ -74,7 +75,7 @@ class Compute(ValidatedInterface):
     def __call__(dataset,
                  url_only=False,
                  template=None,
-                 output=None,
+                 outputs=None,
                  parameters=None
                  ):
 
@@ -86,12 +87,13 @@ class Compute(ValidatedInterface):
                 for parameter in parameters
             }
             template_path = dataset.pathobj / template_dir / template
-            compute(template_path, parameter_dict, output)
+            compute(template_path, parameter_dict, outputs)
             dataset.save()
 
         relaxed = ['--relaxed'] if url_only else []
-        url = get_url(template, parameters)
-        dataset.repo.call_annex(['addurl', url, '--file', output] + relaxed)
+        for output in outputs:
+            url = get_url(template, parameters, output)
+            dataset.repo.call_annex(['addurl', url, '--file', output] + relaxed)
 
         yield get_status_dict(
                 action='compute',
@@ -101,9 +103,12 @@ class Compute(ValidatedInterface):
             )
 
 
-def get_url(template_name: str, parameters: list[str]) -> str:
+def get_url(template_name: str, parameters: list[str], output: str) -> str:
     url_params = '&'.join(
         f'{name}={quote(value)}'
         for name, value in map(lambda s: s.split('=', 1), parameters)
     )
-    return f'{url_scheme}:///?dep=&method={template_name}&' + url_params
+    return (
+        f'{url_scheme}:///?dep=&method={template_name}&output={quote(output)}&'
+        + url_params
+    )

@@ -58,9 +58,9 @@ class ComputeRemote(SpecialRemote):
         self.annex.debug(f'GETCOST')
         return 100
 
-    def get_url_encoded_info(self, url: str) -> tuple[str, str, str]:
-        parts = urlparse(url).query.split('&', 2)
-        return parts[0], parts[1], parts[2]
+    def get_url_encoded_info(self, url: str) -> tuple[str, str, str, str]:
+        parts = urlparse(url).query.split('&', 3)
+        return parts[0], parts[1], parts[2], parts[3]
 
     def get_url_for_key(self, key: str) -> str:
         urls = self.annex.geturls(key, f'{url_scheme}:')
@@ -71,7 +71,7 @@ class ComputeRemote(SpecialRemote):
         def get_assignment_value(assignment: str) -> str:
             return assignment.split('=', 1)[1]
 
-        dependencies, method, parameters = self.get_url_encoded_info(
+        dependencies, method, output, parameters = self.get_url_encoded_info(
             self.get_url_for_key(key)
         )
         return {
@@ -79,6 +79,7 @@ class ComputeRemote(SpecialRemote):
             'method': Path(self.annex.getgitdir()).parent
                 / template_dir
                 / get_assignment_value(method),
+            'output': get_assignment_value(output),
             'parameter': {
                 name: unquote(value)
                 for name, value in map(lambda s: s.split('=', 1), parameters.split('&'))
