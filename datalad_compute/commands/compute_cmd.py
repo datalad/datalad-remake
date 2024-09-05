@@ -7,6 +7,23 @@ from os.path import curdir
 from os.path import abspath
 from urllib.parse import quote
 
+from datalad_next.constraints import (
+    AnyOf,
+    EnsureChoice,
+    EnsureDataset,
+    EnsureGeneratorFromFileLike,
+    EnsureIterableOf,
+    EnsureJSON,
+    EnsureListOf,
+    EnsureMapping,
+    EnsurePath,
+    EnsureStr,
+    EnsureURL,
+    EnsureValue,
+    WithDescription,
+)
+
+
 from datalad_next.commands import (
     EnsureCommandParameterization,
     ValidatedInterface,
@@ -39,6 +56,8 @@ class Compute(ValidatedInterface):
 
     _validator_ = EnsureCommandParameterization(dict(
         dataset=EnsureDataset(installed=True),
+        output=EnsureListOf(EnsureStr(min_len=3)),
+        parameter=EnsureListOf(EnsureStr(min_len=3)),
     ))
 
     # parameters of the command, must be exhaustive
@@ -57,12 +76,12 @@ class Compute(ValidatedInterface):
             args=('template',),
             doc="""Name of the computing template (template should be present
             in $DATASET/.datalad/compute/methods)"""),
-        outputs=Parameter(
-            args=('--output',),
+        output=Parameter(
+            args=('-o', '--output',),
             action='append',
             doc="""Name of an output file"""),
-        parameters=Parameter(
-            args=('--parameter',),
+        parameter=Parameter(
+            args=('-p', '--parameter',),
             action='append',
             doc="""Input parameter in the form <name>=<value>"""),
     )
@@ -75,32 +94,32 @@ class Compute(ValidatedInterface):
     def __call__(dataset,
                  url_only=False,
                  template=None,
-                 outputs=None,
-                 parameters=None
+                 output=None,
+                 parameter=None
                  ):
 
         dataset = dataset.ds
 
         if not url_only:
             parameter_dict = {
-                parameter.split('=')[0]: parameter.split('=')[1]
-                for parameter in parameters
+                p.split('=')[0]: p.split('=')[1]
+                for p in parameter
             }
             template_path = dataset.pathobj / template_dir / template
-            compute(template_path, parameter_dict, outputs)
+            compute(template_path, parameter_dict)
             dataset.save()
 
         relaxed = ['--relaxed'] if url_only else []
-        for output in outputs:
-            url = get_url(template, parameters, output)
-            dataset.repo.call_annex(['addurl', url, '--file', output] + relaxed)
+        for out in output:
+            url = get_url(template, parameter, out)
+            dataset.repo.call_annex(['addurl', url, '--file', out] + relaxed)
 
-        yield get_status_dict(
-                action='compute',
-                path=abspath(curdir),
-                status='ok',
-                message=f'added url: {url!r} to {output!r}',
-            )
+            yield get_status_dict(
+                    action='compute',
+                    path=abspath(curdir),
+                    status='ok',
+                    message=f'added url: {url!r} to {out!r}',
+                )
 
 
 def get_url(template_name: str, parameters: list[str], output: str) -> str:
