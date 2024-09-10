@@ -1,7 +1,7 @@
 """
 A data provisioner that works with local git repositories.
-Data is provisioned in a temporary worktree
-Currently there is no support for subdatasets
+Data is provisioned in a temporary worktree. All subdatasets
+are currently also provisioned.
 """
 from __future__ import annotations
 
@@ -11,53 +11,81 @@ from argparse import ArgumentParser
 from contextlib import chdir
 from pathlib import Path
 
+from datalad.distribution.dataset import Dataset
+
 
 argument_parser = ArgumentParser()
-argument_parser.add_argument('dataset', help='Path to source dataset')
 argument_parser.add_argument(
-    '-v', '--version',
-    help='Version of the source (sha or tag). If not given the default branch '
-         'will be used',
+    'dataset',
+    default='.',
+    help='Path to source dataset (default: current directory)',
 )
 argument_parser.add_argument(
-    '-p', '--pattern',
+    '-b', '--branch',
+    help='Branch (name, sha, or tag) that should be used. If not given the '
+         'default branch will be used',
+)
+argument_parser.add_argument(
+    '-i', '--input',
     action='append',
-    help='File pattern of files that should be provisioned. If not given, the '
-        'complete repository will be provisioned',
+    help='Name of a file that should be provisioned (use multiple times to '
+         'define multiple inputs). If not provided, the complete dataset, '
+         'including all subdatasets, will be provisioned',
 )
 
 
 def provide(dataset: str,
-            version: str | None,
-            pattern: list[str] | None,
+            branch: str | None = None,
+            input_files: list[str] | None = None,
             ) -> Path:
 
-    dataset = Path(dataset)
-    worktree_dir = temporary_worktree(dataset)
-    if version:
-        with chdir(worktree_dir):
-            subprocess.run(['git', 'checkout', version], check=True)
-            if pattern:
-                for p in pattern:
-                    subprocess.run(['git', 'annex', 'get', p], check=True)
-            else:
-                subprocess.run(['git', 'annex', 'get'], check=True)
+    worktree_dir = Path(tempfile.TemporaryDirectory().name)
+    # Get all datasets including subdatasets into the worktree
+    provide_datasets(
+        Dataset(dataset),
+        worktree_dir=worktree_dir,
+        temp_branch=worktree_dir.name,
+        source_branch=branch,
+    )
+
+    # Fetch file content
+    with chdir(worktree_dir):
+        if input_files:
+            for p in input_files:
+                subprocess.run(['datalad', 'get', p], check=True)
+        else:
+            subprocess.run(['datalad', 'get', '-r'], check=True)
     return worktree_dir
 
 
-def temporary_worktree(dataset: Path) -> Path:
-    worktree_dir = tempfile.TemporaryDirectory().name
-    with chdir(dataset):
-        subprocess.run(['git', 'worktree', 'add', worktree_dir], check=True)
-    return Path(worktree_dir)
+def provide_datasets(dataset: Dataset,
+                     worktree_dir: Path,
+                     temp_branch: str,
+                     source_branch: str | None = None,
+                     ) -> None:
+
+    with chdir(dataset.path):
+        args = ['git', 'worktree', 'add', '-b', temp_branch, str(worktree_dir)] + (
+            [source_branch] if source_branch else []
+        )
+
+        subprocess.run(args, check=True)
+        for subdataset in dataset.subdatasets():
+            subdataset_path = Path(subdataset['path']).relative_to(dataset.pathobj)
+            dataset.install(path=subdataset_path)
+            provide_datasets(
+                Dataset(subdataset_path),
+                worktree_dir / subdataset_path,
+                temp_branch,
+            )
 
 
 def main():
     arguments = argument_parser.parse_args()
     provision_dir = provide(
         arguments.dataset,
-        arguments.version,
-        arguments.pattern,
+        arguments.branch,
+        arguments.input,
     )
     print(provision_dir)
 
