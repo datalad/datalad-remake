@@ -5,6 +5,7 @@ are currently also provisioned.
 """
 from __future__ import annotations
 
+import shutil
 import subprocess
 import tempfile
 from argparse import ArgumentParser
@@ -21,6 +22,11 @@ argument_parser.add_argument(
     help='Path to source dataset (default: current directory)',
 )
 argument_parser.add_argument(
+    '-d', '--delete',
+    help='Delete the temporary worktree WORKTREE that belongs the the '
+         'dataset (cannot be used with `-b`, `--branch`, `-i`, or `--input`)',
+)
+argument_parser.add_argument(
     '-b', '--branch',
     help='Branch (name, sha, or tag) that should be used. If not given the '
          'default branch will be used',
@@ -32,6 +38,22 @@ argument_parser.add_argument(
          'define multiple inputs). If not provided, the complete dataset, '
          'including all subdatasets, will be provisioned',
 )
+
+
+def remove(dataset: str,
+           worktree: str
+           ) -> None:
+
+    shutil.rmtree(worktree)
+    dataset = Dataset(dataset)
+    prune_worktrees(dataset)
+
+
+def prune_worktrees(dataset: Dataset) -> None:
+    with chdir(dataset.path):
+        subprocess.run(['git', 'worktree', 'prune'], check=True)
+    for result in dataset.subdatasets():
+        prune_worktrees(Dataset(result['path']))
 
 
 def provide(dataset: str,
@@ -82,6 +104,11 @@ def provide_datasets(dataset: Dataset,
 
 def main():
     arguments = argument_parser.parse_args()
+    if arguments.delete:
+        if arguments.branch or arguments.input:
+            raise ValueError('Cannot use `-d`, `--delete` with `-b`, `--branch`, `-i`, `--input`')
+        remove(arguments.dataset, arguments.delete)
+        return
     provision_dir = provide(
         arguments.dataset,
         arguments.branch,
