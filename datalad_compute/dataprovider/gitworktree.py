@@ -6,13 +6,13 @@ are currently also provisioned.
 from __future__ import annotations
 
 import shutil
-import subprocess
 import tempfile
 from argparse import ArgumentParser
 from contextlib import chdir
 from pathlib import Path
 
-from datalad.distribution.dataset import Dataset
+from datalad_next.datasets import Dataset
+from datalad_next.runners import call_git_success
 
 
 argument_parser = ArgumentParser()
@@ -51,8 +51,8 @@ def remove(dataset: str,
 
 def prune_worktrees(dataset: Dataset) -> None:
     with chdir(dataset.path):
-        subprocess.run(['git', 'worktree', 'prune'], check=True)
-    for result in dataset.subdatasets():
+        call_git_success(['worktree', 'prune'])
+    for result in dataset.subdatasets(result_renderer='disabled'):
         prune_worktrees(Dataset(result['path']))
 
 
@@ -71,12 +71,13 @@ def provide(dataset: str,
     )
 
     # Fetch file content
+    work_dataset = Dataset(worktree_dir)
     with chdir(worktree_dir):
         if input_files:
             for p in input_files:
-                subprocess.run(['datalad', 'get', p], check=True)
+                work_dataset.get(p, result_renderer='disabled')
         else:
-            subprocess.run(['datalad', 'get', '-r'], check=True)
+            work_dataset.get(recursive=True, result_renderer='disabled')
     return worktree_dir
 
 
@@ -87,14 +88,14 @@ def provide_datasets(dataset: Dataset,
                      ) -> None:
 
     with chdir(dataset.path):
-        args = ['git', 'worktree', 'add', '-b', temp_branch, str(worktree_dir)] + (
+        args = ['worktree', 'add', '-b', temp_branch, str(worktree_dir)] + (
             [source_branch] if source_branch else []
         )
 
-        subprocess.run(args, check=True)
-        for subdataset in dataset.subdatasets():
+        call_git_success(args)
+        for subdataset in dataset.subdatasets(result_renderer='disabled'):
             subdataset_path = Path(subdataset['path']).relative_to(dataset.pathobj)
-            dataset.install(path=subdataset_path)
+            dataset.install(path=subdataset_path, result_renderer='disabled')
             provide_datasets(
                 Dataset(subdataset_path),
                 worktree_dir / subdataset_path,
