@@ -23,20 +23,23 @@ argument_parser.add_argument(
 )
 argument_parser.add_argument(
     '-d', '--delete',
+    metavar='WORKTREE',
     help='Delete the temporary worktree WORKTREE that belongs the the '
          'dataset (cannot be used with `-b`, `--branch`, `-i`, or `--input`)',
 )
 argument_parser.add_argument(
     '-b', '--branch',
-    help='Branch (name, sha, or tag) that should be used. If not given the '
-         'default branch will be used',
+    help='Branch (name, sha, or tag) of `dataset` that should be provisioned. '
+         'If not given the default branch will be used',
 )
 argument_parser.add_argument(
     '-i', '--input',
     action='append',
-    help='Name of a file that should be provisioned (use multiple times to '
-         'define multiple inputs). If not provided, the complete dataset, '
-         'including all subdatasets, will be provisioned',
+    metavar='PATH',
+    help='Path of a file that should be provisioned (relative from dataset '
+         'root). If not provided, the complete dataset, including all data in '
+         'all subdatasets, will be provisioned (use multiple times to define '
+         'multiple inputs)',
 )
 
 
@@ -88,7 +91,9 @@ def provide_datasets(dataset: Dataset,
     temp_branch = worktree_dir.name
     with chdir(dataset.path):
         args = ['worktree', 'add', '-b', temp_branch, str(worktree_dir)] + (
-            [source_branch] if source_branch else []
+            [source_branch]
+            if source_branch
+            else []
         )
 
         call_git_success(args)
@@ -105,10 +110,15 @@ def provide_datasets(dataset: Dataset,
 def main():
     arguments = argument_parser.parse_args()
     if arguments.delete:
+
         if arguments.branch or arguments.input:
-            raise ValueError('Cannot use `-d`, `--delete` with `-b`, `--branch`, `-i`, `--input`')
+            raise ValueError(
+                'Cannot use `-d`, `--delete` with `-b`, `--branch`,'
+                ' `-i`, or `--input`')
+
         remove(arguments.dataset, arguments.delete)
         return
+
     provision_dir = provide(
         arguments.dataset,
         arguments.branch,
