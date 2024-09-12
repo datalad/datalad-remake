@@ -66,7 +66,6 @@ def provide(dataset: str,
     provide_datasets(
         Dataset(dataset),
         worktree_dir=worktree_dir,
-        temp_branch=worktree_dir.name,
         source_branch=branch,
     )
 
@@ -83,10 +82,10 @@ def provide(dataset: str,
 
 def provide_datasets(dataset: Dataset,
                      worktree_dir: Path,
-                     temp_branch: str,
                      source_branch: str | None = None,
                      ) -> None:
 
+    temp_branch = worktree_dir.name
     with chdir(dataset.path):
         args = ['worktree', 'add', '-b', temp_branch, str(worktree_dir)] + (
             [source_branch] if source_branch else []
@@ -99,7 +98,7 @@ def provide_datasets(dataset: Dataset,
             provide_datasets(
                 Dataset(subdataset_path),
                 worktree_dir / subdataset_path,
-                temp_branch,
+                None,   # Use default branches for subdatasets
             )
 
 
