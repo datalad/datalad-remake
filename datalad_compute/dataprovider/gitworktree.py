@@ -37,9 +37,8 @@ argument_parser.add_argument(
     action='append',
     metavar='PATH',
     help='Path of a file that should be provisioned (relative from dataset '
-         'root). If not provided, the complete dataset, including all data in '
-         'all subdatasets, will be provisioned (use multiple times to define '
-         'multiple inputs)',
+         'root), at least one input has tp be provided (use multiple times to '
+         'define multiple inputs)',
 )
 
 
