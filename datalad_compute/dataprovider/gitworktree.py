@@ -72,14 +72,11 @@ def provide(dataset: str,
         source_branch=branch,
     )
 
-    # Fetch file content
+    # Fetch file content in the worktree
     work_dataset = Dataset(worktree_dir)
     with chdir(worktree_dir):
-        if input_files:
-            for p in input_files:
-                work_dataset.get(p, result_renderer='disabled')
-        else:
-            work_dataset.get(recursive=True, result_renderer='disabled')
+        for p in input_files:
+            work_dataset.get(p, result_renderer='disabled')
     return worktree_dir
 
 
@@ -118,6 +115,9 @@ def main():
 
         remove(arguments.dataset, arguments.delete)
         return
+
+    if not arguments.input:
+        raise ValueError('At least one input file must be provided')
 
     provision_dir = provide(
         arguments.dataset,
