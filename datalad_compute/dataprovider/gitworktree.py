@@ -5,6 +5,7 @@ are currently also provisioned.
 """
 from __future__ import annotations
 
+import random
 import shutil
 import tempfile
 from argparse import ArgumentParser
@@ -84,15 +85,18 @@ def provide_datasets(dataset: Dataset,
                      source_branch: str | None = None,
                      ) -> None:
 
-    temp_branch = worktree_dir.name
+    temp_branch = 'tmp_' + ''.join(
+        random.choices('abcdefghijklmnopqrstuvwxyz', k=10)
+    )
     with chdir(dataset.path):
+
         args = ['worktree', 'add', '-b', temp_branch, str(worktree_dir)] + (
             [source_branch]
             if source_branch
             else []
         )
-
         call_git_success(args)
+
         for subdataset in dataset.subdatasets(result_renderer='disabled'):
             subdataset_path = Path(subdataset['path']).relative_to(dataset.pathobj)
             dataset.install(path=subdataset_path, result_renderer='disabled')
