@@ -1,0 +1,9 @@
+inputs = ['first', 'second', 'output']
+
+use_shell = 'true'
+executable = "echo"
+
+arguments = [
+    "content: {first} > '{output}-1.txt';",
+    "echo content: {second} > '{output}-2.txt'",
+]

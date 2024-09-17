@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import contextlib
 import subprocess
 from pathlib import Path
 from typing import Any
 
 import tomllib
+
+from datalad_next.datasets import Dataset
 
 
 def substitute_string(format_str: str,
@@ -48,9 +51,11 @@ def get_substitutions(template: dict[str, Any],
     }
 
 
-def compute(template_path: Path,
+def compute(root_directory: Path,
+            template_path: Path,
             compute_arguments: dict[str, str],
-            ):
+            ) -> None:
+
     with template_path.open('rb') as f:
         template = tomllib.load(f)
 
@@ -63,7 +68,8 @@ def compute(template_path: Path,
         'arguments'
     )
 
-    if template.get('use_shell', 'false') == 'true':
-        subprocess.run(' '.join([substituted_executable] + substituted_arguments), shell=True)
-    else:
-        subprocess.run([substituted_executable] + substituted_arguments)
+    with contextlib.chdir(root_directory):
+        if template.get('use_shell', 'false') == 'true':
+            subprocess.run(' '.join([substituted_executable] + substituted_arguments), shell=True)
+        else:
+            subprocess.run([substituted_executable] + substituted_arguments)
