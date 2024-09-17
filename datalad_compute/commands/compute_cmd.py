@@ -119,18 +119,9 @@ class Compute(ValidatedInterface):
             un_provide(dataset, worktree)
 
         url_base = get_url(dataset, branch, template, parameter, input, output)
-        relaxed = ['--relaxed'] if url_only else []
 
         for out in output:
-
-            # Build the file-specific URL and store it in the annex
-            url = url_base + f'&this={quote(out)}'
-            file_dataset_path, file_path = get_file_dataset(dataset.pathobj / out)
-            lgr.debug('addurl: -C:%s file_path:%s url:%s', str(file_dataset_path), str(file_path), str(url))
-            call_git_success([
-                '-C', str(file_dataset_path), 'annex',
-                'addurl', url, '--file', file_path]  + relaxed)
-
+            url = add_url(dataset, out, url_base, url_only)
             yield get_status_dict(
                     action='compute',
                     path=dataset.pathobj / out,
@@ -156,6 +147,25 @@ def get_url(dataset: Dataset,
         + f'&output={quote(json.dumps(output_files))}'
         + f'&params={quote(json.dumps(parameters))}'
     )
+
+
+def add_url(dataset: Dataset,
+            file_path: str,
+            url_base: str,
+            url_only: bool
+            ) -> str:
+
+    lgr.debug(
+        'add_url: %s %s %s %s',
+        str(dataset), str(file_path), url_base, repr(url_only))
+
+    # Build the file-specific URL and store it in the annex
+    url = url_base + f'&this={quote(file_path)}'
+    file_dataset_path, file_path = get_file_dataset(dataset.pathobj / file_path)
+    call_git_success(
+        ['-C', str(file_dataset_path), 'annex', 'addurl', url, '--file', file_path]
+        + (['--relaxed'] if url_only else []))
+    return url
 
 
 def get_file_dataset(file: Path) -> [Path, Path]:
