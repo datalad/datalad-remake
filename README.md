@@ -18,12 +18,12 @@ the datalad remake-project.
 
 It contains an annex remote that can compute content on demand. It uses template
 files that specify the operations. It encodes computation parameters in URLs
-that are associated with annex keys, that allows to compute dropped content
+that are associated with annex keys, which allows to compute dropped content
 instead of fetching it from some storage system.  It also contains the new
 datalad command `compute` that
-can trigger the computation of content and stores the parameters that are
-used for content creation in the git-annex branch, where they can be used by
-the annex remote to repeat the computation.
+can trigger the computation of content, generate the parameterized URLs, and
+associate this URL with the respective annex key. This information can then
+be used by the annex remote to repeat the computation.
 
 ## Installation
 
@@ -78,9 +78,9 @@ Execute a computation and save the result:
 > datalad compute -p first=bob -p second=alice -p output=name -o name-1.txt \
 -o name-2.txt one-to-many
 ```
-The method `one-to-many` will create two files with the names <output>-1.txt
-and `<output>-2.txt`. That is why those two files are listed as outputs in the
-command above.
+The method `one-to-many` will create two files with the names `<output>-1.txt`
+and `<output>-2.txt`. That is why the two files `name-1.txt` and `name-2.txt`
+are listed as outputs in the command above.
 
 ```bash
 > cat name-1.txt
