@@ -1,3 +1,7 @@
 
 1. Associate URLs with output files. This allows to register URLs when
    the file was copied to the dataset and saved.
+
+2. Consolidate compute-URL construction and splitting code
+
+3. Use dataclass for compute_info in annex remote

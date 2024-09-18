@@ -210,7 +210,9 @@ def execute(worktree: Path,
 
     # Unlock output files in the worktree-directory
     for o in output:
-        call_git_success(['-C', str(worktree), 'annex', 'unlock', o])
+        call_git_success(
+            ['-C', str(worktree), 'annex', 'unlock', o],
+            capture_output=True)
 
     # Run the computation in the worktree-directory
     template_path = worktree / template_dir / template_name
@@ -249,7 +251,9 @@ def collect(worktree: Path,
     # Unlock output files in the dataset-directory and copy the result
     for o in output:
         dest = dataset.pathobj / o
-        call_git_success(['-C', dataset.path, 'annex', 'unlock', str(dest)])
+        call_git_success(
+            ['-C', dataset.path, 'annex', 'unlock', str(dest)],
+            capture_output=True)
         shutil.copyfile(worktree / o, dest)
 
     # Save the dataset
