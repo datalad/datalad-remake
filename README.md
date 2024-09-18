@@ -25,6 +25,18 @@ can trigger the computation of content and stores the parameters that are
 used for content creation in the git-annex branch, where they can be used by
 the annex remote to repeat the computation.
 
+## Installation
+
+There is no pypi-package yet. To install the extension, clone the repository
+and install it via `pip` (preferably in a virtual environment):
+
+```bash
+git clone https://github.com/christian-monch/datalad-compute.git
+cd datalad-compute
+pip install -r requirements-devel.txt
+pip install .
+```
+
 
 ## Example usage
 
