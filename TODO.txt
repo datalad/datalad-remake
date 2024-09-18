@@ -1,7 +1,13 @@
 
-1. Associate URLs with output files. This allows to register URLs when
-   the file was copied to the dataset and saved.
+- Provide a way to overwrite the root dataset version during `datalad get`.
+  This could be done via a config variable or an option that is used when
+  creating the annex remote.
 
-2. Consolidate compute-URL construction and splitting code
+- Implement opportunistic collection of all results of a single computation
+  that are not yet present (via `git annex reinject`).
 
-3. Use dataclass for compute_info in annex remote
+- Consolidate compute-URL construction and splitting code
+
+- Use dataclass for compute_info in annex remote
+
+- Implement locking for result collection
