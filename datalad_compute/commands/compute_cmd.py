@@ -110,7 +110,7 @@ class Compute(ValidatedInterface):
                  parameter=None,
                  ):
 
-        dataset : Dataset = dataset.ds if dataset else Dataset()
+        dataset : Dataset = dataset.ds if dataset else Dataset('.')
 
         if not url_only:
             worktree = provide(dataset, branch, input)
@@ -191,7 +191,7 @@ def provide(dataset: Dataset,
     args = ['provide-gitworktree', dataset.path, ] + (
         ['--branch', branch] if branch else []
     )
-    args.extend(chain(*[('--input', i) for i in input]))
+    args.extend(chain(*[('--input', i) for i in (input or [])]))
     stdout = subprocess.run(args, stdout=subprocess.PIPE, check=True).stdout
     return Path(stdout.splitlines()[-1].decode())
 
