@@ -82,6 +82,12 @@ The method `one-to-many` will create two files with the names `<output>-1.txt`
 and `<output>-2.txt`. That is why the two files `name-1.txt` and `name-2.txt`
 are listed as outputs in the command above.
 
+Note that only output files that are defined by the `-o/--output` option will
+be available in the dataset after `datalad compute`. Similarly, only the files
+defined by `-i/--input` will be available as inputs to the computation (the
+computation is performed in a "scratch" directory, so the input files must be
+copied there and the output files must be copied back).
+
 ```bash
 > cat name-1.txt
 bob
