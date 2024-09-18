@@ -1,8 +1,28 @@
+# This is a computing template that demonstrates a computation with
+# multiple output files.
+#
+# Templates are addressed by their name. They should be stored in
+# `$DATASET_ROOT/.datalad/compute/methods`
+
+# An invocation of `datalad compute` has to provide a parameter argument for
+# each input variable. In this case the invocation could look like this:
+# `datalad compute -p first=bob -p second=alice -p output=name ... one-to-many`
+#
 inputs = ['first', 'second', 'output']
 
+# Use a shell to interpret `arguments`. By default, `use_shell` is 'false'.
+#
 use_shell = 'true'
-executable = "echo"
 
+# The name of the executable. This will be the prepended to the argument list
+# given in `arguments`.
+#
+executable = 'echo'
+
+# Arguments to the executable. The curly braces are placeholders for the
+# input variables that were defined above. They will be replaced with the
+# values provided in the parameter arguments of `datalad compute`.
+#
 arguments = [
     "content: {first} > '{output}-1.txt';",
     "echo content: {second} > '{output}-2.txt'",
