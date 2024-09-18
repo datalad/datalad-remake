@@ -2,12 +2,9 @@ from __future__ import annotations
 
 import contextlib
 import subprocess
+import tomllib
 from pathlib import Path
 from typing import Any
-
-import tomllib
-
-from datalad_next.datasets import Dataset
 
 
 def substitute_string(format_str: str,

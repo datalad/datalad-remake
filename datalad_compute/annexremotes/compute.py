@@ -16,10 +16,10 @@ from datalad_next.annexremotes import (
     SpecialRemote,
     super_main
 )
-
 from datalad_next.datasets import Dataset
-from datalad_compute import url_scheme
-from datalad_compute.commands.compute_cmd import (
+
+from .. import url_scheme
+from ..commands.compute_cmd import (
     execute,
     provide,
     un_provide

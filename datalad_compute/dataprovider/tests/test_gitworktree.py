@@ -64,34 +64,3 @@ def test_worktree_basic():
 
     check_deleted_worktrees(dataset)
     dataset.drop(reckless='kill', result_renderer='disabled')
-
-
-def test_worktree_example():
-    dataset = Dataset('/home/cristian/tmp/compute/compute-test-4')
-    worktree = Dataset(provide(
-        dataset.path,
-        input_files=[
-            'b.txt',
-            'subds1/c.txt',
-            'subds1/a/d.txt',
-            'd/subds2/a/e.txt'
-        ],
-    ))
-
-    r_orig = [r['gitmodule_url'] for r in dataset.subdatasets(recursive=True, result_renderer='disabled')]
-    r_worktree = [r['gitmodule_url'] for r in worktree.subdatasets(recursive=True, result_renderer='disabled')]
-    assert r_orig == r_worktree
-
-
-    remove(dataset.path, worktree.path)
-
-    def check_deleted_worktrees(ds: Dataset):
-        with chdir(ds.path):
-            for line in call_git_lines(['worktree', 'list']):
-                directory = line.split()[0]
-                assert directory == ds.path
-        for sub_ds in ds.subdatasets(result_renderer='disabled'):
-            check_deleted_worktrees(Dataset(sub_ds['path']))
-
-    check_deleted_worktrees(dataset)
-    dataset.drop(reckless='kill', result_renderer='disabled')

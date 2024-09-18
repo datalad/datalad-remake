@@ -1,8 +1,6 @@
-"""DataLad demo command"""
+"""DataLad compute command"""
 
 from __future__ import annotations
-
-__docformat__ = 'restructuredtext'
 
 import contextlib
 import json
@@ -11,7 +9,6 @@ import shutil
 import subprocess
 from itertools import chain
 from pathlib import Path
-from tempfile import template
 from urllib.parse import quote
 
 from datalad_next.commands import (
@@ -30,17 +27,20 @@ from datalad_next.constraints import (
 )
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_oneline, call_git_success, iter_subproc
-from datalad_compute import (
-    template_dir,
-    url_scheme,
-)
-from datalad_compute.utils.compute import compute
 from datasalad.runners import iter_subproc
 from datasalad.itertools import (
     itemize,
     load_json,
 )
-from more_itertools import intersperse
+
+from .. import (
+    template_dir,
+    url_scheme,
+)
+from ..utils.compute import compute
+
+
+__docformat__ = 'restructuredtext'
 
 
 lgr = logging.getLogger('datalad.compute.compute_cmd')
@@ -57,7 +57,7 @@ class Compute(ValidatedInterface):
 
     _validator_ = EnsureCommandParameterization(dict(
         dataset=EnsureDataset(installed=True),
-        input=EnsureListOf(EnsureStr(min_len=1), min_len=1),
+        input=EnsureListOf(EnsureStr(min_len=1)),
         output=EnsureListOf(EnsureStr(min_len=1), min_len=1),
         parameter=EnsureListOf(EnsureStr(min_len=3)),
     ))
