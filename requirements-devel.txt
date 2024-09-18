@@ -1,0 +1,12 @@
+# requirements for a development environment
+coverage
+datalad
+datalad-next
+datasalad
+pytest
+pytest-cov
+
+# requirements for a document building
+sphinx
+sphinx_rtd_theme
+sphinx_copybutton
