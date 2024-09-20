@@ -3,6 +3,18 @@
 #
 # Templates are addressed by their name. They should be stored in
 # `$DATASET_ROOT/.datalad/compute/methods`
+#
+# Each template must define the following variables:
+# - `inputs`:  a list of strings that define the input variables
+# - `use_shell`: a boolean that defines whether to use a shell to interpret executable and arguments
+# - `executable`: the name of the executable
+# - `arguments`:  a list of strings that define the arguments to the executable
+#
+# During execution `subprocess.run([executable] + arguments, shell=use_shell, ...)`
+# will be invoked.
+# Variable placeholders, i.e `{<variable name>}` in `arguments` will be
+# replaced with the values provided in the parameter arguments of
+# `datalad compute`.
 
 # An invocation of `datalad compute` has to provide a parameter argument for
 # each input variable. In this case the invocation could look like this:

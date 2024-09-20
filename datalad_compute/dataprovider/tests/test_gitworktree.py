@@ -10,35 +10,11 @@ from ..gitworktree import (
     provide,
     remove,
 )
+from ...test_utils.create_datasets import create_ds_hierarchy
 
 
-def create_subdatasets(parent_dataset: Dataset,
-                       subdataset_levels: int = 2,
-                       level_id: int = 0,
-                       ):
-    if subdataset_levels == 0:
-        return
-
-    subdataset = Dataset(parent_dataset.pathobj / f'subds{level_id}')
-    subdataset.create(result_renderer='disabled')
-    create_subdatasets(subdataset, subdataset_levels - 1, level_id + 1)
-    (subdataset.pathobj / f'a{level_id}.txt').write_text(f'a{level_id}')
-    (subdataset.pathobj / f'b{level_id}.txt').write_text(f'b{level_id}')
-    subdataset.save(result_renderer='disabled')
-
-
-def create_ds_hierarchy(subdataset_levels: int = 2):
-    dataset = Dataset(tempfile.TemporaryDirectory().name)
-    dataset.create(force=True, result_renderer='disabled')
-    create_subdatasets(dataset, subdataset_levels)
-    (dataset.pathobj / 'a.txt').write_text('a')
-    (dataset.pathobj / 'b.txt').write_text('b')
-    dataset.save(result_renderer='disabled')
-    return dataset
-
-
-def test_worktree_basic():
-    dataset = create_ds_hierarchy(3)
+def test_worktree_basic(tmp_path):
+    dataset = create_ds_hierarchy(str(tmp_path), 3)[0][0]
     worktree = Dataset(provide(
         dataset.path,
         input_files=[
@@ -63,4 +39,8 @@ def test_worktree_basic():
             check_deleted_worktrees(Dataset(sub_ds['path']))
 
     check_deleted_worktrees(dataset)
-    dataset.drop(reckless='kill', result_renderer='disabled')
+    dataset.drop(
+        what='all',
+        reckless='kill',
+        recursive=True,
+        result_renderer='disabled')
