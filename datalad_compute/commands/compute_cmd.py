@@ -207,13 +207,12 @@ def execute(worktree: Path,
         'execute: %s %s %s %s', str(worktree),
         template_name, repr(parameter), repr(output))
 
-    assert_annexed(worktree, output)
-
     # Unlock output files in the worktree-directory
+    temp_dataset = Dataset(worktree)
     for o in output:
-        call_git_success(
-            ['-C', str(worktree), 'annex', 'unlock', o],
-            capture_output=True)
+        file = temp_dataset.pathobj / o
+        if file.exists():
+            temp_dataset.unlock(file)
 
     # Run the computation in the worktree-directory
     template_path = worktree / template_dir / template_name
@@ -222,24 +221,6 @@ def execute(worktree: Path,
         for p in parameter
     }
     compute(worktree, template_path, parameter_dict)
-
-
-def assert_annexed(worktree: Path,
-                   files: list[str]
-                   ) -> None:
-
-    present_files = list(filter(lambda f: Path(f).exists(), files))
-    with contextlib.chdir(worktree):
-        with iter_subproc(['git', 'annex', 'info', '--json', '--batch', '-z'],
-                          inputs=(file.encode() + b'\x00' for file in present_files),
-                          bufsize=0) as results:
-            not_annexed = tuple(filter(
-                lambda r: r['success'] == False,
-                load_json(itemize(results, sep=b'\n'))))
-            if not_annexed:
-                raise ValueError(
-                    f'Output files are not annexed: ' + ', '.join(
-                        map(lambda na: na['file'], not_annexed)))
 
 
 def collect(worktree: Path,
