@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import json
 import logging
 import shutil
@@ -26,11 +25,9 @@ from datalad_next.constraints import (
     EnsureStr,
 )
 from datalad_next.datasets import Dataset
-from datalad_next.runners import call_git_oneline, call_git_success, iter_subproc
-from datasalad.runners import iter_subproc
-from datasalad.itertools import (
-    itemize,
-    load_json,
+from datalad_next.runners import (
+    call_git_oneline,
+    call_git_success,
 )
 
 from .. import (
