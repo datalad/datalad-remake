@@ -168,11 +168,11 @@ def add_url(dataset: Dataset,
     return url
 
 
-def get_file_dataset(file: Path) -> [Path, Path]:
+def get_file_dataset(file: Path) -> tuple[Path, Path]:
     """ Get dataset of file and relative path of file from the dataset
 
-    Determine the dataset that contains the file and the relative path of the
-    file in this dataset."""
+    Determine the path of the dataset that contains the file and the relative
+    path of the file in this dataset."""
     top_level = Path(call_git_oneline(
         ['-C', str(file.parent), 'rev-parse', '--show-toplevel']
     ))

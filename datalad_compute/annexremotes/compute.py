@@ -17,12 +17,14 @@ from datalad_next.annexremotes import (
     super_main
 )
 from datalad_next.datasets import Dataset
+from datalad_next.runners import call_git_success
 
 from .. import url_scheme
 from ..commands.compute_cmd import (
     execute,
+    get_file_dataset,
     provide,
-    un_provide
+    un_provide,
 )
 
 
@@ -140,7 +142,20 @@ class ComputeRemote(SpecialRemote):
                  ) -> None:
         """Collect computation results for `this` (and all other outputs) """
 
-        # TODO: reap all other output files that are known to the annex
+        # Collect all output files that have been created while creating
+        # `this` file.
+        for output in outputs:
+            if output == this:
+                continue
+            dataset_path, file_path = get_file_dataset(dataset.pathobj / output)
+            call_git_success([
+                '-C', str(dataset_path),
+                'annex', 'reinject',
+                str(worktree / output),
+                str(file_path)],
+                capture_output=True)
+
+        # Collect `this` file
         shutil.copyfile(worktree / this, this_destination)
 
 
