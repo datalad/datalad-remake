@@ -206,17 +206,7 @@ def execute(worktree: Path,
         template_name, repr(parameter), repr(output))
 
     # Unlock output files in the worktree-directory
-    temp_dataset = Dataset(worktree)
-    for o in output:
-        file = temp_dataset.pathobj / o
-        if file.exists():
-            temp_dataset.unlock(file)
-        elif file.is_symlink():
-            # `datalad unlock` does not unlock dangling symlinks, so we mimic
-            # the behavior of `git annex unlock` here:
-            link = os.readlink(file)
-            file.unlink()
-            file.write('/annex/objects/' + link.split('/')[-1])
+    unlock_files(Dataset(worktree), output)
 
     # Run the computation in the worktree-directory
     template_path = worktree / template_dir / template_name
@@ -235,14 +225,28 @@ def collect(worktree: Path,
     lgr.debug('collect: %s %s %s', str(worktree), dataset, repr(output))
 
     # Unlock output files in the dataset-directory and copy the result
+    unlock_files(dataset, output)
     for o in output:
-        dest = dataset.pathobj / o
-        if dest.exists():
-            dataset.unlock(str(dest))
-        shutil.copyfile(worktree / o, dest)
+        shutil.copyfile(worktree / o, dataset.pathobj / o)
 
     # Save the dataset
     dataset.save(recursive=True)
+
+
+def unlock_files(dataset: Dataset,
+                 files: list[str]
+                 ) -> None:
+    """Use datalad to resolve subdatasets and unlock files in the dataset."""
+    for f in files:
+        file = dataset.pathobj / f
+        if not file.exists() and file.is_symlink():
+            # `datalad unlock` does not unlock dangling symlinks, so we
+            # mimic the behavior of `git annex unlock` here:
+            link = os.readlink(file)
+            file.unlink()
+            file.write_text('/annex/objects/' + link.split('/')[-1] + '\n')
+        elif file.is_symlink():
+            dataset.unlock(file)
 
 
 def un_provide(dataset: Dataset,
