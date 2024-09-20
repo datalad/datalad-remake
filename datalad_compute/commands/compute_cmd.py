@@ -162,9 +162,10 @@ def add_url(dataset: Dataset,
     # Build the file-specific URL and store it in the annex
     url = url_base + f'&this={quote(file_path)}'
     file_dataset_path, file_path = get_file_dataset(dataset.pathobj / file_path)
-    call_git_success(
+    success = call_git_success(
         ['-C', str(file_dataset_path), 'annex', 'addurl', url, '--file', file_path]
         + (['--relaxed'] if url_only else []))
+    assert success, f'\naddurl failed:\nfile_dataset_path: {file_dataset_path}\nurl: {url!r}\nfile_path: {file_path!r}'
     return url
 
 
@@ -251,13 +252,12 @@ def collect(worktree: Path,
     # Unlock output files in the dataset-directory and copy the result
     for o in output:
         dest = dataset.pathobj / o
-        call_git_success(
-            ['-C', dataset.path, 'annex', 'unlock', str(dest)],
-            capture_output=True)
+        if dest.exists():
+            dataset.unlock(str(dest))
         shutil.copyfile(worktree / o, dest)
 
     # Save the dataset
-    dataset.save()
+    dataset.save(recursive=True)
 
 
 def un_provide(dataset: Dataset,
