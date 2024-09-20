@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import shutil
 import subprocess
 from itertools import chain
@@ -210,6 +211,12 @@ def execute(worktree: Path,
         file = temp_dataset.pathobj / o
         if file.exists():
             temp_dataset.unlock(file)
+        elif file.is_symlink():
+            # `datalad unlock` does not unlock dangling symlinks, so we mimic
+            # the behavior of `git annex unlock` here:
+            link = os.readlink(file)
+            file.unlink()
+            file.write('/annex/objects/' + link.split('/')[-1])
 
     # Run the computation in the worktree-directory
     template_path = worktree / template_dir / template_name
