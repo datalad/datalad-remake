@@ -1,5 +1,5 @@
-import contextlib
 
+from datalad.api import get as datalad_get
 from datalad_next.runners import call_git_success
 from datalad_next.tests.fixtures import datalad_cfg
 
@@ -39,7 +39,7 @@ output = [
 ]
 
 
-def test_end_to_end(tmp_path, datalad_cfg):
+def test_end_to_end(tmp_path, datalad_cfg, monkeypatch):
 
     datasets = create_ds_hierarchy(str(tmp_path), 3)
     root_dataset = datasets[0][0]
@@ -81,9 +81,18 @@ def test_end_to_end(tmp_path, datalad_cfg):
     for file in output:
         root_dataset.drop(file)
 
+    # check that all files are dropped
+    for file in output:
+        assert not (root_dataset.pathobj / file).exists()
+
     # Go to the subdataset `subds0/subds1` and fetch the content of `a1.txt`
     # from a compute remote.
-    with contextlib.chdir(root_dataset.pathobj / 'subds0' / 'subds1'):
-        root_dataset.get('a1.txt')
+    monkeypatch.chdir(root_dataset.pathobj / 'subds0' / 'subds1')
+    datalad_get('a1.txt')
 
-    print(datasets)
+    # check that all files are calculated
+    for file, content in zip(output, ['first', 'second', 'third'] * 4):
+        assert (root_dataset.pathobj / file).read_text() == f'content: {content}\n'
+
+    # TODO: check `datalad get subds0/subds1/a1.txt``from top level directory
+    return
