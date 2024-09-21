@@ -94,5 +94,13 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch):
     for file, content in zip(output, ['first', 'second', 'third'] * 4):
         assert (root_dataset.pathobj / file).read_text() == f'content: {content}\n'
 
-    # TODO: check `datalad get subds0/subds1/a1.txt``from top level directory
-    return
+    # Drop all computed content
+    for file in output:
+        root_dataset.drop(file)
+
+    monkeypatch.chdir(root_dataset.pathobj)
+    datalad_get('subds0/subds1/a1.txt')
+
+    # check that all files are calculated
+    for file, content in zip(output, ['first', 'second', 'third'] * 4):
+        assert (root_dataset.pathobj / file).read_text() == f'content: {content}\n'
