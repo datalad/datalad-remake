@@ -1,5 +1,7 @@
+from collections.abc import Iterable
 
 from datalad.api import get as datalad_get
+from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_success
 from datalad_next.tests.fixtures import datalad_cfg
 
@@ -38,6 +40,26 @@ output = [
     'subds0/subds1/subds2/a2.txt', 'subds0/subds1/subds2/b2.txt', 'subds0/subds1/subds2/new.txt',
 ]
 
+test_file_content = [
+    (file, content)
+    for file, content in
+    zip(output, ['content: first\n', 'content: second\n', 'content: third\n'] * 4)
+]
+
+
+def _drop_files(dataset: Dataset,
+                files: Iterable[str]):
+    for file in files:
+        dataset.drop(file)
+        assert not (dataset.pathobj / file).exists()
+
+
+def _check_content(dataset,
+                   file_content: Iterable[tuple[str, str]]
+                   ):
+    for file, content in file_content:
+        assert (dataset.pathobj / file).read_text() == content
+
 
 def test_end_to_end(tmp_path, datalad_cfg, monkeypatch):
 
@@ -74,33 +96,23 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch):
         output=output)
 
     # check computation success
-    for file, content in zip(output, ['first', 'second', 'third'] * 4):
-        assert (root_dataset.pathobj / file).read_text() == f'content: {content}\n'
+    _check_content(root_dataset, test_file_content)
 
     # Drop all computed content
-    for file in output:
-        root_dataset.drop(file)
-
-    # check that all files are dropped
-    for file in output:
-        assert not (root_dataset.pathobj / file).exists()
+    _drop_files(root_dataset, output)
 
     # Go to the subdataset `subds0/subds1` and fetch the content of `a1.txt`
     # from a compute remote.
     monkeypatch.chdir(root_dataset.pathobj / 'subds0' / 'subds1')
     datalad_get('a1.txt')
 
-    # check that all files are calculated
-    for file, content in zip(output, ['first', 'second', 'third'] * 4):
-        assert (root_dataset.pathobj / file).read_text() == f'content: {content}\n'
+    # check that all files are computed
+    _check_content(root_dataset, test_file_content)
 
-    # Drop all computed content
-    for file in output:
-        root_dataset.drop(file)
+    _drop_files(root_dataset, output)
 
+    # check get in subdatasets
     monkeypatch.chdir(root_dataset.pathobj)
     datalad_get('subds0/subds1/a1.txt')
 
-    # check that all files are calculated
-    for file, content in zip(output, ['first', 'second', 'third'] * 4):
-        assert (root_dataset.pathobj / file).read_text() == f'content: {content}\n'
+    _check_content(root_dataset, test_file_content)
