@@ -56,7 +56,9 @@ class Compute(ValidatedInterface):
     _validator_ = EnsureCommandParameterization(dict(
         dataset=EnsureDataset(installed=True),
         input=EnsureListOf(EnsureStr(min_len=1)),
+        input_list=EnsureStr(min_len=1),
         output=EnsureListOf(EnsureStr(min_len=1), min_len=1),
+        output_list=EnsureStr(min_len=1),
         parameter=EnsureListOf(EnsureStr(min_len=3)),
     ))
 
@@ -84,10 +86,20 @@ class Compute(ValidatedInterface):
             args=('-i', '--input',),
             action='append',
             doc="Name of an input file (repeat for multiple inputs)"),
+        input_list=Parameter(
+            args=('-I', '--input-list',),
+            doc="Name of a file that contains a list of input files. Format is "
+                "one file per line, relative path from `dataset`. This is "
+                "useful if a large number of input files should be provided."),
         output=Parameter(
             args=('-o', '--output',),
             action='append',
             doc="Name of an output file (repeat for multiple outputs)"),
+        output_list=Parameter(
+            args=('-O', '--output-list',),
+            doc="Name of a file that contains a list of output files. Format "
+                "is one file per line, relative path from `dataset`. This is "
+                "useful if a large number of output files should be provided."),
         parameter=Parameter(
             args=('-p', '--parameter',),
             action='append',
@@ -104,11 +116,16 @@ class Compute(ValidatedInterface):
                  template=None,
                  branch=None,
                  input=None,
+                 input_list=None,
                  output=None,
+                 output_list=None,
                  parameter=None,
                  ):
 
         dataset : Dataset = dataset.ds if dataset else Dataset('.')
+
+        input = (input or []) + read_files(input_list)
+        output = (output or []) + read_files(output_list)
 
         if not url_only:
             worktree = provide(dataset, branch, input)
@@ -125,6 +142,12 @@ class Compute(ValidatedInterface):
                     path=dataset.pathobj / out,
                     status='ok',
                     message=f'added url: {url!r} to {out!r} in {dataset.pathobj}',)
+
+
+def read_files(list_file: str | None) -> list[str]:
+    if list_file is None:
+        return []
+    return Path(list_file).read_text().splitlines()
 
 
 def get_url(dataset: Dataset,
