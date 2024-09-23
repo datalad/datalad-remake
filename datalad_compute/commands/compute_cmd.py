@@ -60,6 +60,7 @@ class Compute(ValidatedInterface):
         output=EnsureListOf(EnsureStr(min_len=1), min_len=1),
         output_list=EnsureStr(min_len=1),
         parameter=EnsureListOf(EnsureStr(min_len=3)),
+        parameter_list=EnsureStr(min_len=1),
     ))
 
     # parameters of the command, must be exhaustive
@@ -89,7 +90,8 @@ class Compute(ValidatedInterface):
         input_list=Parameter(
             args=('-I', '--input-list',),
             doc="Name of a file that contains a list of input files. Format is "
-                "one file per line, relative path from `dataset`. This is "
+                "one file per line, relative path from `dataset`. Empty lines, "
+                "i.e. lines that contain only newlines, arg ignored. This is "
                 "useful if a large number of input files should be provided."),
         output=Parameter(
             args=('-o', '--output',),
@@ -98,13 +100,22 @@ class Compute(ValidatedInterface):
         output_list=Parameter(
             args=('-O', '--output-list',),
             doc="Name of a file that contains a list of output files. Format "
-                "is one file per line, relative path from `dataset`. This is "
-                "useful if a large number of output files should be provided."),
+                "is one file per line, relative path from `dataset`. Empty "
+                "lines, i.e. lines that contain only newlines, arg ignored. "
+                "This is useful if a large number of output files should be "
+                "provided."),
         parameter=Parameter(
             args=('-p', '--parameter',),
             action='append',
             doc="Input parameter in the form <name>=<value> (repeat for "
                 "multiple parameters)"),
+        parameter_list=Parameter(
+            args=('-P', '--parameter-list',),
+            action='append',
+            doc="Name of a file that contains a list of parameters. Format "
+                "is one `<name>=<value>` string per line. Empty lines, "
+                "i.e. lines that contain only newlines, arg ignored. This is "
+                "useful if a large number of parameters should be provided."),
     )
 
 
@@ -120,12 +131,14 @@ class Compute(ValidatedInterface):
                  output=None,
                  output_list=None,
                  parameter=None,
+                 parameter_list=None,
                  ):
 
         dataset : Dataset = dataset.ds if dataset else Dataset('.')
 
-        input = (input or []) + read_files(input_list)
-        output = (output or []) + read_files(output_list)
+        input = (input or []) + read_list(input_list)
+        output = (output or []) + read_list(output_list)
+        parameter = (parameter or []) + read_list(parameter_list)
 
         if not url_only:
             worktree = provide(dataset, branch, input)
@@ -144,10 +157,13 @@ class Compute(ValidatedInterface):
                     message=f'added url: {url!r} to {out!r} in {dataset.pathobj}',)
 
 
-def read_files(list_file: str | None) -> list[str]:
+def read_list(list_file: str | Path | None) -> list[str]:
     if list_file is None:
         return []
-    return Path(list_file).read_text().splitlines()
+    return list(
+        filter(
+            lambda s: s != '',
+            Path(list_file).read_text().splitlines(keepends=False)))
 
 
 def get_url(dataset: Dataset,

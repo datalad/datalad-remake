@@ -3,6 +3,7 @@ coverage
 datalad
 datalad-next
 datasalad
+hypothesis
 pytest
 pytest-cov
 
