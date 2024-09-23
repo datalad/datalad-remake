@@ -112,7 +112,6 @@ class Compute(ValidatedInterface):
                 "multiple parameters)"),
         parameter_list=Parameter(
             args=('-P', '--parameter-list',),
-            action='append',
             doc="Name of a file that contains a list of parameters. Format "
                 "is one `<name>=<value>` string per line. Empty lines, "
                 "i.e. lines that contain only newlines, arg ignored. This is "
