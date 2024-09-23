@@ -1,0 +1,206 @@
+[build-system]
+requires = [
+  "hatchling",
+  "hatch-vcs",
+]
+build-backend = "hatchling.build"
+
+[project]
+name = "datalad-remake"
+dynamic = ["version"]
+description = ''
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+keywords = [
+  "datalad",
+  "git",
+  "git-annex",
+]
+authors = [
+#  { name = "Michael Hanke", email = "michael.hanke@gmail.com" },
+]
+maintainers = [
+#  { name = "Michael Hanke", email = "michael.hanke@gmail.com" },
+]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: End Users/Desktop",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Topic :: Software Development",
+  "Topic :: Software Development :: Version Control",
+  "Topic :: Software Development :: Version Control :: Git",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+  "datalad_next",
+]
+
+[project.urls]
+Homepage = "https://github.com/datalad/datalad-remake"
+Documentation = "https://github.com/datalad/datalad-remake#readme"
+Issues = "https://github.com/datalad/datalad-remake/issues"
+Source = "https://github.com/datalad/datalad-remake"
+Changelog = "https://github.com/datalad/datalad-remake/blob/main/CHANGELOG.md"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "datalad_remake/_version.py"
+
+[tool.hatch.envs.hatch-test]
+default-args = ["datalad_remake"]
+extra-dependencies = [
+  "pytest",
+  # if you come here, because coverage combination crashed for you
+  # run `hatch test --cover` and/or see
+  # https://github.com/pypa/hatch/issues/1565#issuecomment-2163773123
+  "pytest-cov",
+]
+
+
+[tool.hatch.envs.tests]
+description = "run tests across Python versions"
+template = "hatch-test"
+
+[[tool.hatch.envs.tests.matrix]]
+python = ["3.9", "3.10", "3.11", "3.12"]
+
+[tool.hatch.envs.tests.scripts]
+run = 'python -m pytest {args}'
+
+[tool.hatch.envs.types]
+description = "type checking with MyPy"
+extra-dependencies = [
+  "mypy>=1.0.0",
+  "pytest",
+]
+[tool.hatch.envs.types.scripts]
+check = [
+  "mypy --install-types --non-interactive --python-version 3.9 --pretty --show-error-context datalad_remake",
+]
+
+[tool.hatch.envs.docs]
+description = "build Sphinx-based docs"
+extra-dependencies = [
+  "sphinx",
+]
+[tool.hatch.envs.docs.scripts]
+build = [
+  "make -C docs html",
+]
+clean = [
+  "rm -rf docs/generated",
+  "make -C docs clean",
+]
+
+[tool.hatch.envs.cz]
+description = "commit compliance, changelog, and release generation"
+detached = true
+extra-dependencies = [
+  "commitizen",
+]
+[tool.hatch.envs.cz.scripts]
+check-commits = [
+  # check all commit messages since the (before) beginning
+  "cz check --rev-range 4b825dc642cb6eb9a060e54bf8d69288fbee4904..HEAD",
+]
+show-changelog = [
+  # show the would-be changelog on stdout
+  "cz changelog --dry-run",
+]
+bump-version = [
+  # bump version (also tags) and update changelog
+  "cz bump --changelog",
+]
+
+[tool.hatch.envs.codespell]
+description = "spell checking"
+detached = true
+extra-dependencies = [
+  "codespell",
+]
+[tool.hatch.envs.codespell.scripts]
+check = "codespell"
+fix = "codespell --write-changes"
+
+[tool.codespell]
+skip = ".git,build,.*cache,dist"
+
+[tool.coverage.run]
+source_pkgs = ["datalad_remake", "tests"]
+branch = true
+parallel = true
+omit = [
+#  "src/datalad_remake/__about__.py",
+]
+data_file = "${COVERAGE_ROOT-.}/.coverage"
+
+[tool.coverage.paths]
+datalad_remake = ["src/datalad_remake", "*/datalad_remake/src/datalad_remake"]
+tests = ["tests", "*/datalad_remake/tests"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+]
+
+[tool.ruff]
+exclude = [
+  # sphinx
+  "docs",
+]
+line-length = 88
+indent-width = 4
+target-version = "py39"
+[tool.ruff.format]
+# Prefer single quotes over double quotes.
+quote-style = "single"
+[tool.ruff.lint.per-file-ignores]
+"**/test_*" = [
+  # permit assert statements in tests
+  "S101",
+  # permit relative import in tests
+  "TID252",
+  # permit versatile function names in tests
+  "N802",
+]
+# permit relative import in subpackage root
+"datalad_remake/*/__init__.py" = ["TID252"]
+
+[tool.commitizen]
+name = "cz_customize"
+tag_format = "v$version"
+version_scheme = "pep440"
+version_provider = "scm"
+changelog_incremental = true
+template = ".changelog.md.j2"
+gpg_sign = true
+
+[tool.commitizen.customize]
+commit_parser = "^((?P<change_type>feat|fix|rf|perf|test|doc|BREAKING CHANGE)(?:\\((?P<scope>[^()\r\n]*)\\)|\\()?(?P<breaking>!)?|\\w+!):\\s(?P<message>.*)?(?P<body>.*)?"
+change_type_order = ["BREAKING CHANGE", "feat", "fix", "rf", "perf", "doc", "test"]
+changelog_pattern = "^((BREAKING[\\-\\ ]CHANGE|\\w+)(\\(.+\\))?!?):"
+bump_pattern = "^((BREAKING[\\-\\ ]CHANGE|\\w+)(\\(.+\\))?!?):"
+schema_pattern = "(?s)(ci|doc|feat|fix|perf|rf|style|test|chore|revert|bump)(\\(\\S+\\))?!?:( [^\\n\\r]+)((\\n\\n.*)|(\\s*))?$"
+
+[tool.commitizen.customize.bump_map]
+"^\\w+!" = "MAJOR"
+"^BREAKING" = "MAJOR"
+"^feat" = "MINOR"
+"^fix" = "PATCH"
