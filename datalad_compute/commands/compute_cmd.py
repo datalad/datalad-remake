@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -276,16 +277,20 @@ def unlock_files(dataset: Dataset,
                  files: list[str]
                  ) -> None:
     """Use datalad to resolve subdatasets and unlock files in the dataset."""
-    for f in files:
-        file = dataset.pathobj / f
-        if not file.exists() and file.is_symlink():
-            # `datalad unlock` does not unlock dangling symlinks, so we
-            # mimic the behavior of `git annex unlock` here:
-            link = os.readlink(file)
-            file.unlink()
-            file.write_text('/annex/objects/' + link.split('/')[-1] + '\n')
-        elif file.is_symlink():
-            dataset.unlock(file)
+    # TODO: for some reason `dataset unlock` does not operate in the
+    #  context of `dataset.pathobj`, so we need to change the working
+    #  directory manually here.
+    with contextlib.chdir(dataset.pathobj):
+        for f in files:
+            file = dataset.pathobj / f
+            if not file.exists() and file.is_symlink():
+                # `datalad unlock` does not unlock dangling symlinks, so we
+                # mimic the behavior of `git annex unlock` here:
+                link = os.readlink(file)
+                file.unlink()
+                file.write_text('/annex/objects/' + link.split('/')[-1] + '\n')
+            elif file.is_symlink():
+                dataset.unlock(file)
 
 
 def un_provide(dataset: Dataset,
