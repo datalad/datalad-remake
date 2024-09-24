@@ -8,7 +8,6 @@ from __future__ import annotations
 import os
 import random
 import shutil
-import tempfile
 from argparse import ArgumentParser
 from contextlib import chdir
 from pathlib import Path
@@ -96,17 +95,21 @@ def provide(dataset: str,
 
 def provide_datasets(dataset: Dataset,
                      worktree_dir: Path,
-                     branch_name: str,
+                     branch_name: str | None,
                      source_branch: str | None = None,
                      ) -> None:
 
     with chdir(dataset.path):
 
-        args = ['worktree', 'add', '-b', branch_name, str(worktree_dir)] + (
-            [source_branch]
-            if source_branch
+        args = ['worktree', 'add'] + (
+            ['-b', branch_name]
+            if branch_name
             else []
-        )
+        ) + [str(worktree_dir)] + (
+                   [source_branch]
+                   if source_branch
+                   else []
+               )
         call_git_success(args)
 
         for subdataset in dataset.subdatasets(result_renderer='disabled'):
@@ -115,7 +118,8 @@ def provide_datasets(dataset: Dataset,
             provide_datasets(
                 Dataset(subdataset_path),
                 worktree_dir / subdataset_path,
-                None,   # Use default branches for subdatasets
+                branch_name,
+                None,   # Use default commit-ish for subdatasets
             )
 
 
