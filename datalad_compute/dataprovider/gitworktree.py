@@ -5,6 +5,7 @@ are currently also provisioned.
 """
 from __future__ import annotations
 
+import os
 import random
 import shutil
 import tempfile
@@ -41,6 +42,13 @@ argument_parser.add_argument(
          'root), at least one input has tp be provided (use multiple times to '
          'define multiple inputs)',
 )
+argument_parser.add_argument(
+    '-t', '--temp-dir',
+    metavar='PATH',
+    default=os.getenv('TMP', '/tmp'),
+    help='Path of the directory where temporary worktrees should be created. '
+         'The  default is `$TMP` if set, otherwise `/tmp`.',
+)
 
 
 def remove(dataset: str,
@@ -60,15 +68,21 @@ def prune_worktrees(dataset: Dataset) -> None:
 
 
 def provide(dataset: str,
+            temp_dir: str,
             branch: str | None = None,
             input_files: list[str] | None = None,
             ) -> Path:
 
-    worktree_dir = Path(tempfile.TemporaryDirectory().name)
+    worktree_name = random_name()
+    worktree_dir = Path(temp_dir) / worktree_name
+    if not worktree_dir.exists():
+        worktree_dir.mkdir(parents=True, exist_ok=True)
+
     # Get all datasets including subdatasets into the worktree
     provide_datasets(
         Dataset(dataset),
         worktree_dir=worktree_dir,
+        branch_name=worktree_name,
         source_branch=branch,
     )
 
@@ -82,15 +96,13 @@ def provide(dataset: str,
 
 def provide_datasets(dataset: Dataset,
                      worktree_dir: Path,
+                     branch_name: str,
                      source_branch: str | None = None,
                      ) -> None:
 
-    temp_branch = 'tmp_' + ''.join(
-        random.choices('abcdefghijklmnopqrstuvwxyz', k=10)
-    )
     with chdir(dataset.path):
 
-        args = ['worktree', 'add', '-b', temp_branch, str(worktree_dir)] + (
+        args = ['worktree', 'add', '-b', branch_name, str(worktree_dir)] + (
             [source_branch]
             if source_branch
             else []
@@ -107,6 +119,11 @@ def provide_datasets(dataset: Dataset,
             )
 
 
+def random_name() -> str:
+    return 'tmp_' + ''.join(
+        random.choices('abcdefghijklmnopqrstuvwxyz', k=10))
+
+
 def main():
     arguments = argument_parser.parse_args()
     if arguments.delete:
@@ -121,6 +138,7 @@ def main():
 
     provision_dir = provide(
         arguments.dataset,
+        arguments.temp_dir,
         arguments.branch,
         arguments.input,
     )
