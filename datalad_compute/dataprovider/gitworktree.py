@@ -5,16 +5,22 @@ are currently also provisioned.
 """
 from __future__ import annotations
 
+import logging
 import os
 import random
 import shutil
 from argparse import ArgumentParser
 from contextlib import chdir
 from pathlib import Path
+from urllib.parse import urlparse
 
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_success
 
+from ..commands.compute_cmd import read_list
+
+
+lgr = logging.getLogger('datalad.compute.dataprovider.gitworktree')
 
 argument_parser = ArgumentParser()
 argument_parser.add_argument(
@@ -42,6 +48,12 @@ argument_parser.add_argument(
          'define multiple inputs)',
 )
 argument_parser.add_argument(
+    '-I', '--input-list',
+    metavar='PATH',
+    default=None,
+    help='Path of a file that contains a list of input paths',
+)
+argument_parser.add_argument(
     '-t', '--temp-dir',
     metavar='PATH',
     default=os.getenv('TMP', '/tmp'),
@@ -53,10 +65,21 @@ argument_parser.add_argument(
 def remove(dataset: str,
            worktree: str
            ) -> None:
-
+    remove_subdatasets(worktree)
     shutil.rmtree(worktree)
     dataset = Dataset(dataset)
     prune_worktrees(dataset)
+
+
+def remove_subdatasets(worktree: str):
+    dataset = Dataset(worktree)
+    for subdataset_info in dataset.subdatasets(result_renderer='disabled'):
+        dataset.drop(
+            subdataset_info['path'],
+            recursive=True,
+            reckless='kill',
+            what='all',
+            result_renderer='disabled')
 
 
 def prune_worktrees(dataset: Dataset) -> None:
@@ -66,61 +89,51 @@ def prune_worktrees(dataset: Dataset) -> None:
         prune_worktrees(Dataset(result['path']))
 
 
-def provide(dataset: str,
+def ensure_absolute_gitmodule_urls(original_dataset: Dataset,
+                                   dataset: Dataset
+                                   ) -> None:
+    sub_datasets = dataset.subdatasets(result_renderer='disabled')
+    for subdataset in sub_datasets:
+        name, location_spec = subdataset['gitmodule_name'], subdataset['gitmodule_url']
+        parse_result = urlparse(location_spec)
+        if parse_result.scheme == '':
+            if not Path(location_spec).is_absolute():
+                args = ['submodule', 'set-url', name, original_dataset.path]
+                call_git_success(args, cwd=dataset.path)
+    dataset.save()
+
+
+def provide(dataset_dir: str,
             temp_dir: str,
-            branch: str | None = None,
+            source_branch: str | None = None,
             input_files: list[str] | None = None,
             ) -> Path:
 
+    lgr.debug('Provisioning dataset %s', dataset_dir)
     worktree_name = random_name()
     worktree_dir = Path(temp_dir) / worktree_name
     if not worktree_dir.exists():
         worktree_dir.mkdir(parents=True, exist_ok=True)
 
-    # Get all datasets including subdatasets into the worktree
-    provide_datasets(
-        Dataset(dataset),
-        worktree_dir=worktree_dir,
-        branch_name=worktree_name,
-        source_branch=branch,
-    )
-
-    # Fetch file content in the worktree
-    work_dataset = Dataset(worktree_dir)
-    with chdir(worktree_dir):
-        for p in input_files or []:
-            work_dataset.get(p, result_renderer='disabled')
-    return worktree_dir
-
-
-def provide_datasets(dataset: Dataset,
-                     worktree_dir: Path,
-                     branch_name: str | None,
-                     source_branch: str | None = None,
-                     ) -> None:
-
-    with chdir(dataset.path):
-
-        args = ['worktree', 'add'] + (
-            ['-b', branch_name]
-            if branch_name
+    # Create a worktree
+    with chdir(dataset_dir):
+        args = ['worktree', 'add', '-b', worktree_name] + [str(worktree_dir)] + (
+            [source_branch]
+            if source_branch
             else []
-        ) + [str(worktree_dir)] + (
-                   [source_branch]
-                   if source_branch
-                   else []
-               )
+        )
         call_git_success(args)
 
-        for subdataset in dataset.subdatasets(result_renderer='disabled'):
-            subdataset_path = Path(subdataset['path']).relative_to(dataset.pathobj)
-            dataset.install(path=subdataset_path, result_renderer='disabled')
-            provide_datasets(
-                Dataset(subdataset_path),
-                worktree_dir / subdataset_path,
-                branch_name,
-                None,   # Use default commit-ish for subdatasets
-            )
+    worktree_dataset = Dataset(worktree_dir)
+    # Ensure that all subdatasets have absolute URLs
+    ensure_absolute_gitmodule_urls(Dataset(dataset_dir), worktree_dataset)
+    # Get all input files in the worktree
+    with chdir(worktree_dataset.path):
+        for file in input_files or []:
+            lgr.debug('Provisioning file %s', file)
+            worktree_dataset.get(file, result_renderer='disabled')
+
+    return worktree_dir
 
 
 def random_name() -> str:
@@ -140,11 +153,13 @@ def main():
         remove(arguments.dataset, arguments.delete)
         return
 
+    inputs = arguments.input or [] + read_list(arguments.input_list)
+
     provision_dir = provide(
         arguments.dataset,
         arguments.temp_dir,
         arguments.branch,
-        arguments.input,
+        inputs,
     )
     print(provision_dir)
 
