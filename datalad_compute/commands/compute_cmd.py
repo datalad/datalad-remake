@@ -12,6 +12,7 @@ from itertools import chain
 from pathlib import Path
 from urllib.parse import quote
 
+from datalad.support.exceptions import IncompleteResultsError
 from datalad_next.commands import (
     EnsureCommandParameterization,
     ValidatedInterface,
@@ -244,6 +245,10 @@ def execute(worktree: Path,
         'execute: %s %s %s %s', str(worktree),
         template_name, repr(parameter), repr(output))
 
+    # Get the subdatasets, directories, and files that are part of the output
+    # space.
+    create_output_space(Dataset(worktree), output)
+
     # Unlock output files in the worktree-directory
     unlock_files(Dataset(worktree), output)
 
@@ -266,7 +271,9 @@ def collect(worktree: Path,
     # Unlock output files in the dataset-directory and copy the result
     unlock_files(dataset, output)
     for o in output:
-        shutil.copyfile(worktree / o, dataset.pathobj / o)
+        destination = dataset.pathobj / o
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(worktree / o, destination)
 
     # Save the dataset
     dataset.save(recursive=True)
@@ -283,13 +290,26 @@ def unlock_files(dataset: Dataset,
         for f in files:
             file = dataset.pathobj / f
             if not file.exists() and file.is_symlink():
-                # `datalad unlock` does not unlock dangling symlinks, so we
+                # `datalad unlock` does not "unlock" dangling symlinks, so we
                 # mimic the behavior of `git annex unlock` here:
                 link = os.readlink(file)
                 file.unlink()
                 file.write_text('/annex/objects/' + link.split('/')[-1] + '\n')
             elif file.is_symlink():
                 dataset.unlock(file)
+
+
+def create_output_space(dataset: Dataset,
+                        files: list[str]
+                        ) -> None:
+    """Get all files that are part of the output space."""
+    for f in files:
+        try:
+            dataset.get(f)
+        except IncompleteResultsError:
+            # The file does not yet exist. The computation should create it.
+            # We create the directory here.
+            (dataset.pathobj / f).parent.mkdir(parents=True, exist_ok=True)
 
 
 def un_provide(dataset: Dataset,
