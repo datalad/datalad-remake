@@ -9,7 +9,7 @@ from ... import (
     template_dir,
     url_scheme,
 )
-from ...test_utils.create_datasets import create_ds_hierarchy
+from datalad_compute.dataprovider.tests.create_datasets import create_ds_hierarchy
 
 
 test_method = """
@@ -20,24 +20,24 @@ arguments = [
     "content: {first} > 'a.txt';",
     "echo content: {second} > 'b.txt';",
     "echo content: {third} > 'new.txt';",
-    "echo content: {first} > 'subds0/a0.txt';",
-    "echo content: {second} > 'subds0/b0.txt';",
-    "echo content: {third} > 'subds0/new.txt';",
-    "echo content: {first} > 'subds0/subds1/a1.txt';",
-    "echo content: {second} > 'subds0/subds1/b1.txt';",
-    "echo content: {third} > 'subds0/subds1/new.txt';",
-    "echo content: {first} > 'subds0/subds1/subds2/a2.txt';",
-    "echo content: {second} > 'subds0/subds1/subds2/b2.txt';",
-    "echo content: {third} > 'subds0/subds1/subds2/new.txt';",
+    "echo content: {first} > 'd2_subds0/a0.txt';",
+    "echo content: {second} > 'd2_subds0/b0.txt';",
+    "echo content: {third} > 'd2_subds0/new.txt';",
+    "echo content: {first} > 'd2_subds0/d2_subds1/a1.txt';",
+    "echo content: {second} > 'd2_subds0/d2_subds1/b1.txt';",
+    "echo content: {third} > 'd2_subds0/d2_subds1/new.txt';",
+    "echo content: {first} > 'd2_subds0/d2_subds1/d2_subds2/a2.txt';",
+    "echo content: {second} > 'd2_subds0/d2_subds1/d2_subds2/b2.txt';",
+    "echo content: {third} > 'd2_subds0/d2_subds1/d2_subds2/new.txt';",
 ]
 """
 
 
 output = [
     'a.txt', 'b.txt', 'new.txt',
-    'subds0/a0.txt', 'subds0/b0.txt', 'subds0/new.txt',
-    'subds0/subds1/a1.txt', 'subds0/subds1/b1.txt', 'subds0/subds1/new.txt',
-    'subds0/subds1/subds2/a2.txt', 'subds0/subds1/subds2/b2.txt', 'subds0/subds1/subds2/new.txt',
+    'd2_subds0/a0.txt', 'd2_subds0/b0.txt', 'd2_subds0/new.txt',
+    'd2_subds0/d2_subds1/a1.txt', 'd2_subds0/d2_subds1/b1.txt', 'd2_subds0/d2_subds1/new.txt',
+    'd2_subds0/d2_subds1/d2_subds2/a2.txt', 'd2_subds0/d2_subds1/d2_subds2/b2.txt', 'd2_subds0/d2_subds1/d2_subds2/new.txt',
 ]
 
 test_file_content = [
@@ -63,8 +63,8 @@ def _check_content(dataset,
 
 def test_end_to_end(tmp_path, datalad_cfg, monkeypatch):
 
-    datasets = create_ds_hierarchy(str(tmp_path), 3)
-    root_dataset = datasets[0][0]
+    datasets = create_ds_hierarchy(tmp_path, 'd2', 3)
+    root_dataset = datasets[0][2]
 
     # add method template
     template_path = root_dataset.pathobj / template_dir
@@ -77,13 +77,13 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch):
     datalad_cfg.set('annex.security.allowed-ip-addresses', 'all', scope='global')
     datalad_cfg.set('annex.security.allow-unverified-downloads', 'ACKTHPPT', scope='global')
 
-    # add a compute remotes to all datasets
-    for _, dataset_path, _ in datasets:
-        call_git_success([
-            '-C', str(dataset_path),
-            'annex', 'initremote', 'compute',
-            'type=external', 'externaltype=compute',
-            'encryption=none'])
+    ## add a compute remotes to all datasets
+    #for _, dataset_path, _ in datasets:
+    #    call_git_success([
+    #        '-C', str(dataset_path),
+    #        'annex', 'initremote', 'compute',
+    #        'type=external', 'externaltype=compute',
+    #        'encryption=none'])
 
     # run compute command
     root_dataset.compute(
@@ -101,9 +101,9 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch):
     # Drop all computed content
     _drop_files(root_dataset, output)
 
-    # Go to the subdataset `subds0/subds1` and fetch the content of `a1.txt`
+    # Go to the subdataset `d2_subds0/d2_subds1` and fetch the content of `a1.txt`
     # from a compute remote.
-    monkeypatch.chdir(root_dataset.pathobj / 'subds0' / 'subds1')
+    monkeypatch.chdir(root_dataset.pathobj / 'd2_subds0' / 'd2_subds1')
     datalad_get('a1.txt')
 
     # check that all files are computed
@@ -113,6 +113,6 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch):
 
     # check get in subdatasets
     monkeypatch.chdir(root_dataset.pathobj)
-    datalad_get('subds0/subds1/a1.txt')
+    datalad_get('d2_subds0/d2_subds1/a1.txt')
 
     _check_content(root_dataset, test_file_content)

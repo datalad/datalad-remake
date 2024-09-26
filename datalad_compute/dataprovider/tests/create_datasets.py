@@ -3,82 +3,74 @@ from __future__ import annotations
 from pathlib import Path
 
 from datalad_next.datasets import Dataset
+from datalad_next.runners import call_git_success
+
+from datalad_compute import url_scheme
 
 
-def create_subdatasets(tmp_path: Path,
-                       parent_dataset: Dataset,
-                       subdataset_levels: int = 2,
-                       level_id: int = 0,
-                       top_level_path: Path | None = None,
-                       relative_subdataset_path: Path = None,
-                       ) -> list[tuple[Dataset, Path]]:
-    """Create a hierarchy of subdatasets in the dataset `parent_dataset`.
-
-    Individual datasets are created in the temporary directory `tmp_path` and
-    installed in the parent_dataset.
-
-    The subdatasets are created in the directories `subds{level_id}`, where
-    `level_id` is an integer counter starting at `0`. Each subdataset has two
-    annexed files `a{level_id}.txt` and `b{level_id}.txt`.
-
-    `subdataset_levels` determines the depth of the hierarchy. If, for example,
-    `subdataset_levels` is 3, the following subdatasets are created:
-
-      - parent_dataset/subds0
-      - parent_dataset/subds0/subds1
-      - parent_dataset/subds0/subds1/subds2
-    """
-    if subdataset_levels == 0:
-        return []
-
-    if relative_subdataset_path is None:
-        relative_subdataset_path = Path(f'subds{level_id}')
-    else:
-        relative_subdataset_path /= Path(f'subds{level_id}')
-
-    if top_level_path is None:
-        top_level_path = parent_dataset.pathobj
-
-    # Create a dataset in the tempaorary directory
-    subdataset = Dataset(tmp_path / f'subds{level_id}')
-    subdataset.create(result_renderer='disabled')
-    (subdataset.pathobj / f'a{level_id}.txt').write_text(f'a{level_id}\n')
-    (subdataset.pathobj / f'b{level_id}.txt').write_text(f'b{level_id}\n')
-
-    child_datasets = create_subdatasets(
-        tmp_path,
-        subdataset,
-        subdataset_levels - 1,
-        level_id + 1,
-        top_level_path,
-        relative_subdataset_path)
-
-    subdataset.save(result_renderer='disabled')
-
-    # Install the dataset in the parent dataset
-    parent_dataset.install(
-        path=f'subds{level_id}',
-        source='file://' + subdataset.path,
-
-    )#result_renderer='disabled')
-
-    parent_dataset.save(result_renderer='disabled')
+def update_config_for_compute(dataset: Dataset):
+    # set annex security related variables to allow compute-URLs
+    dataset.configuration(
+        action='set',
+        scope='local',
+        recursive=True,
+        spec=[
+            ('annex.security.allowed-url-schemes', url_scheme),
+            ('annex.security.allowed-ip-addresses', 'all'),
+            ('annex.security.allow-unverified-downloads', 'ACKTHPPT')])
 
 
-    return [(
-        subdataset,
-        subdataset.pathobj,
-        relative_subdataset_path)] + child_datasets
+def add_compute_remote(dataset: Dataset):
+    call_git_success([
+        '-C', dataset.path,
+        'annex', 'initremote', 'compute',
+        'type=external', 'externaltype=compute',
+        'encryption=none'])
 
 
 def create_ds_hierarchy(tmp_path: Path,
-                        directory_name: str,
+                        name: str,
                         subdataset_levels: int = 2
-                        ) -> list[tuple[Dataset, Path]]:
-    dataset = Dataset(directory_name)
-    dataset.create(force=True, result_renderer='disabled')
-    subdatasets = create_subdatasets(tmp_path, dataset, subdataset_levels)
-    (dataset.pathobj / 'a.txt').write_text('a\n')
-    (dataset.pathobj / 'b.txt').write_text('b\n')
-    dataset.save(result_renderer='disabled')
-    return [(dataset, dataset.pathobj, Path('.'))] + subdatasets
+                        ) -> list[tuple[str, Path, Dataset]]:
+
+    # Create root dataset
+    root_dataset = Dataset(tmp_path / name)
+    root_dataset.create(force=True, result_renderer='disabled')
+    (root_dataset.pathobj / 'a.txt').write_text('a\n')
+    (root_dataset.pathobj / 'b.txt').write_text('b\n')
+    root_dataset.save()
+    datasets = [(name, tmp_path / name, root_dataset)]
+
+    # Create subdatasets
+    for level in range(subdataset_levels):
+        subdataset_path = tmp_path / f'{name}_subds{level}'
+        subdataset = Dataset(subdataset_path)
+        subdataset.create(force=True, result_renderer='disabled')
+        (subdataset.pathobj / f'a{level}.txt').write_text(f'a{level}\n')
+        (subdataset.pathobj / f'b{level}.txt').write_text(f'b{level}\n')
+        subdataset.save()
+        datasets.append((f'{name}_subds{level}', subdataset_path, subdataset))
+
+    # Link the datasets
+    for index in range(len(datasets) - 2, -1, -1):
+        dataset, subdataset = datasets[index:index+2]
+        print(index)
+        print(dataset)
+        print(subdataset)
+        dataset[2].install(
+            path=subdataset[0],
+            source='file://' + subdataset[2].path,
+        )
+        dataset[2].save()
+
+    root_dataset.get(recursive=True)
+    update_config_for_compute(root_dataset)
+
+    # Add compute remotes to the root dataset and all subdatasets
+    add_compute_remote(root_dataset)
+    subdataset_path = Path()
+    for index in range(subdataset_levels):
+        subdataset_path /= f'{name}_subds{index}'
+        add_compute_remote(Dataset(root_dataset.pathobj / subdataset_path))
+
+    return datasets

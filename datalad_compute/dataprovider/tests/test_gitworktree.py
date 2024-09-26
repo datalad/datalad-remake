@@ -13,14 +13,14 @@ from .create_datasets import create_ds_hierarchy
 
 
 def test_worktree_basic(tmp_path):
-    dataset = create_ds_hierarchy(str(tmp_path / 'root_dataset'), 3)[0][0]
+    dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     worktree = Dataset(provide(
         dataset.path,
         str(tmp_path),
         input_files=[
             'a.txt', 'b.txt',
-            'subds0/a0.txt', 'subds0/b0.txt',
-            'subds0/subds1/a1.txt', 'subds0/subds1/b1.txt'
+            'ds1_subds0/a0.txt', 'ds1_subds0/b0.txt',
+            'ds1_subds0/ds1_subds1/a1.txt', 'ds1_subds0/ds1_subds1/b1.txt'
         ],
     ))
 
