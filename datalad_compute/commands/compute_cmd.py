@@ -204,7 +204,9 @@ def add_url(dataset: Dataset,
     file_dataset_path, file_path = get_file_dataset(dataset.pathobj / file_path)
     success = call_git_success(
         ['-C', str(file_dataset_path), 'annex', 'addurl', url, '--file', file_path]
-        + (['--relaxed'] if url_only else []))
+        + (['--relaxed'] if url_only else []),
+        capture_output=True,)
+
     assert success, f'\naddurl failed:\nfile_dataset_path: {file_dataset_path}\nurl: {url!r}\nfile_path: {file_path!r}'
     return url
 
@@ -278,7 +280,7 @@ def collect(worktree: Path,
         shutil.copyfile(worktree / o, destination)
 
     # Save the dataset
-    dataset.save(recursive=True)
+    dataset.save(recursive=True, result_renderer='disabled')
 
 
 def unlock_files(dataset: Dataset,
@@ -298,7 +300,7 @@ def unlock_files(dataset: Dataset,
                 file.unlink()
                 file.write_text('/annex/objects/' + link.split('/')[-1] + '\n')
             elif file.is_symlink():
-                dataset.unlock(file)
+                dataset.unlock(file, result_renderer='disabled')
 
 
 def create_output_space(dataset: Dataset,
@@ -307,7 +309,7 @@ def create_output_space(dataset: Dataset,
     """Get all files that are part of the output space."""
     for f in files:
         try:
-            dataset.get(f)
+            dataset.get(f, result_renderer='disabled')
         except IncompleteResultsError:
             # The file does not yet exist. The computation should create it.
             # We create the directory here.

@@ -2,7 +2,6 @@ from collections.abc import Iterable
 
 from datalad.api import get as datalad_get
 from datalad_next.datasets import Dataset
-from datalad_next.runners import call_git_success
 from datalad_next.tests.fixtures import datalad_cfg
 
 from ... import (
@@ -50,7 +49,7 @@ test_file_content = [
 def _drop_files(dataset: Dataset,
                 files: Iterable[str]):
     for file in files:
-        dataset.drop(file)
+        dataset.drop(file, result_renderer='disabled')
         assert not (dataset.pathobj / file).exists()
 
 
@@ -77,14 +76,6 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch):
     datalad_cfg.set('annex.security.allowed-ip-addresses', 'all', scope='global')
     datalad_cfg.set('annex.security.allow-unverified-downloads', 'ACKTHPPT', scope='global')
 
-    ## add a compute remotes to all datasets
-    #for _, dataset_path, _ in datasets:
-    #    call_git_success([
-    #        '-C', str(dataset_path),
-    #        'annex', 'initremote', 'compute',
-    #        'type=external', 'externaltype=compute',
-    #        'encryption=none'])
-
     # run compute command
     root_dataset.compute(
         template='test_method',
@@ -93,7 +84,8 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch):
             'second=second',
             'third=third',
         ],
-        output=output)
+        output=output,
+        result_renderer='disabled')
 
     # check computation success
     _check_content(root_dataset, test_file_content)

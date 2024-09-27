@@ -17,7 +17,8 @@ def update_config_for_compute(dataset: Dataset):
         spec=[
             ('annex.security.allowed-url-schemes', url_scheme),
             ('annex.security.allowed-ip-addresses', 'all'),
-            ('annex.security.allow-unverified-downloads', 'ACKTHPPT')])
+            ('annex.security.allow-unverified-downloads', 'ACKTHPPT')],
+        result_renderer='disabled')
 
 
 def add_compute_remote(dataset: Dataset):
@@ -25,7 +26,8 @@ def add_compute_remote(dataset: Dataset):
         '-C', dataset.path,
         'annex', 'initremote', 'compute',
         'type=external', 'externaltype=compute',
-        'encryption=none'])
+        'encryption=none'],
+        capture_output=True)
 
 
 def create_ds_hierarchy(tmp_path: Path,
@@ -38,7 +40,7 @@ def create_ds_hierarchy(tmp_path: Path,
     root_dataset.create(force=True, result_renderer='disabled')
     (root_dataset.pathobj / 'a.txt').write_text('a\n')
     (root_dataset.pathobj / 'b.txt').write_text('b\n')
-    root_dataset.save()
+    root_dataset.save(result_renderer='disabled')
     datasets = [(name, tmp_path / name, root_dataset)]
 
     # Create subdatasets
@@ -48,22 +50,20 @@ def create_ds_hierarchy(tmp_path: Path,
         subdataset.create(force=True, result_renderer='disabled')
         (subdataset.pathobj / f'a{level}.txt').write_text(f'a{level}\n')
         (subdataset.pathobj / f'b{level}.txt').write_text(f'b{level}\n')
-        subdataset.save()
+        subdataset.save(result_renderer='disabled')
         datasets.append((f'{name}_subds{level}', subdataset_path, subdataset))
 
     # Link the datasets
     for index in range(len(datasets) - 2, -1, -1):
         dataset, subdataset = datasets[index:index+2]
-        print(index)
-        print(dataset)
-        print(subdataset)
         dataset[2].install(
             path=subdataset[0],
             source='file://' + subdataset[2].path,
+            result_renderer='disabled',
         )
-        dataset[2].save()
+        dataset[2].save(result_renderer='disabled')
 
-    root_dataset.get(recursive=True)
+    root_dataset.get(recursive=True, result_renderer='disabled')
     update_config_for_compute(root_dataset)
 
     # Add compute remotes to the root dataset and all subdatasets

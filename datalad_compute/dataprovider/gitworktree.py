@@ -84,7 +84,10 @@ def remove_subdatasets(worktree: str):
 
 def prune_worktrees(dataset: Dataset) -> None:
     with chdir(dataset.path):
-        call_git_success(['worktree', 'prune'])
+        call_git_success(
+            ['worktree', 'prune'],
+            capture_output=True)
+
     for result in dataset.subdatasets(result_renderer='disabled'):
         prune_worktrees(Dataset(result['path']))
 
@@ -99,8 +102,8 @@ def ensure_absolute_gitmodule_urls(original_dataset: Dataset,
         if parse_result.scheme == '':
             if not Path(location_spec).is_absolute():
                 args = ['submodule', 'set-url', name, original_dataset.path]
-                call_git_success(args, cwd=dataset.path)
-    dataset.save()
+                call_git_success(args, cwd=dataset.path, capture_output=True)
+    dataset.save(result_renderer='disabled')
 
 
 def provide(dataset_dir: str,
@@ -122,7 +125,7 @@ def provide(dataset_dir: str,
             if source_branch
             else []
         )
-        call_git_success(args)
+        call_git_success(args, capture_output=True)
 
     worktree_dataset = Dataset(worktree_dir)
     # Ensure that all subdatasets have absolute URLs
