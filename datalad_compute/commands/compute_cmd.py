@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import glob
 import json
 import logging
 import os
@@ -10,6 +11,7 @@ import shutil
 import subprocess
 from itertools import chain
 from pathlib import Path
+from typing import Iterable
 from urllib.parse import quote
 
 from datalad.support.exceptions import IncompleteResultsError
@@ -32,6 +34,7 @@ from datalad_next.runners import (
     call_git_oneline,
     call_git_success,
 )
+from hypothesis.strategies import recursive
 
 from .. import (
     template_dir,
@@ -88,24 +91,28 @@ class Compute(ValidatedInterface):
         input=Parameter(
             args=('-i', '--input',),
             action='append',
-            doc="Name of an input file (repeat for multiple inputs)"),
+            doc="Name of an input file pattern (repeat for multiple inputs), "
+                "file pattern support python globbing"),
         input_list=Parameter(
             args=('-I', '--input-list',),
-            doc="Name of a file that contains a list of input files. Format is "
-                "one file per line, relative path from `dataset`. Empty lines, "
-                "i.e. lines that contain only newlines, arg ignored. This is "
-                "useful if a large number of input files should be provided."),
+            doc="Name of a file that contains a list of input file patterns. "
+                "Format is one file per line, relative path from `dataset`. "
+                "Empty lines, i.e. lines that contain only newlines, and lines "
+                "that start with '#' are ignored. Line content is stripped "
+                "before used. This is useful if a large number of input file "
+                "patterns should be provided."),
         output=Parameter(
             args=('-o', '--output',),
             action='append',
             doc="Name of an output file (repeat for multiple outputs)"),
         output_list=Parameter(
             args=('-O', '--output-list',),
-            doc="Name of a file that contains a list of output files. Format "
-                "is one file per line, relative path from `dataset`. Empty "
-                "lines, i.e. lines that contain only newlines, arg ignored. "
-                "This is useful if a large number of output files should be "
-                "provided."),
+            doc="Name of a file that contains a list of output file patterns. "
+                "Format is one file per line, relative path from `dataset`. "
+                "Empty lines, i.e. lines that contain only newlines, and lines "
+                "that start with '#' are ignored. Line content is stripped "
+                "before used. This is useful if a large number of output file "
+                "patterns should be provided."),
         parameter=Parameter(
             args=('-p', '--parameter',),
             action='append',
@@ -114,9 +121,11 @@ class Compute(ValidatedInterface):
         parameter_list=Parameter(
             args=('-P', '--parameter-list',),
             doc="Name of a file that contains a list of parameters. Format "
-                "is one `<name>=<value>` string per line. Empty lines, "
-                "i.e. lines that contain only newlines, arg ignored. This is "
-                "useful if a large number of parameters should be provided."),
+                "is one `<name>=<value>` string per line. "
+                "Empty lines, i.e. lines that contain only newlines, and lines "
+                "that start with '#' are ignored. Line content is stripped "
+                "before used. This is useful if a large number of parameters "
+                "should be provided."),
     )
 
 
@@ -137,19 +146,25 @@ class Compute(ValidatedInterface):
 
         dataset : Dataset = dataset.ds if dataset else Dataset('.')
 
-        input = (input or []) + read_list(input_list)
-        output = (output or []) + read_list(output_list)
+        input_pattern = (input or []) + read_list(input_list)
+        output_pattern = (output or []) + read_list(output_list)
         parameter = (parameter or []) + read_list(parameter_list)
 
         if not url_only:
-            worktree = provide(dataset, branch, input)
-            execute(worktree, template, parameter, output)
-            collect(worktree, dataset, output)
+            worktree = provide(dataset, branch, input_pattern)
+            execute(worktree, template, parameter, output_pattern)
+            output_files = collect(worktree, dataset, output_pattern)
             un_provide(dataset, worktree)
 
-        url_base = get_url(dataset, branch, template, parameter, input, output)
+        url_base = get_url(
+            dataset,
+            branch,
+            template,
+            parameter,
+            input_pattern,
+            output_pattern)
 
-        for out in output:
+        for out in (output_pattern if url_only else output_files):
             url = add_url(dataset, out, url_base, url_only)
             yield get_status_dict(
                     action='compute',
@@ -226,15 +241,15 @@ def get_file_dataset(file: Path) -> tuple[Path, Path]:
 
 def provide(dataset: Dataset,
             branch: str | None,
-            input: list[str],
+            input_patterns: list[str],
             ) -> Path:
 
-    lgr.debug('provide: %s %s %s', dataset, branch, input)
+    lgr.debug('provide: %s %s %s', dataset, branch, input_patterns)
 
     args = ['provide-gitworktree', dataset.path, ] + (
         ['--branch', branch] if branch else []
     )
-    args.extend(chain(*[('--input', i) for i in (input or [])]))
+    args.extend(chain(*[('--input', i) for i in (input_patterns or [])]))
     stdout = subprocess.run(args, stdout=subprocess.PIPE, check=True).stdout
     return Path(stdout.splitlines()[-1].decode())
 
@@ -267,24 +282,33 @@ def execute(worktree: Path,
 
 def collect(worktree: Path,
             dataset: Dataset,
-            output: list[str],
-            ) -> None:
+            output_patterns: list[str],
+            ) -> Iterable[str]:
 
-    lgr.debug('collect: %s %s %s', str(worktree), dataset, repr(output))
+    lgr.debug(
+        'collect: %s %s %s',
+        str(worktree), dataset, repr(output_patterns))
+
+    # Get the list of created output files based on the output patterns
+    output_files = set(
+        chain.from_iterable(
+            glob.glob(pattern, root_dir=worktree, recursive=True)
+            for pattern in output_patterns))
 
     # Unlock output files in the dataset-directory and copy the result
-    unlock_files(dataset, output)
-    for o in output:
+    unlock_files(dataset, output_files)
+    for o in output_files:
         destination = dataset.pathobj / o
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(worktree / o, destination)
 
     # Save the dataset
     dataset.save(recursive=True, result_renderer='disabled')
+    return output_files
 
 
 def unlock_files(dataset: Dataset,
-                 files: list[str]
+                 files: Iterable[str]
                  ) -> None:
     """Use datalad to resolve subdatasets and unlock files in the dataset."""
     # TODO: for some reason `dataset unlock` does not operate in the

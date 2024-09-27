@@ -5,13 +5,16 @@ are currently also provisioned.
 """
 from __future__ import annotations
 
+import glob
 import logging
 import os
 import random
 import shutil
 from argparse import ArgumentParser
 from contextlib import chdir
+from itertools import chain
 from pathlib import Path
+from typing import Iterable
 from urllib.parse import urlparse
 
 from datalad_next.datasets import Dataset
@@ -43,15 +46,15 @@ argument_parser.add_argument(
     '-i', '--input',
     action='append',
     metavar='PATH',
-    help='Path of a file that should be provisioned (relative from dataset '
-         'root), at least one input has tp be provided (use multiple times to '
+    help='File pattern that should be provisioned (relative from dataset '
+         'root), at least one input has to be provided (use multiple times to '
          'define multiple inputs)',
 )
 argument_parser.add_argument(
     '-I', '--input-list',
     metavar='PATH',
     default=None,
-    help='Path of a file that contains a list of input paths',
+    help='Path of a file that contains a list of input file patterns',
 )
 argument_parser.add_argument(
     '-t', '--temp-dir',
@@ -109,7 +112,7 @@ def ensure_absolute_gitmodule_urls(original_dataset: Dataset,
 def provide(dataset_dir: str,
             temp_dir: str,
             source_branch: str | None = None,
-            input_files: list[str] | None = None,
+            input_patterns: Iterable[str] | None = None,
             ) -> Path:
 
     lgr.debug('Provisioning dataset %s', dataset_dir)
@@ -117,6 +120,12 @@ def provide(dataset_dir: str,
     worktree_dir = Path(temp_dir) / worktree_name
     if not worktree_dir.exists():
         worktree_dir.mkdir(parents=True, exist_ok=True)
+
+    # Resolve input file patterns in the original dataset
+    input_files = set(
+        chain.from_iterable(
+            glob.glob(pattern, root_dir=dataset_dir, recursive=True)
+            for pattern in input_patterns))
 
     # Create a worktree
     with chdir(dataset_dir):
