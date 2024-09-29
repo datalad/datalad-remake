@@ -17,6 +17,7 @@ use_shell = 'true'
 executable = 'echo'
 arguments = [
     "content: {first} > 'a.txt';",
+    "mkdir -p 'd2_subds0/d2_subds1/d2_subds2';",
     "echo content: {second} > 'b.txt';",
     "echo content: {third} > 'new.txt';",
     "echo content: {first} > 'd2_subds0/a0.txt';",
