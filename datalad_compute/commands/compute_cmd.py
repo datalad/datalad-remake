@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import glob
 import json
 import logging
 import os
@@ -34,7 +33,6 @@ from datalad_next.runners import (
     call_git_oneline,
     call_git_success,
 )
-from hypothesis.strategies import recursive
 
 from .. import (
     template_dir,
@@ -44,7 +42,6 @@ from ..utils.compute import compute
 
 
 __docformat__ = 'restructuredtext'
-
 
 lgr = logging.getLogger('datalad.compute.compute_cmd')
 
@@ -91,8 +88,9 @@ class Compute(ValidatedInterface):
         input=Parameter(
             args=('-i', '--input',),
             action='append',
-            doc="Name of an input file pattern (repeat for multiple inputs), "
-                "file pattern support python globbing"),
+            doc="An input file pattern (repeat for multiple inputs, "
+                "file pattern support python globbing, globbing is expanded "
+                "in the source dataset"),
         input_list=Parameter(
             args=('-I', '--input-list',),
             doc="Name of a file that contains a list of input file patterns. "
@@ -107,12 +105,11 @@ class Compute(ValidatedInterface):
             doc="Name of an output file (repeat for multiple outputs)"),
         output_list=Parameter(
             args=('-O', '--output-list',),
-            doc="Name of a file that contains a list of output file patterns. "
-                "Format is one file per line, relative path from `dataset`. "
-                "Empty lines, i.e. lines that contain only newlines, and lines "
-                "that start with '#' are ignored. Line content is stripped "
-                "before used. This is useful if a large number of output file "
-                "patterns should be provided."),
+            doc="Name of a file that contains a list of output files. Format "
+                "is one file per line, relative path from `dataset`. Empty "
+                "lines, i.e. lines that contain only newlines, arg ignored. "
+                "This is useful if a large number of output files should be "
+                "provided."),
         parameter=Parameter(
             args=('-p', '--parameter',),
             action='append',
@@ -147,13 +144,13 @@ class Compute(ValidatedInterface):
         dataset : Dataset = dataset.ds if dataset else Dataset('.')
 
         input_pattern = (input or []) + read_list(input_list)
-        output_pattern = (output or []) + read_list(output_list)
+        output = (output or []) + read_list(output_list)
         parameter = (parameter or []) + read_list(parameter_list)
 
         if not url_only:
             worktree = provide(dataset, branch, input_pattern)
-            execute(worktree, template, parameter, output_pattern)
-            output_files = collect(worktree, dataset, output_pattern)
+            execute(worktree, template, parameter, output)
+            collect(worktree, dataset, output)
             un_provide(dataset, worktree)
 
         url_base = get_url(
@@ -162,9 +159,9 @@ class Compute(ValidatedInterface):
             template,
             parameter,
             input_pattern,
-            output_pattern)
+            output)
 
-        for out in (output_pattern if url_only else output_files):
+        for out in output:
             url = add_url(dataset, out, url_base, url_only)
             yield get_status_dict(
                     action='compute',
@@ -264,12 +261,13 @@ def execute(worktree: Path,
         'execute: %s %s %s %s', str(worktree),
         template_name, repr(parameter), repr(output))
 
+    worktree_ds = Dataset(worktree)
     # Get the subdatasets, directories, and files that are part of the output
     # space.
-    create_output_space(Dataset(worktree), output)
+    create_output_space(worktree_ds, output)
 
-    # Unlock output files in the worktree-directory
-    unlock_files(Dataset(worktree), output)
+    # Unlock output files in the output space (worktree-directory)
+    unlock_files(worktree_ds, output)
 
     # Run the computation in the worktree-directory
     template_path = worktree / template_dir / template_name
@@ -282,29 +280,19 @@ def execute(worktree: Path,
 
 def collect(worktree: Path,
             dataset: Dataset,
-            output_patterns: list[str],
-            ) -> Iterable[str]:
-
-    lgr.debug(
-        'collect: %s %s %s',
-        str(worktree), dataset, repr(output_patterns))
-
-    # Get the list of created output files based on the output patterns
-    output_files = set(
-        chain.from_iterable(
-            glob.glob(pattern, root_dir=worktree, recursive=True)
-            for pattern in output_patterns))
+            output: Iterable[str],
+            ) -> None:
 
     # Unlock output files in the dataset-directory and copy the result
-    unlock_files(dataset, output_files)
-    for o in output_files:
+    unlock_files(dataset, output)
+    for o in output:
+        lgr.debug('collect: collecting %s', o)
         destination = dataset.pathobj / o
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(worktree / o, destination)
 
     # Save the dataset
     dataset.save(recursive=True, result_renderer='disabled')
-    return output_files
 
 
 def unlock_files(dataset: Dataset,
@@ -328,16 +316,15 @@ def unlock_files(dataset: Dataset,
 
 
 def create_output_space(dataset: Dataset,
-                        files: list[str]
+                        files: Iterable[str]
                         ) -> None:
     """Get all files that are part of the output space."""
     for f in files:
         try:
             dataset.get(f, result_renderer='disabled')
         except IncompleteResultsError:
-            # The file does not yet exist. The computation should create it.
-            # We create the directory here.
-            (dataset.pathobj / f).parent.mkdir(parents=True, exist_ok=True)
+            # Ignore non-existing files
+            pass
 
 
 def un_provide(dataset: Dataset,
