@@ -47,7 +47,8 @@ argument_parser.add_argument(
     metavar='PATH',
     help='File pattern that should be provisioned (relative from dataset '
          'root), at least one input has to be provided (use multiple times to '
-         'define multiple inputs)',
+         'define multiple inputs). Patterns are resolved by Python\'s globbing '
+         'rules. They are resolved in the source dataset.',
 )
 argument_parser.add_argument(
     '-I', '--input-list',
@@ -109,7 +110,7 @@ def provide(dataset_dir: str,
     # Resolve input file patterns in the original dataset
     input_files = set(
         chain.from_iterable(
-            glob.glob(pattern, root_dir=dataset_dir, recursive=True)
+            glob.glob(pattern, root_dir=dataset_dir)
             for pattern in input_patterns))
 
     # Create a worktree
@@ -124,7 +125,7 @@ def provide(dataset_dir: str,
     worktree_dataset = Dataset(worktree_dir)
     # Get all input files in the worktree
     with chdir(worktree_dataset.path):
-        for file in input_files or []:
+        for file in input_files:
             lgr.debug('Provisioning file %s', file)
             worktree_dataset.get(file, result_renderer='disabled')
 
