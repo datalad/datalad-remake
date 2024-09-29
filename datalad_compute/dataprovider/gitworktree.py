@@ -5,20 +5,19 @@ are currently also provisioned.
 """
 from __future__ import annotations
 
-import glob
 import logging
 import os
 import random
 import shutil
 from argparse import ArgumentParser
 from contextlib import chdir
-from itertools import chain
 from pathlib import Path
 from typing import Iterable
 
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_success
 
+from datalad_compute.utils.glob import resolve_patterns
 from ..commands.compute_cmd import read_list
 
 
@@ -108,10 +107,7 @@ def provide(dataset_dir: str,
         worktree_dir.mkdir(parents=True, exist_ok=True)
 
     # Resolve input file patterns in the original dataset
-    input_files = set(
-        chain.from_iterable(
-            glob.glob(pattern, root_dir=dataset_dir)
-            for pattern in input_patterns))
+    input_files = resolve_patterns(dataset_dir, input_patterns)
 
     # Create a worktree
     with chdir(dataset_dir):
