@@ -15,7 +15,6 @@ from contextlib import chdir
 from itertools import chain
 from pathlib import Path
 from typing import Iterable
-from urllib.parse import urlparse
 
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_success
@@ -95,20 +94,6 @@ def prune_worktrees(dataset: Dataset) -> None:
         prune_worktrees(Dataset(result['path']))
 
 
-def ensure_absolute_gitmodule_urls(original_dataset: Dataset,
-                                   dataset: Dataset
-                                   ) -> None:
-    sub_datasets = dataset.subdatasets(result_renderer='disabled')
-    for subdataset in sub_datasets:
-        name, location_spec = subdataset['gitmodule_name'], subdataset['gitmodule_url']
-        parse_result = urlparse(location_spec)
-        if parse_result.scheme == '':
-            if not Path(location_spec).is_absolute():
-                args = ['submodule', 'set-url', name, original_dataset.path]
-                call_git_success(args, cwd=dataset.path, capture_output=True)
-    dataset.save(result_renderer='disabled')
-
-
 def provide(dataset_dir: str,
             temp_dir: str,
             source_branch: str | None = None,
@@ -137,8 +122,6 @@ def provide(dataset_dir: str,
         call_git_success(args, capture_output=True)
 
     worktree_dataset = Dataset(worktree_dir)
-    # Ensure that all subdatasets have absolute URLs
-    ensure_absolute_gitmodule_urls(Dataset(dataset_dir), worktree_dataset)
     # Get all input files in the worktree
     with chdir(worktree_dataset.path):
         for file in input_files or []:
