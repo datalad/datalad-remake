@@ -125,7 +125,6 @@ class Compute(ValidatedInterface):
                 "should be provided."),
     )
 
-
     @staticmethod
     @datasetmethod(name='compute')
     @eval_results
