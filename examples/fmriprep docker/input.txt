@@ -1,0 +1,12 @@
+# Paths are relative to the dataset in which `datalad compute` was executed
+datasets/ds000102/dataset_description.json
+datasets/ds000102/participants.tsv
+datasets/ds000102/T1w.json
+datasets/ds000102/task-flanker_bold.json
+
+datasets/ds000102/sub-01/anat/sub-01_T1w.nii.gz
+
+datasets/ds000102/sub-01/func/sub-01_task-flanker_run-1_bold.nii.gz
+datasets/ds000102/sub-01/func/sub-01_task-flanker_run-1_events.tsv
+datasets/ds000102/sub-01/func/sub-01_task-flanker_run-2_bold.nii.gz
+datasets/ds000102/sub-01/func/sub-01_task-flanker_run-2_events.tsv
