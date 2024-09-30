@@ -48,7 +48,6 @@ Install the extension, create a dataset, configure it to use `compute`-URLs
 > cd compute-test-1
 > git config annex.security.allowed-url-schemes datalad-make
 > git config annex.security.allowed-ip-addresses all
-> git config annex.security.allow-unverified-downloads ACKTHPPT
 ```
 
 Create the template directory and a template
@@ -109,7 +108,13 @@ The command `datalad compute` does also support to just record the parameters
 that would lead to a certain computation, without actually performing the
 computation. We refer to this as *speculative computation*.
 
-Generate a speculative computation, this  is done by providing the `-u` option
+To use this feature, the following configuration value has to be set:
+
+```bash
+> git config annex.security.allow-unverified-downloads ACKTHPPT
+```
+
+Afterward, a speculative computation can be recorded by providing the `-u` option
 (url-only) to `datalad compute`.
 
 ```bash
