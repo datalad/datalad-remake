@@ -4,8 +4,6 @@ datasets/ds000102/derivatives/logs/CITATION.bib
 datasets/ds000102/derivatives/logs/CITATION.html
 datasets/ds000102/derivatives/logs/CITATION.tex
 
-datasets/ds000102/derivatives/sub-01/log/20240920-082920_76a9b76a-421a-43c9-9b54-354d2ab772fc/fmriprep.toml
-
 datasets/ds000102/derivatives/sub-01/figures/sub-01_desc-about_T1w.html
 datasets/ds000102/derivatives/sub-01/figures/sub-01_task-flanker_run-1_desc-validation_bold.html
 datasets/ds000102/derivatives/sub-01/figures/sub-01_task-flanker_run-2_desc-validation_bold.html

@@ -12,7 +12,7 @@
 #
 # The template assumes that the BIDS dataset referenced in `input_dir` is
 # a subdataset of the dataset in which the computation is started, as outlined
-ä in the fairly-big-follow-up document.
+# in the fairly-big-follow-up document.
 #
 # Input files, output files, and parameter for the computation are defined in
 # the lists: `input.txt`, `output.txt`, and `parameter.txt` to keep the command

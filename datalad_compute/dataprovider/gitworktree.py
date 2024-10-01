@@ -140,7 +140,7 @@ def provide(dataset_dir: str,
 def get_candidate_env_vars(dataset: Dataset, counter: int = 1) -> dict[str, str]:
     env_vars = {}
     for result in dataset.subdatasets(result_renderer='disabled'):
-        env_vars[f'DATALAD_GET_SUBDATASET__SOURCE__CANDIDATE__100_{counter}'] = result['path']
+        env_vars[f'DATALAD_GET_SUBDATASET__SOURCE__CANDIDATE__100__{counter}'] = result['path']
         counter += 1
         subdataset = Dataset(result['path'])
         env_vars = {
