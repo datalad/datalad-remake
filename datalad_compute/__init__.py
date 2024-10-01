@@ -23,6 +23,16 @@ command_suite = (
             # optional name of the command in the Python API
             'compute'
         ),
+        (
+            # importable module that contains the command implementation
+            'datalad_compute.commands.provision_cmd',
+            # name of the command class implementation in above module
+            'Provision',
+            # optional name of the command in the cmdline API
+            'provision',
+            # optional name of the command in the Python API
+            'provision'
+        ),
     ]
 )
 
