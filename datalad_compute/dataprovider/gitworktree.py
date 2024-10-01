@@ -119,19 +119,20 @@ def provide(dataset_dir: str,
         call_git_success(args, capture_output=True)
 
     source_dataset = Dataset(dataset_dir)
+
     # get candidate environment variables for each subdataset
     env_vars = get_candidate_env_vars(source_dataset)
 
-    stored_environ = dict(os.environ)
     # Get all input files in the worktree
-    os.environ.update(env_vars)
     worktree_dataset = Dataset(worktree_dir)
     with chdir(worktree_dataset.path):
+        stored_environ = dict(os.environ)
+        os.environ.update(env_vars)
         for file in input_files:
             lgr.debug('Provisioning file %s', file)
             worktree_dataset.get(file, result_renderer='disabled')
-    os.environ.clear()
-    os.environ.update(stored_environ)
+        os.environ.clear()
+        os.environ.update(stored_environ)
 
     return worktree_dir
 
