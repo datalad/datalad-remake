@@ -15,9 +15,9 @@ def update_config_for_compute(dataset: Dataset):
         scope='local',
         recursive=True,
         spec=[
-            #('annex.security.allowed-url-schemes', url_scheme),
+            ('annex.security.allowed-url-schemes', url_scheme),
             ('annex.security.allowed-ip-addresses', 'all'),
-            #('annex.security.allow-unverified-downloads', 'ACKTHPPT'),
+            ('annex.security.allow-unverified-downloads', 'ACKTHPPT'),
         ],
         result_renderer='disabled')
 
