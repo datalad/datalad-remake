@@ -118,14 +118,35 @@ def provide(dataset_dir: str,
         )
         call_git_success(args, capture_output=True)
 
-    worktree_dataset = Dataset(worktree_dir)
+    source_dataset = Dataset(dataset_dir)
+    # get candidate environment variables for each subdataset
+    env_vars = get_candidate_env_vars(source_dataset)
+
+    stored_environ = dict(os.environ)
     # Get all input files in the worktree
+    os.environ.update(env_vars)
+    worktree_dataset = Dataset(worktree_dir)
     with chdir(worktree_dataset.path):
         for file in input_files:
             lgr.debug('Provisioning file %s', file)
             worktree_dataset.get(file, result_renderer='disabled')
+    os.environ.clear()
+    os.environ.update(stored_environ)
 
     return worktree_dir
+
+
+def get_candidate_env_vars(dataset: Dataset, counter: int = 1) -> dict[str, str]:
+    env_vars = {}
+    for result in dataset.subdatasets(result_renderer='disabled'):
+        env_vars[f'DATALAD_GET_SUBDATASET__SOURCE__CANDIDATE__100_{counter}'] = result['path']
+        counter += 1
+        subdataset = Dataset(result['path'])
+        env_vars = {
+            **env_vars,
+            **get_candidate_env_vars(subdataset, counter)
+        }
+    return env_vars
 
 
 def random_name() -> str:
