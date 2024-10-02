@@ -8,7 +8,7 @@ from ... import (
     template_dir,
     url_scheme,
 )
-from datalad_compute.dataprovider.tests.create_datasets import create_ds_hierarchy
+from datalad_compute.commands.tests.create_datasets import create_ds_hierarchy
 
 
 test_method = """

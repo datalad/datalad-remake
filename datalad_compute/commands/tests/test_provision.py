@@ -7,11 +7,6 @@ from typing import Iterable
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines
 
-
-from ..gitworktree import (
-    provide,
-    remove,
-)
 from .create_datasets import create_ds_hierarchy
 
 
@@ -39,26 +34,24 @@ b_paths = [
     for path in file_path_templates
 ]
 
-all_paths = a_paths + b_paths
-
 
 def test_worktree_basic(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
-    worktree = Dataset(provide(
-        dataset.path,
-        str(tmp_path),
-        input_patterns=[
+    provision_result = dataset.provision(
+        worktree_dir=tmp_path / 'ds1_worktree1',
+        input=[
             'a.txt', 'b.txt',
             'ds1_subds0/a0.txt', 'ds1_subds0/b0.txt',
             'ds1_subds0/ds1_subds1/a1.txt', 'ds1_subds0/ds1_subds1/b1.txt'
         ],
-    ))
+    )[0]
 
+    worktree = Dataset(provision_result['path'])
     r_orig = [r['gitmodule_url'] for r in dataset.subdatasets(recursive=True, result_renderer='disabled')]
     r_worktree = [r['gitmodule_url'] for r in worktree.subdatasets(recursive=True, result_renderer='disabled')]
     assert r_orig == r_worktree
 
-    remove(dataset.path, worktree.path)
+    dataset.provision(delete=worktree.path)
 
     def check_deleted_worktrees(ds: Dataset):
         with chdir(ds.path):
@@ -78,41 +71,41 @@ def test_worktree_basic(tmp_path):
 
 def test_worktree_globbing(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
-    worktree = Dataset(provide(
-        dataset.path,
-        str(tmp_path),
-        input_patterns=[
+    result = dataset.provision(
+        worktree_dir=tmp_path / 'ds1_worktree2',
+        input=[
             '*.txt',
             '*_subds0/*.txt',
             '*_subds0/*_subds1/*.txt',
             '*_subds0/*_subds1/*_subds2/*.txt',
         ],
-    ))
+    )[0]
 
-    worktree_set = set(get_file_list(worktree.pathobj))
+    worktree = Path(result['path'])
+    worktree_set = set(get_file_list(worktree))
     assert worktree_set == set(
         path.format(ds_name='ds1')
         for path in all_paths
     )
-    remove(dataset.path, worktree.path)
+    dataset.provision(delete=worktree)
 
-    worktree = Dataset(provide(
-        dataset.path,
-        str(tmp_path),
-        input_patterns=[
+    result = dataset.provision(
+        worktree_dir=tmp_path / 'ds1_worktree2',
+        input=[
             'b*txt',
             '*_subds0/b*txt',
             '*_subds0/*_subds1/b*txt',
             '*_subds0/*_subds1/*_subds2/b*txt',
         ],
-    ))
+    )[0]
 
-    worktree_set = set(get_file_list(worktree.pathobj))
+    worktree = Path(result['path'])
+    worktree_set = set(get_file_list(worktree))
     assert set(
         path.format(ds_name='ds1')
         for path in b_paths
     ).issubset(worktree_set)
-    remove(dataset.path, worktree.path)
+    dataset.provision(delete=worktree)
 
     dataset.drop(
         what='all',

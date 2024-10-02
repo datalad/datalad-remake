@@ -55,7 +55,7 @@ class Provision(ValidatedInterface):
         input=EnsureListOf(EnsureStr(min_len=1)),
         input_list=EnsureStr(min_len=1),
         tmp_dir=EnsurePath(is_mode=stat.S_ISDIR),
-        delete=EnsurePath(lexists=True, is_mode=stat.S_ISDIR),
+        delete=EnsureDataset(installed=True),
     ))
 
     # parameters of the command, must be exhaustive
@@ -88,21 +88,21 @@ class Provision(ValidatedInterface):
                 "that start with '#' are ignored. Line content is stripped "
                 "before used. This is useful if a large number of input file "
                 "patterns should be provided."),
-        temp_dir=Parameter(
-            args=('-t', '--temp-dir',),
-            doc="Path of the directory where temporary worktrees should be "
-                "created. The  default is `$TMP` if set, otherwise `/tmp`."),
+        worktree_dir=Parameter(
+            args=('-w', '--worktree-dir',),
+            doc="Path of the directory that should become the temporary worktree"
+                ", defaults to `tempfile.TemporaryDirectory().name`."),
     )
 
     @staticmethod
-    @datasetmethod(name='compute')
+    @datasetmethod(name='provision')
     @eval_results
     def __call__(dataset=None,
                  branch=None,
                  delete=None,
                  input=None,
                  input_list=None,
-                 temp_dir=None,
+                 worktree_dir=None,
                  ):
 
         dataset : Dataset = dataset.ds if dataset else Dataset('.')
@@ -112,16 +112,17 @@ class Provision(ValidatedInterface):
                     'Cannot use `-d`, `--delete` with `-b`, `--branch`,'
                     ' `-i`, or `--input`')
 
-            remove(dataset, delete)
+            remove(dataset, delete.ds)
             yield get_status_dict(
                 action='provision [delete]',
-                path=delete,
+                path=delete.ds.path,
                 status='ok',
-                message=f'delete workspace: {delete!r} from dataset {dataset}',)
+                message=f'delete workspace: {delete.ds.path!r} from dataset {dataset}')
+            return
 
-        temp_dir: Path = temp_dir or Path(TemporaryDirectory().name)
+        worktree_dir: Path = worktree_dir or Path(TemporaryDirectory().name)
         inputs = input or [] + read_list(input_list)
-        provision_dir = provide(dataset, temp_dir, branch, inputs)
+        provision_dir = provide(dataset, worktree_dir, branch, inputs)
         yield get_status_dict(
             action='provision',
             path=str(provision_dir),
@@ -130,17 +131,22 @@ class Provision(ValidatedInterface):
 
 
 def remove(dataset: Dataset,
-           worktree: str
+           worktree: Dataset
            ) -> None:
-    remove_subdatasets(worktree)
-    shutil.rmtree(worktree)
+    worktree.drop(
+        what='all',
+        reckless='kill',
+        recursive=True,
+        result_renderer='disabled')
     prune_worktrees(dataset)
 
 
-def remove_subdatasets(worktree: str):
-    dataset = Dataset(worktree)
-    for subdataset_info in dataset.subdatasets(result_renderer='disabled'):
-        dataset.drop(
+def remove_subdatasets(worktree: Dataset):
+    for subdataset_info in worktree.subdatasets(
+            recursive=True,
+            result_renderer='disabled'
+    ):
+        worktree.drop(
             subdataset_info['path'],
             recursive=True,
             reckless='kill',
@@ -163,44 +169,22 @@ def provide(dataset: Dataset,
     lgr.debug('Provisioning dataset %s at %s', dataset, worktree_dir)
 
     worktree_dir.mkdir(parents=True, exist_ok=True)
-    worktree_name = worktree_dir.parts[-1]
 
     # Resolve input file patterns in the original dataset
     input_files = resolve_patterns(dataset.path, input_patterns)
 
     # Create a worktree
-    args = ['worktree', 'add', '-b', worktree_name] + [str(worktree_dir)] + (
+    args = ['worktree', 'add'] + [str(worktree_dir)] + (
         [source_branch]
         if source_branch
         else []
     )
     call_git_lines(args, cwd=dataset.pathobj)
 
-    # get candidate environment variables for each subdataset
-    env_vars = get_candidate_env_vars(dataset)
-
     # Get all input files in the worktree
     worktree_dataset = Dataset(worktree_dir)
     with chdir(worktree_dataset.path):
-        stored_environ = dict(os.environ)
-        os.environ.update(env_vars)
         for file in input_files:
             lgr.debug('Provisioning file %s', file)
             worktree_dataset.get(file, result_renderer='disabled')
-        os.environ.clear()
-        os.environ.update(stored_environ)
-
     return worktree_dir
-
-
-def get_candidate_env_vars(dataset: Dataset, counter: int = 1) -> dict[str, str]:
-    env_vars = {}
-    for result in dataset.subdatasets(result_renderer='disabled'):
-        env_vars[f'DATALAD_GET_SUBDATASET__SOURCE__CANDIDATE__100__{counter}'] = result['path']
-        counter += 1
-        subdataset = Dataset(result['path'])
-        env_vars = {
-            **env_vars,
-            **get_candidate_env_vars(subdataset, counter)
-        }
-    return env_vars

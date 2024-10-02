@@ -150,7 +150,7 @@ class Compute(ValidatedInterface):
             worktree = provide(dataset, branch, input_pattern)
             execute(worktree, template, parameter, output)
             collect(worktree, dataset, output)
-            un_provide(dataset, worktree)
+            dataset.provision(delete=worktree)
 
         url_base = get_url(
             dataset,
@@ -241,13 +241,8 @@ def provide(dataset: Dataset,
             ) -> Path:
 
     lgr.debug('provide: %s %s %s', dataset, branch, input_patterns)
-
-    args = ['provide-gitworktree', dataset.path, ] + (
-        ['--branch', branch] if branch else []
-    )
-    args.extend(chain(*[('--input', i) for i in (input_patterns or [])]))
-    stdout = subprocess.run(args, stdout=subprocess.PIPE, check=True).stdout
-    return Path(stdout.splitlines()[-1].decode())
+    result = dataset.provision(input=input_patterns, branch=branch)
+    return Path(result[0]['path'])
 
 
 def execute(worktree: Path,
@@ -331,6 +326,4 @@ def un_provide(dataset: Dataset,
                ) -> None:
 
     lgr.debug('un_provide: %s %s', dataset, str(worktree))
-
-    args = ['provide-gitworktree', dataset.path, '--delete', str(worktree)]
-    subprocess.run(args, check=True)
+    dataset.provision(delete=worktree)
