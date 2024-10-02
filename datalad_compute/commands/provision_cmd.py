@@ -6,7 +6,7 @@ are currently also provisioned.
 from __future__ import annotations
 
 import logging
-import random
+import os
 import shutil
 import stat
 from contextlib import chdir
@@ -176,11 +176,31 @@ def provide(dataset: Dataset,
     )
     call_git_lines(args, cwd=dataset.pathobj)
 
+    # get candidate environment variables for each subdataset
+    env_vars = get_candidate_env_vars(dataset)
+
     # Get all input files in the worktree
     worktree_dataset = Dataset(worktree_dir)
     with chdir(worktree_dataset.path):
+        stored_environ = dict(os.environ)
+        os.environ.update(env_vars)
         for file in input_files:
             lgr.debug('Provisioning file %s', file)
             worktree_dataset.get(file, result_renderer='disabled')
+        os.environ.clear()
+        os.environ.update(stored_environ)
 
     return worktree_dir
+
+
+def get_candidate_env_vars(dataset: Dataset, counter: int = 1) -> dict[str, str]:
+    env_vars = {}
+    for result in dataset.subdatasets(result_renderer='disabled'):
+        env_vars[f'DATALAD_GET_SUBDATASET__SOURCE__CANDIDATE__100__{counter}'] = result['path']
+        counter += 1
+        subdataset = Dataset(result['path'])
+        env_vars = {
+            **env_vars,
+            **get_candidate_env_vars(subdataset, counter)
+        }
+    return env_vars
