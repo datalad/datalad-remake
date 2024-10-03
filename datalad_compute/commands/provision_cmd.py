@@ -6,12 +6,13 @@ are currently also provisioned.
 from __future__ import annotations
 
 import logging
-import os
-import shutil
 import stat
 from contextlib import chdir
 from pathlib import Path
-from typing import Iterable
+from typing import (
+    Any,
+    Iterable,
+)
 from tempfile import TemporaryDirectory
 
 from datalad_next.commands import (
@@ -170,9 +171,6 @@ def provide(dataset: Dataset,
 
     worktree_dir.mkdir(parents=True, exist_ok=True)
 
-    # Resolve input file patterns in the original dataset
-    input_files = resolve_patterns(dataset.path, input_patterns)
-
     # Create a worktree
     args = ['worktree', 'add'] + [str(worktree_dir)] + (
         [source_branch]
@@ -181,10 +179,109 @@ def provide(dataset: Dataset,
     )
     call_git_lines(args, cwd=dataset.pathobj)
 
-    # Get all input files in the worktree
+    input_files = resolve_patterns(dataset.path, input_patterns)
+
     worktree_dataset = Dataset(worktree_dir)
+    install_required_locally_available_datasets(
+        dataset,
+        [Path(i) for i in input_files],
+        worktree_dataset)
+
+    # Get all input files in the worktree
     with chdir(worktree_dataset.path):
         for file in input_files:
             lgr.debug('Provisioning file %s', file)
             worktree_dataset.get(file, result_renderer='disabled')
     return worktree_dir
+
+
+def check_results(results: Iterable[dict[str, Any]]):
+    assert not any(
+        result['status'] in ('impossible', 'error')
+        for result in results)
+
+
+def install_required_locally_available_datasets(root_dataset: Dataset,
+                                                input_files: list[Path],
+                                                worktree: Dataset,
+                                                ) -> None:
+    """Ensure that local and locally changed subdatasets can be provisioned.
+
+    If subdatasets are only available within the root dataset, either because
+    they are not published or because they are locally modified, the provision
+    has to use those.
+
+    This means we have to adapt cloning candidates before trying to install
+    a subdataset. This is done by:
+
+    - Determining which subdatasets are installed in the root dataset
+    - Determining which of those subdatasets are required by the input files
+    - Adjust the `.gitmodules` files and install the required local datasets
+    - All other datasets are installed as usual, e.g. via `datalad get`.
+    """
+
+    # Determine which subdatasets are installed in the root dataset
+    subdataset_info = get_subdataset_info(root_dataset)
+
+    # Determine which subdatasets are required by the input files
+    required_subdatasets = determine_required_subdatasets(
+        subdataset_info,
+        input_files)
+
+    install_locally_available_subdatasets(
+        root_dataset,
+        required_subdatasets,
+        worktree)
+
+
+def get_subdataset_info(dataset: Dataset) -> Iterable[tuple[Path, Path, Path]]:
+    results = dataset.subdatasets(
+        recursive=True,
+        result_renderer='disabled')
+    check_results(results)
+    return [
+        (
+            Path(result['path']),
+            Path(result['parentds']),
+            Path(result['path']).relative_to(dataset.pathobj)
+        )
+        for result in results
+    ]
+
+
+def determine_required_subdatasets(subdataset_info: Iterable[tuple[Path, Path, Path]],
+                                   input_files: list[Path],
+                                   ) -> set[tuple[Path, Path, Path]]:
+    required_set = set()
+    for file in input_files:
+        # if the path can be expressed as relative to the subdataset path.
+        # the subdataset is required, and so are all subdatasets above it.
+        for subdataset_path, parent_path, path_from_root in subdataset_info:
+            try:
+                file.relative_to(path_from_root)
+                required_set.add((subdataset_path, parent_path, path_from_root))
+            except ValueError as e:
+                pass
+    return required_set
+
+
+def install_locally_available_subdatasets(source_dataset: Dataset,
+                                          required_subdatasets: set[tuple[Path, Path, Path]],
+                                          worktree: Dataset,
+                                          ) -> None:
+    """Install the required subdatasets from the source dataset in the worktree.
+    """
+    todo = [Path('.')]
+    while todo:
+        current_root = todo.pop()
+        for subdataset_path, parent_path, path_from_root in required_subdatasets:
+            if not current_root == parent_path.relative_to(source_dataset.pathobj):
+                continue
+            # Set the URL to the full source path
+            args = ['-C', str(worktree.pathobj / current_root),
+                    'submodule', 'set-url', '--',
+                    str(subdataset_path.relative_to(parent_path)),
+                    'file://' + str(source_dataset.pathobj / path_from_root)]
+            call_git_lines(args)
+            worktree.get(path_from_root, get_data=False)
+            todo.append(path_from_root)
