@@ -37,19 +37,19 @@ b_paths = [
 
 def test_worktree_basic(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
+    inputs = [
+        'a.txt', 'b.txt',
+        'ds1_subds0/a0.txt', 'ds1_subds0/b0.txt',
+        'ds1_subds0/ds1_subds1/a1.txt', 'ds1_subds0/ds1_subds1/b1.txt'
+    ]
     provision_result = dataset.provision(
         worktree_dir=tmp_path / 'ds1_worktree1',
-        input=[
-            'a.txt', 'b.txt',
-            'ds1_subds0/a0.txt', 'ds1_subds0/b0.txt',
-            'ds1_subds0/ds1_subds1/a1.txt', 'ds1_subds0/ds1_subds1/b1.txt'
-        ],
+        input=inputs,
     )[0]
 
     worktree = Dataset(provision_result['path'])
-    r_orig = [r['gitmodule_url'] for r in dataset.subdatasets(recursive=True, result_renderer='disabled')]
-    r_worktree = [r['gitmodule_url'] for r in worktree.subdatasets(recursive=True, result_renderer='disabled')]
-    assert r_orig == r_worktree
+    # Check input availability
+    assert all((worktree.pathobj / path).exists() for path in inputs)
 
     dataset.provision(delete=worktree.path)
 
