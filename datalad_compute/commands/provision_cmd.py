@@ -260,7 +260,7 @@ def determine_required_subdatasets(subdataset_info: Iterable[tuple[Path, Path, P
             try:
                 file.relative_to(path_from_root)
                 required_set.add((subdataset_path, parent_path, path_from_root))
-            except ValueError as e:
+            except ValueError:
                 pass
     return required_set
 
