@@ -236,8 +236,8 @@ def get_file_dataset(file: Path) -> tuple[Path, Path]:
     Determine the path of the dataset that contains the file and the relative
     path of the file in this dataset."""
     top_level = Path(call_git_oneline(
-        ['-C', str(file.parent), 'rev-parse', '--show-toplevel']
-    ))
+        ['rev-parse', '--show-toplevel'],
+        cwd=file.parent))
     return (
         Path(top_level),
         file.absolute().relative_to(top_level))
