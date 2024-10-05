@@ -213,12 +213,20 @@ def add_url(dataset: Dataset,
     # Build the file-specific URL and store it in the annex
     url = url_base + f'&this={quote(file_path)}'
     file_dataset_path, file_path = get_file_dataset(dataset.pathobj / file_path)
-    success = call_git_success(
-        ['-C', str(file_dataset_path), 'annex', 'addurl', url, '--file', file_path]
-        + (['--relaxed'] if url_only else []),
-        capture_output=True,)
-
-    assert success, f'\naddurl failed:\nfile_dataset_path: {file_dataset_path}\nurl: {url!r}\nfile_path: {file_path!r}'
+    is_annexed = call_git_success(
+        ['annex', 'whereis', str(file_path)],
+        cwd=file_dataset_path,
+        capture_output=True)
+    if is_annexed:
+        success = call_git_success(
+            ['annex', 'addurl', url, '--file', file_path]
+            + (['--relaxed'] if url_only else []),
+            cwd=file_dataset_path,
+            capture_output=True)
+        assert (
+            success,
+            f'\naddurl failed:\nfile_dataset_path: {file_dataset_path}\n'
+            f'url: {url!r}\nfile_path: {file_path!r}')
     return url
 
 
