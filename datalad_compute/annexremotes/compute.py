@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import shutil
 import subprocess
+from hashlib import md5
 from pathlib import Path
 from typing import Any
 from urllib.parse import (
@@ -160,15 +162,31 @@ class ComputeRemote(SpecialRemote):
             if output == this:
                 continue
             dataset_path, file_path = get_file_dataset(dataset.pathobj / output)
-            call_git_success([
-                '-C', str(dataset_path),
-                'annex', 'reinject',
-                str(worktree / output),
-                str(file_path)],
+            is_annexed = call_git_success(
+                ['annex', 'whereis', str(file_path)],
+                cwd=dataset_path,
                 capture_output=True)
+            if is_annexed:
+                call_git_success(
+                    ['annex', 'reinject', str(worktree / output), str(file_path)],
+                    cwd=dataset_path,
+                    capture_output=True)
+            else:
+                # Check that the files in worktree and source dataset are identical
+                assert (
+                    _hash_file(dataset.pathobj / output)
+                    == _hash_file(worktree / output),
+                    f'calculated output: ({worktree / output}) differs from '
+                    f'original output: ({dataset.pathobj / output}).')
 
-        # Collect `this` file
+        # Collect `this` file. It has to be copied to the destination given
+        # by git-annex. Git-annex will check its integrity.
         shutil.copyfile(worktree / this, this_destination)
+
+
+def _hash_file(file: str | Path) -> str:
+    with open(file, 'rb') as f:
+        return hashlib.file_digest(f, 'md5').hexdigest()
 
 
 def main():
