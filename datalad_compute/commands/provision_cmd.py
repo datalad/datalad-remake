@@ -49,6 +49,13 @@ class Provision(ValidatedInterface):
     # first docstring line is used a short description in the cmdline help
     # the rest is put in the verbose help and manpage
     """Provision inputs for a compute command
+
+    This command provides a temporary, partial copy of the dataset in a separate
+    tree, called a "worktree". The worktree will contain all files that are
+    specified by the input patterns. All necessary subdatasets will be
+    installed. If a subdataset is locally available in the source dataset, it
+    will be installed from there. Its main purpose is to provide an isolated
+    environment for "compute" commands.
     """
 
     _validator_ = EnsureCommandParameterization(dict(
@@ -73,8 +80,8 @@ class Provision(ValidatedInterface):
         delete=Parameter(
             args=('--delete',),
             doc="Delete the temporary worktree WORKTREE that belongs the the "
-                "dataset (cannot be used with `-b`, `--branch`, `-i`, or "
-                "`--input`)"),
+                "dataset (cannot be used with `-b`, `--branch`, `-i`,"
+                "`--input`, `-I`, or `--input-list`)."),
         input=Parameter(
             args=('-i', '--input',),
             action='append',
@@ -91,8 +98,8 @@ class Provision(ValidatedInterface):
                 "patterns should be provided."),
         worktree_dir=Parameter(
             args=('-w', '--worktree-dir',),
-            doc="Path of the directory that should become the temporary worktree"
-                ", defaults to `tempfile.TemporaryDirectory().name`."),
+            doc="Path of the directory that should become the temporary "
+                "worktree, defaults to `tempfile.TemporaryDirectory().name`."),
     )
 
     @staticmethod
@@ -142,19 +149,6 @@ def remove(dataset: Dataset,
     prune_worktrees(dataset)
 
 
-def remove_subdatasets(worktree: Dataset):
-    for subdataset_info in worktree.subdatasets(
-            recursive=True,
-            result_renderer='disabled'
-    ):
-        worktree.drop(
-            subdataset_info['path'],
-            recursive=True,
-            reckless='kill',
-            what='all',
-            result_renderer='disabled')
-
-
 def prune_worktrees(dataset: Dataset) -> None:
     call_git_lines(['worktree', 'prune'], cwd=dataset.pathobj)
     for result in dataset.subdatasets(result_renderer='disabled'):
@@ -190,7 +184,7 @@ def provide(dataset: Dataset,
     # Get all input files in the worktree
     with chdir(worktree_dataset.path):
         for file in input_files:
-            lgr.debug('Provisioning file %s', file)
+            lgr.debug('provisioning input file %s', file)
             worktree_dataset.get(file, result_renderer='disabled')
     return worktree_dir
 
@@ -238,7 +232,6 @@ def get_subdataset_info(dataset: Dataset) -> Iterable[tuple[Path, Path, Path]]:
     results = dataset.subdatasets(
         recursive=True,
         result_renderer='disabled')
-    check_results(results)
     return [
         (
             Path(result['path']),
