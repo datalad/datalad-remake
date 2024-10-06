@@ -2,7 +2,6 @@ from collections.abc import Iterable
 
 from datalad.api import get as datalad_get
 from datalad_next.datasets import Dataset
-from datalad_next.runners import call_git_success
 from datalad_next.tests.fixtures import datalad_cfg
 
 from ... import (
