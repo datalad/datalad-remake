@@ -12,5 +12,5 @@ def resolve_patterns(root_dir: str | Path,
                      ) -> set[str]:
     return set(
         chain.from_iterable(
-            glob(pattern, root_dir=str(root_dir))
+            glob(pattern, root_dir=str(root_dir), recursive=True)
             for pattern in patterns))
