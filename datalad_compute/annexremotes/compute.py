@@ -5,7 +5,10 @@ import logging
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import (
+    Any,
+    Iterable,
+)
 from urllib.parse import (
     unquote,
     urlparse,
@@ -27,7 +30,7 @@ from ..commands.compute_cmd import (
     provide,
     un_provide,
 )
-
+from ..utils.glob import resolve_patterns
 
 lgr = logging.getLogger('datalad.compute.annexremotes.compute')
 
@@ -148,11 +151,14 @@ class ComputeRemote(SpecialRemote):
     def _collect(self,
                  worktree: Path,
                  dataset: Dataset,
-                 outputs: list[str],
+                 output_patterns: Iterable[str],
                  this: str,
                  this_destination: str,
                  ) -> None:
         """Collect computation results for `this` (and all other outputs) """
+
+        # Get all outputs that were created during computation
+        outputs = resolve_patterns(root_dir=worktree, patterns=output_patterns)
 
         # Collect all output files that have been created while creating
         # `this` file.
@@ -165,6 +171,7 @@ class ComputeRemote(SpecialRemote):
                 cwd=dataset_path,
                 capture_output=True)
             if is_annexed:
+                self.annex.debug(f'_collect: reinject: {worktree / output} -> {dataset_path}:{file_path}')
                 call_git_success(
                     ['annex', 'reinject', str(worktree / output), str(file_path)],
                     cwd=dataset_path,

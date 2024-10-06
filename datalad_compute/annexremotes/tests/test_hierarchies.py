@@ -2,6 +2,7 @@ from collections.abc import Iterable
 
 from datalad.api import get as datalad_get
 from datalad_next.datasets import Dataset
+from datalad_next.runners import call_git_success
 from datalad_next.tests.fixtures import datalad_cfg
 
 from ... import (
@@ -40,6 +41,15 @@ output = [
     'd2_subds0/d2_subds1/d2_subds2/a2.txt', 'd2_subds0/d2_subds1/d2_subds2/b2.txt', 'd2_subds0/d2_subds1/d2_subds2/new.txt',
 ]
 
+
+output_pattern = [
+    '*.txt',
+    'd2_subds0/*.txt',
+    'd2_subds0/d2_subds1/*.txt',
+    'd2_subds0/d2_subds1/d2_subds2/*.txt',
+]
+
+
 test_file_content = [
     (file, content)
     for file, content in
@@ -50,7 +60,7 @@ test_file_content = [
 def _drop_files(dataset: Dataset,
                 files: Iterable[str]):
     for file in files:
-        dataset.drop(file, result_renderer='disabled')
+        dataset.drop(file, reckless='availability', result_renderer='disabled')
         assert not (dataset.pathobj / file).exists()
 
 
@@ -100,6 +110,56 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch):
     datalad_get('a1.txt')
 
     # check that all files are computed
+    _check_content(root_dataset, test_file_content)
+
+    _drop_files(root_dataset, output)
+
+    # check get in subdatasets
+    monkeypatch.chdir(root_dataset.pathobj)
+    datalad_get('d2_subds0/d2_subds1/a1.txt')
+
+    _check_content(root_dataset, test_file_content)
+
+
+def test_end_to_end_with_pattern(tmp_path, datalad_cfg, monkeypatch):
+
+    datasets = create_ds_hierarchy(tmp_path, 'd2', 3)
+    root_dataset = datasets[0][2]
+
+    # add method template
+    template_path = root_dataset.pathobj / template_dir
+    template_path.mkdir(parents=True)
+    (template_path / 'test_method').write_text(test_method)
+    root_dataset.save(result_renderer='disabled')
+
+    # set annex security related variables to allow compute-URLs
+    datalad_cfg.set('annex.security.allowed-url-schemes', url_scheme, scope='global')
+    datalad_cfg.set('annex.security.allowed-ip-addresses', 'all', scope='global')
+    datalad_cfg.set('annex.security.allow-unverified-downloads', 'ACKTHPPT', scope='global')
+
+    # run compute command
+    root_dataset.compute(
+        template='test_method',
+        parameter=[
+            'first=first',
+            'second=second',
+            'third=third',
+        ],
+        output=output_pattern,
+        result_renderer='disabled')
+
+    # check computation success
+    _check_content(root_dataset, test_file_content)
+
+    # Drop all computed content
+    _drop_files(root_dataset, output)
+
+    # Go to the subdataset `d2_subds0/d2_subds1` and fetch the content of `a1.txt`
+    # from a compute remote.
+    monkeypatch.chdir(root_dataset.pathobj / 'd2_subds0' / 'd2_subds1')
+    datalad_get('a1.txt')
+
+    # check that all known files that were computed are added to the annex
     _check_content(root_dataset, test_file_content)
 
     _drop_files(root_dataset, output)

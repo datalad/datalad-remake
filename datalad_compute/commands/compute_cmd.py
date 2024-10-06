@@ -7,8 +7,6 @@ import json
 import logging
 import os
 import shutil
-import subprocess
-from itertools import chain
 from pathlib import Path
 from typing import Iterable
 from urllib.parse import quote
@@ -39,6 +37,7 @@ from .. import (
     url_scheme,
 )
 from ..utils.compute import compute
+from ..utils.glob import resolve_patterns
 
 
 __docformat__ = 'restructuredtext'
@@ -90,7 +89,7 @@ class Compute(ValidatedInterface):
             action='append',
             doc="An input file pattern (repeat for multiple inputs, "
                 "file pattern support python globbing, globbing is expanded "
-                "in the source dataset"),
+                "in the source dataset)"),
         input_list=Parameter(
             args=('-I', '--input-list',),
             doc="Name of a file that contains a list of input file patterns. "
@@ -102,10 +101,12 @@ class Compute(ValidatedInterface):
         output=Parameter(
             args=('-o', '--output',),
             action='append',
-            doc="Name of an output file (repeat for multiple outputs)"),
+            doc="An output file pattern (repeat for multiple outputs)"
+                "file pattern support python globbing, globbing is expanded "
+                "in the worktree)"),
         output_list=Parameter(
             args=('-O', '--output-list',),
-            doc="Name of a file that contains a list of output files. Format "
+            doc="Name of a file that contains a list of output patterns. Format "
                 "is one file per line, relative path from `dataset`. Empty "
                 "lines, i.e. lines that contain only newlines, arg ignored. "
                 "This is useful if a large number of output files should be "
@@ -143,13 +144,13 @@ class Compute(ValidatedInterface):
         dataset : Dataset = dataset.ds if dataset else Dataset('.')
 
         input_pattern = (input or []) + read_list(input_list)
-        output = (output or []) + read_list(output_list)
+        output_pattern = (output or []) + read_list(output_list)
         parameter = (parameter or []) + read_list(parameter_list)
 
         if not url_only:
             worktree = provide(dataset, branch, input_pattern)
-            execute(worktree, template, parameter, output)
-            collect(worktree, dataset, output)
+            execute(worktree, template, parameter, output_pattern)
+            output = collect(worktree, dataset, output_pattern)
             dataset.provision(delete=worktree)
 
         url_base = get_url(
@@ -158,7 +159,7 @@ class Compute(ValidatedInterface):
             template,
             parameter,
             input_pattern,
-            output)
+            output_pattern)
 
         for out in output:
             url = add_url(dataset, out, url_base, url_only)
@@ -184,8 +185,8 @@ def get_url(dataset: Dataset,
             branch: str | None,
             template_name: str,
             parameters: dict[str, str],
-            input_files: list[str],
-            output_files: list[str],
+            input_pattern: list[str],
+            output_pattern: list[str],
             ) -> str:
 
     branch = dataset.repo.get_hexsha() if branch is None else branch
@@ -194,8 +195,8 @@ def get_url(dataset: Dataset,
         + f'?root_id={quote(dataset.id)}'
         + f'&default_root_version={quote(branch)}'
         + f'&method={quote(template_name)}'
-        + f'&input={quote(json.dumps(input_files))}'
-        + f'&output={quote(json.dumps(output_files))}'
+        + f'&input={quote(json.dumps(input_pattern))}'
+        + f'&output={quote(json.dumps(output_pattern))}'
         + f'&params={quote(json.dumps(parameters))}'
     )
 
@@ -256,20 +257,25 @@ def provide(dataset: Dataset,
 def execute(worktree: Path,
             template_name: str,
             parameter: list[str],
-            output: list[str],
+            output_pattern: list[str],
             ) -> None:
 
     lgr.debug(
         'execute: %s %s %s %s', str(worktree),
-        template_name, repr(parameter), repr(output))
+        template_name, repr(parameter), repr(output_pattern))
 
     worktree_ds = Dataset(worktree)
-    # Get the subdatasets, directories, and files that are part of the output
-    # space.
-    create_output_space(worktree_ds, output)
 
-    # Unlock output files in the output space (worktree-directory)
-    unlock_files(worktree_ds, output)
+    # Determine which outputs already exist
+    existing_outputs = resolve_patterns(
+        root_dir=worktree,
+        patterns=output_pattern)
+
+    # Get the subdatasets, directories, and files of the existing output space
+    create_output_space(worktree_ds, existing_outputs)
+
+    # Unlock existing output files in the output space (worktree-directory)
+    unlock_files(worktree_ds, existing_outputs)
 
     # Run the computation in the worktree-directory
     template_path = worktree / template_dir / template_name
@@ -282,8 +288,10 @@ def execute(worktree: Path,
 
 def collect(worktree: Path,
             dataset: Dataset,
-            output: Iterable[str],
-            ) -> None:
+            output_pattern: Iterable[str],
+            ) -> set[str]:
+
+    output = resolve_patterns(root_dir=worktree, patterns=output_pattern)
 
     # Unlock output files in the dataset-directory and copy the result
     unlock_files(dataset, output)
@@ -295,6 +303,7 @@ def collect(worktree: Path,
 
     # Save the dataset
     dataset.save(recursive=True, result_renderer='disabled')
+    return output
 
 
 def unlock_files(dataset: Dataset,
