@@ -11,6 +11,8 @@ def resolve_patterns(root_dir: str | Path,
                      patterns: Iterable[str]
                      ) -> set[str]:
     return set(
-        chain.from_iterable(
-            glob(pattern, root_dir=str(root_dir), recursive=True)
-            for pattern in patterns))
+        filter(
+            lambda p: not (Path(root_dir) / p).is_dir(),
+            chain.from_iterable(
+                glob(pattern, root_dir=str(root_dir), recursive=True)
+                for pattern in patterns)))
