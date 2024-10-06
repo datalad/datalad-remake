@@ -8,7 +8,10 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Iterable
+from typing import (
+    Generator,
+    Iterable,
+)
 from urllib.parse import quote
 
 from datalad.support.exceptions import IncompleteResultsError
@@ -148,10 +151,9 @@ class Compute(ValidatedInterface):
         parameter = (parameter or []) + read_list(parameter_list)
 
         if not url_only:
-            worktree = provide(dataset, branch, input_pattern)
-            execute(worktree, template, parameter, output_pattern)
-            output = collect(worktree, dataset, output_pattern)
-            dataset.provision(delete=worktree)
+            with provide_context(dataset, branch, input_pattern) as worktree:
+                execute(worktree, template, parameter, output_pattern)
+                output = collect(worktree, dataset, output_pattern)
 
         url_base = get_url(
             dataset,
@@ -254,6 +256,20 @@ def provide(dataset: Dataset,
     return Path(result[0]['path'])
 
 
+@contextlib.contextmanager
+def provide_context(dataset: Dataset,
+                    branch: str | None,
+                    input_patterns: list[str],
+                    ) -> Generator:
+
+    worktree = provide(dataset, branch=branch, input_patterns=input_patterns)
+    try:
+        yield worktree
+    finally:
+        lgr.debug('un_provide: %s %s', dataset, str(worktree))
+        dataset.provision(delete=worktree)
+
+
 def execute(worktree: Path,
             template_name: str,
             parameter: list[str],
@@ -336,11 +352,3 @@ def create_output_space(dataset: Dataset,
         except IncompleteResultsError:
             # Ignore non-existing files
             pass
-
-
-def un_provide(dataset: Dataset,
-               worktree: Path,
-               ) -> None:
-
-    lgr.debug('un_provide: %s %s', dataset, str(worktree))
-    dataset.provision(delete=worktree)

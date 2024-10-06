@@ -27,8 +27,7 @@ from .. import url_scheme
 from ..commands.compute_cmd import (
     execute,
     get_file_dataset,
-    provide,
-    un_provide,
+    provide_context,
 )
 from ..utils.glob import resolve_patterns
 
@@ -112,16 +111,19 @@ class ComputeRemote(SpecialRemote):
         # Perform the computation, and collect the results
         lgr.debug('Starting provision')
         self.annex.debug('Starting provision')
-        worktree = provide(dataset, compute_info['root_version'], compute_info['input'])
-        lgr.debug('Starting execution')
-        self.annex.debug('Starting execution')
-        execute(worktree, compute_info['method'], compute_info['parameter'], compute_info['output'])
-        lgr.debug('Starting collection')
-        self.annex.debug('Starting collection')
-        self._collect(worktree, dataset, compute_info['output'], compute_info['this'], file_name)
-        lgr.debug('Starting unprovision')
-        self.annex.debug('Starting unprovision')
-        un_provide(dataset, worktree)
+        with provide_context(
+                dataset,
+                compute_info['root_version'],
+                compute_info['input']
+        ) as worktree:
+            lgr.debug('Starting execution')
+            self.annex.debug('Starting execution')
+            execute(worktree, compute_info['method'], compute_info['parameter'], compute_info['output'])
+            lgr.debug('Starting collection')
+            self.annex.debug('Starting collection')
+            self._collect(worktree, dataset, compute_info['output'], compute_info['this'], file_name)
+            lgr.debug('Starting unprovision')
+            self.annex.debug('Starting unprovision')
 
     def checkpresent(self, key: str) -> bool:
         # See if at least one URL with the compute url-scheme is present

@@ -8,6 +8,7 @@ from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines
 
 from .create_datasets import create_ds_hierarchy
+from ..compute_cmd import provide_context
 
 
 file_path_templates = [
@@ -126,3 +127,11 @@ def get_file_list(root: Path,
                 yield from get_file_list(root, child, prefix=prefix / child)
             else:
                 yield str((prefix / child).relative_to(root))
+
+
+def test_provision_context(tmp_path):
+    dataset = create_ds_hierarchy(tmp_path, 'ds1')[0][2]
+    with provide_context(dataset, branch=None, input_patterns=['**']) as worktree:
+        files = set(get_file_list(worktree))
+        assert files
+    assert not worktree.exists()
