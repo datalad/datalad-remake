@@ -167,7 +167,7 @@ class Compute(ValidatedInterface):
             url = add_url(dataset, out, url_base, url_only)
             yield get_status_dict(
                     action='compute',
-                    path=dataset.pathobj / out,
+                    path=str(dataset.pathobj / out),
                     status='ok',
                     message=f'added url: {url!r} to {out!r} in {dataset.pathobj}',)
 
