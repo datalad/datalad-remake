@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Iterable
 
 import pytest
@@ -103,7 +104,7 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch, output_pattern):
         result_renderer='disabled')
 
     collected_output = [
-        str(result['path'].relative_to(root_dataset.pathobj))
+        str(Path(result['path']).relative_to(root_dataset.pathobj))
         for result in results]
     assert set(collected_output) == set(output_pattern_static)
 
