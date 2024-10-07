@@ -133,7 +133,7 @@ class ComputeRemote(SpecialRemote):
                       root_id: str
                       ) -> Dataset:
         """Find the first enclosing dataset with the given root_id"""
-        current_dir = Path(self.annex.getgitdir()) / '..'
+        current_dir = Path(self.annex.getgitdir()).parent.absolute()
 
         while current_dir != Path('/'):
             result = subprocess.run(
@@ -143,11 +143,10 @@ class ComputeRemote(SpecialRemote):
                     '--get', 'datalad.dataset.id'
                 ],
                 stdout=subprocess.PIPE)
-            if result.returncode != 0:
-                continue
-            if result.stdout.decode().strip() == root_id:
-                return Dataset(current_dir)
-            current_dir = current_dir / '..'
+            if result.returncode == 0:
+                if result.stdout.decode().strip() == root_id:
+                    return Dataset(current_dir)
+            current_dir = current_dir.parent
         raise RemoteError(f'Could not find dataset {root_id!r}')
 
     def _collect(self,
