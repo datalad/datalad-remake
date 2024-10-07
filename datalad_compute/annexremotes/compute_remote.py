@@ -122,8 +122,8 @@ class ComputeRemote(SpecialRemote):
             lgr.debug('Starting collection')
             self.annex.debug('Starting collection')
             self._collect(worktree, dataset, compute_info['output'], compute_info['this'], file_name)
-            lgr.debug('Starting unprovision')
-            self.annex.debug('Starting unprovision')
+            lgr.debug('Leaving provision context')
+            self.annex.debug('Leaving provision context')
 
     def checkpresent(self, key: str) -> bool:
         # See if at least one URL with the compute url-scheme is present
