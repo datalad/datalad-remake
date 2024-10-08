@@ -6,7 +6,8 @@ from annexremote import Master
 
 from ..compute_remote import ComputeRemote
 from datalad_compute.commands.tests.create_datasets import create_ds_hierarchy
-
+from ... import specification_dir
+from ...commands.compute_cmd import build_json
 
 template = """
 inputs = ['content']
@@ -83,7 +84,13 @@ def test_compute_remote_main(tmp_path, monkeypatch):
                 stdout=subprocess.PIPE,
                 check=True).stdout.splitlines()))[0].split(b': ')[1]
 
-    dataset_version = dataset.repo.get_hexsha()
+    (dataset.pathobj / specification_dir).mkdir(parents=True)
+    (dataset.pathobj / specification_dir / '000001111122222').write_text(
+        build_json(
+            'echo',
+            [],
+            ['a.txt'],
+            {'content': 'some_string'}))
 
     input = MockedInput()
 
@@ -95,10 +102,7 @@ def test_compute_remote_main(tmp_path, monkeypatch):
     url = (
         'datalad-make:///?'
         f'root_version={dataset.repo.get_hexsha()}'
-        '&method=echo'
-        '&input=%5B%5D'
-        '&output=%5B"a.txt"%5D'
-        '&params=%5B"content=some_string"%5D'
+        '&specification=000001111122222'
         '&this=a.txt'
     )
     input.send(f'VALUE {url}\n')

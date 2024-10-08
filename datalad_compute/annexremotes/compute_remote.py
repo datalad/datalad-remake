@@ -23,7 +23,11 @@ from datalad_next.annexremotes import (
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_success
 
-from .. import url_scheme
+from .. import (
+    specification_dir,
+    url_scheme,
+)
+
 from ..commands.compute_cmd import (
     execute,
     get_file_dataset,
@@ -82,30 +86,37 @@ class ComputeRemote(SpecialRemote):
         self.annex.debug(f'get_url_for_key: key: {key!r}, urls: {urls!r}')
         return urls[0]
 
-    def get_compute_info(self, key: str) -> dict[str, Any]:
+    def get_compute_info(self,
+                         key: str
+                         ) -> tuple[dict[str, Any], Dataset]:
+
         def get_assigned_value(assignment: str) -> str:
             return assignment.split('=', 1)[1]
 
-        root_version, method, inputs, outputs, parameters, this \
-            = self.get_url_encoded_info(self.get_url_for_key(key))
+        root_version, spec_name, this = list(
+            map(
+                lambda expr: unquote(get_assigned_value(expr)),
+                self.get_url_encoded_info(self.get_url_for_key(key))))
+
+        dataset = self._find_dataset(root_version)
+        spec_path = dataset.pathobj / specification_dir / spec_name
+        with open(spec_path, 'rb') as f:
+            spec = json.load(f)
 
         return {
-            'root_version': unquote(get_assigned_value(root_version)),
-            'method': unquote(get_assigned_value(method)),
-            'input': json.loads(unquote(get_assigned_value(inputs))),
-            'output': json.loads(unquote(get_assigned_value(outputs))),
-            'parameter': json.loads(unquote(get_assigned_value(parameters))),
-            'this': unquote(get_assigned_value(this)),
-        }
+            'root_version': root_version,
+            'this': this,
+            **{
+                name: spec[name]
+                for name in ['method', 'input', 'output', 'parameter']
+            }
+        }, dataset
 
     def transfer_retrieve(self, key: str, file_name: str) -> None:
         self.annex.debug(f'TRANSFER RETRIEVE key: {key!r}, file_name: {file_name!r}')
 
-        compute_info = self.get_compute_info(key)
+        compute_info, dataset = self.get_compute_info(key)
         self.annex.debug(f'TRANSFER RETRIEVE compute_info: {compute_info!r}')
-
-        # TODO: get version override from configuration
-        dataset = self._find_dataset(compute_info['root_version'])
 
         # Perform the computation, and collect the results
         lgr.debug('Starting provision')
@@ -132,6 +143,7 @@ class ComputeRemote(SpecialRemote):
                       commit: str
                       ) -> Dataset:
         """Find the first enclosing dataset with the given commit"""
+        # TODO: get version override from configuration
         start_dir = Path(self.annex.getgitdir()).parent.absolute()
         current_dir = start_dir
         while current_dir != Path('/'):

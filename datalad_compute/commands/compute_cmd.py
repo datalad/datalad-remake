@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import logging
 import os
@@ -36,6 +37,7 @@ from datalad_next.runners import (
 )
 
 from .. import (
+    specification_dir,
     template_dir,
     url_scheme,
 )
@@ -150,18 +152,24 @@ class Compute(ValidatedInterface):
         output_pattern = (output or []) + read_list(output_list)
         parameter = (parameter or []) + read_list(parameter_list)
 
-        if not url_only:
-            with provide_context(dataset, branch, input_pattern) as worktree:
-                execute(worktree, template, parameter, output_pattern)
-                output = collect(worktree, dataset, output_pattern)
+        parameter_dict = {
+            p.split('=', 1)[0]: p.split('=', 1)[1]
+            for p in parameter}
 
-        url_base = get_url(
+        # We have to get the URL first, because saving the specification to
+        # the dataset will change the version.
+        url_base, reset_commit = get_url(
             dataset,
             branch,
             template,
-            parameter,
+            parameter_dict,
             input_pattern,
             output_pattern)
+
+        if not url_only:
+            with provide_context(dataset, branch, input_pattern) as worktree:
+                execute(worktree, template, parameter_dict, output_pattern)
+                output = collect(worktree, dataset, output_pattern)
 
         for out in output:
             url = add_url(dataset, out, url_base, url_only)
@@ -189,17 +197,42 @@ def get_url(dataset: Dataset,
             parameters: dict[str, str],
             input_pattern: list[str],
             output_pattern: list[str],
-            ) -> str:
+            ) -> tuple[str, str]:
 
-    branch = dataset.repo.get_hexsha() if branch is None else branch
+    # If something goes wrong after the compute specification was saved,
+    # the dataset state should be reset to `branch`
+    reset_branch = branch or dataset.repo.get_hexsha()
+
+    # create the specification and hash it
+    spec = build_json(template_name, input_pattern, output_pattern, parameters)
+    hasher = hashlib.sha256()
+    hasher.update(spec.encode())
+    digest = hasher.hexdigest()
+
+    # write the specification file
+    (dataset.pathobj / specification_dir).mkdir(exist_ok=True)
+    (dataset.pathobj / specification_dir / digest).write_text(spec)
+    dataset.save(
+        message=f'[DATALAD] saving computation spec: {digest}',
+        recursive=True, result_renderer='disabled')
+
     return (
         f'{url_scheme}:///'
-        + f'?root_version={quote(branch)}'
-        + f'&method={quote(template_name)}'
-        + f'&input={quote(json.dumps(input_pattern))}'
-        + f'&output={quote(json.dumps(output_pattern))}'
-        + f'&params={quote(json.dumps(parameters))}'
-    )
+        + f'?root_version={quote(dataset.repo.get_hexsha())}'
+        + f'&specification={quote(digest)}'
+    ), reset_branch
+
+
+def build_json(method: str,
+               inputs: list[str],
+               outputs: list[str],
+               parameters: dict[str, str]
+               ) -> str:
+    return json.dumps({
+            'method': method,
+            'input': inputs,
+            'output': outputs,
+            'parameter': parameters})
 
 
 def add_url(dataset: Dataset,
@@ -271,7 +304,7 @@ def provide_context(dataset: Dataset,
 
 def execute(worktree: Path,
             template_name: str,
-            parameter: list[str],
+            parameter: dict[str, str],
             output_pattern: list[str],
             ) -> None:
 
@@ -294,11 +327,7 @@ def execute(worktree: Path,
 
     # Run the computation in the worktree-directory
     template_path = worktree / template_dir / template_name
-    parameter_dict = {
-        p.split('=', 1)[0]: p.split('=', 1)[1]
-        for p in parameter
-    }
-    compute(worktree, template_path, parameter_dict)
+    compute(worktree, template_path, parameter)
 
 
 def collect(worktree: Path,
