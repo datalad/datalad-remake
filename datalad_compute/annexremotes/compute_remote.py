@@ -86,11 +86,10 @@ class ComputeRemote(SpecialRemote):
         def get_assigned_value(assignment: str) -> str:
             return assignment.split('=', 1)[1]
 
-        root_id, root_version, method, inputs, outputs, parameters, this \
+        root_version, method, inputs, outputs, parameters, this \
             = self.get_url_encoded_info(self.get_url_for_key(key))
 
         return {
-            'root_id': unquote(get_assigned_value(root_id)),
             'root_version': unquote(get_assigned_value(root_version)),
             'method': unquote(get_assigned_value(method)),
             'input': json.loads(unquote(get_assigned_value(inputs))),
@@ -106,7 +105,7 @@ class ComputeRemote(SpecialRemote):
         self.annex.debug(f'TRANSFER RETRIEVE compute_info: {compute_info!r}')
 
         # TODO: get version override from configuration
-        dataset = self._find_dataset(compute_info['root_id'])
+        dataset = self._find_dataset(compute_info['root_version'])
 
         # Perform the computation, and collect the results
         lgr.debug('Starting provision')
@@ -130,24 +129,19 @@ class ComputeRemote(SpecialRemote):
         return self.annex.geturls(key, f'{url_scheme}:') != []
 
     def _find_dataset(self,
-                      root_id: str
+                      root_version: str
                       ) -> Dataset:
         """Find the first enclosing dataset with the given root_id"""
         current_dir = Path(self.annex.getgitdir()).parent.absolute()
 
         while current_dir != Path('/'):
             result = subprocess.run(
-                [
-                    'git', 'config', '-f',
-                    str(current_dir/ '.datalad' / 'config'),
-                    '--get', 'datalad.dataset.id'
-                ],
+                ['git', 'cat-file', '-t', root_version],
                 stdout=subprocess.PIPE)
             if result.returncode == 0:
-                if result.stdout.decode().strip() == root_id:
-                    return Dataset(current_dir)
+                return Dataset(current_dir)
             current_dir = current_dir.parent
-        raise RemoteError(f'Could not find dataset {root_id!r}')
+        raise RemoteError(f'Could not find dataset with commit {root_version!r}')
 
     def _collect(self,
                  worktree: Path,

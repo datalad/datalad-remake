@@ -194,8 +194,7 @@ def get_url(dataset: Dataset,
     branch = dataset.repo.get_hexsha() if branch is None else branch
     return (
         f'{url_scheme}:///'
-        + f'?root_id={quote(dataset.id)}'
-        + f'&default_root_version={quote(branch)}'
+        + f'&root_version={quote(branch)}'
         + f'&method={quote(template_name)}'
         + f'&input={quote(json.dumps(input_pattern))}'
         + f'&output={quote(json.dumps(output_pattern))}'

@@ -83,8 +83,6 @@ def test_compute_remote_main(tmp_path, monkeypatch):
                 stdout=subprocess.PIPE,
                 check=True).stdout.splitlines()))[0].split(b': ')[1]
 
-    result = dataset.configuration('get', 'datalad.dataset.id')
-    dataset_id = result[0]['value']
     dataset_version = dataset.repo.get_hexsha()
 
     input = MockedInput()
@@ -96,8 +94,7 @@ def test_compute_remote_main(tmp_path, monkeypatch):
     input.send(f'TRANSFER RETRIEVE {key} {str(tmp_path / "computed.txt")}\n')
     url = (
         'datalad-make:///?'
-        f'root_id={dataset_id}'
-        f'&default_root_version={dataset_version}'
+        f'root_version={dataset.repo.get_hexsha()}'
         '&method=echo'
         '&input=%5B%5D'
         '&output=%5B"a.txt"%5D'
