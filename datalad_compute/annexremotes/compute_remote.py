@@ -73,7 +73,7 @@ class ComputeRemote(SpecialRemote):
         return 100
 
     def get_url_encoded_info(self, url: str) -> list[str]:
-        parts = urlparse(url).query.split('&', 6)
+        parts = urlparse(url).query.split('&', 5)
         self.annex.debug(f'get_url_encoded_info: url: {url!r}, parts: {parts!r}')
         return parts
 
@@ -129,19 +129,22 @@ class ComputeRemote(SpecialRemote):
         return self.annex.geturls(key, f'{url_scheme}:') != []
 
     def _find_dataset(self,
-                      root_version: str
+                      commit: str
                       ) -> Dataset:
-        """Find the first enclosing dataset with the given root_id"""
-        current_dir = Path(self.annex.getgitdir()).parent.absolute()
-
+        """Find the first enclosing dataset with the given commit"""
+        start_dir = Path(self.annex.getgitdir()).parent.absolute()
+        current_dir = start_dir
         while current_dir != Path('/'):
             result = subprocess.run(
-                ['git', 'cat-file', '-t', root_version],
-                stdout=subprocess.PIPE)
-            if result.returncode == 0:
+                ['git', 'cat-file', '-t', commit],
+                stdout=subprocess.PIPE,
+                cwd=current_dir)
+            if result.returncode == 0 and result.stdout.strip() == b'commit':
                 return Dataset(current_dir)
             current_dir = current_dir.parent
-        raise RemoteError(f'Could not find dataset with commit {root_version!r}')
+        raise RemoteError(
+            f'Could not find dataset with commit {commit!r}, starting from '
+            f'{start_dir}')
 
     def _collect(self,
                  worktree: Path,
