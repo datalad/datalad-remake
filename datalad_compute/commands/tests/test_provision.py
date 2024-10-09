@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from contextlib import chdir
+import contextlib
+from contextlib import chdir, contextmanager
 from pathlib import Path
 from typing import Iterable
 
@@ -165,3 +166,19 @@ def test_unclean_dataset(tmp_path):
     dataset.provision(
         input=input_pattern,
         worktree_dir=tmp_path / 'ds1_worktree3')
+
+
+def test_branch_deletion_after_provision(tmp_path):
+    dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
+    with provide_context(
+            dataset=dataset,
+            branch=None,
+            input_patterns=['a.txt']
+    ) as worktree:
+        assert worktree.exists()
+    assert not worktree.exists()
+    with contextlib.chdir(dataset.path):
+        branches = [
+            l.strip()
+            for l in call_git_lines(['branch'])]
+    assert worktree.name not in branches

@@ -30,7 +30,7 @@ from datalad_next.constraints import (
     EnsureStr, EnsurePath,
 )
 from datalad_next.datasets import Dataset
-from datalad_next.runners import call_git_lines
+from datalad_next.runners import call_git_lines, call_git_success
 
 from datalad_compute.utils.glob import resolve_patterns
 from ..commands.compute_cmd import read_list
@@ -142,6 +142,9 @@ def remove(dataset: Dataset,
         recursive=True,
         result_renderer='disabled')
     prune_worktrees(dataset)
+    call_git_success(
+        ['branch', '-d', worktree.pathobj.name],
+        cwd=dataset.pathobj)
 
 
 def prune_worktrees(dataset: Dataset) -> None:
