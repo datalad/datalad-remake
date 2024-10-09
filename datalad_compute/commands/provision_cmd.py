@@ -149,8 +149,6 @@ def remove(dataset: Dataset,
 
 def prune_worktrees(dataset: Dataset) -> None:
     call_git_lines(['worktree', 'prune'], cwd=dataset.pathobj)
-    for result in dataset.subdatasets(result_renderer='disabled'):
-        prune_worktrees(Dataset(result['path']))
 
 
 def provide(dataset: Dataset,
