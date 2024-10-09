@@ -135,3 +135,33 @@ def test_provision_context(tmp_path):
         files = set(get_file_list(worktree))
         assert files
     assert not worktree.exists()
+
+
+def test_unclean_dataset(tmp_path):
+    dataset = Dataset(tmp_path / 'ds1')
+    dataset.create(cfg_proc='text2git', result_renderer='disabled')
+    (dataset.pathobj / 'a.txt').write_text('content')
+    dataset.save()
+    (dataset.pathobj / 'a.txt').write_text('changed content')
+    (dataset.pathobj / 'b.txt').write_text('untracked content')
+
+    # Check that provision of unclean input results in errors
+    input_pattern = ['a.txt', 'b.txt']
+    results = dataset.provision(
+        input=input_pattern,
+        worktree_dir=tmp_path / 'ds1_worktree1',
+        on_failure='ignore')
+    assert set((result['status'], result['state']) for result in results) == \
+        {('error', 'modified'), ('error', 'untracked')}
+
+    # Check that a saved dataset can be provisioned
+    dataset.save()
+    dataset.provision(
+        input=input_pattern,
+        worktree_dir=tmp_path / 'ds1_worktree2')
+
+    # Check that non-input file `c.txt` is ignored
+    (dataset.pathobj / 'c.txt').write_text('content')
+    dataset.provision(
+        input=input_pattern,
+        worktree_dir=tmp_path / 'ds1_worktree3')

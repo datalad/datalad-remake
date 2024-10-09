@@ -11,7 +11,7 @@ from contextlib import chdir
 from pathlib import Path
 from typing import (
     Any,
-    Iterable,
+    Iterable, Generator,
 )
 from tempfile import TemporaryDirectory
 
@@ -130,12 +130,7 @@ class Provision(ValidatedInterface):
 
         worktree_dir: Path = worktree_dir or Path(TemporaryDirectory().name)
         inputs = input or [] + read_list(input_list)
-        provision_dir = provide(dataset, worktree_dir, branch, inputs)
-        yield get_status_dict(
-            action='provision',
-            path=str(provision_dir),
-            status='ok',
-            message=f'provisioned dataset: {dataset} in workspace: {provision_dir!r}',)
+        yield from provide(dataset, worktree_dir, branch, inputs)
 
 
 def remove(dataset: Dataset,
@@ -159,7 +154,7 @@ def provide(dataset: Dataset,
             worktree_dir: Path,
             source_branch: str | None = None,
             input_patterns: Iterable[str] | None = None,
-            ) -> Path:
+            ) -> Generator:
 
     lgr.debug('Provisioning dataset %s at %s', dataset, worktree_dir)
 
@@ -175,6 +170,17 @@ def provide(dataset: Dataset,
 
     input_files = resolve_patterns(dataset.path, input_patterns)
 
+    unclean_elements = get_unclean_elements(dataset, input_files)
+    if unclean_elements:
+        for element in unclean_elements:
+            yield get_status_dict(
+                action='provision',
+                path=element['path'],
+                status='error',
+                state=element['state'],
+                message=f'cannot provision {element["state"]} input: {element["path"]!r} from dataset {dataset}')
+        return
+
     worktree_dataset = Dataset(worktree_dir)
     install_required_locally_available_datasets(
         dataset,
@@ -186,13 +192,25 @@ def provide(dataset: Dataset,
         for file in input_files:
             lgr.debug('provisioning input file %s', file)
             worktree_dataset.get(file, result_renderer='disabled')
-    return worktree_dir
+    yield get_status_dict(
+        action='provision',
+        path=str(worktree_dir),
+        status='ok',
+        message=f'provisioned dataset: {dataset} in workspace: {worktree_dir!r}',)
 
 
 def check_results(results: Iterable[dict[str, Any]]):
     assert not any(
         result['status'] in ('impossible', 'error')
         for result in results)
+
+
+def get_unclean_elements(dataset: Dataset,
+                         paths: Iterable[str]
+                         ) -> list[dict]:
+    if not paths:
+        return []
+    return list(filter(lambda x: x['state'] != 'clean', dataset.status(paths)))
 
 
 def install_required_locally_available_datasets(root_dataset: Dataset,
