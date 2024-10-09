@@ -49,7 +49,6 @@ class MockedOutput:
             while True:
                 line = self.lines.pop(0)
                 if line.startswith('DEBUG '):
-                    print('XXX DEBUG XXX ' + line[6:], file=sys.stderr)
                     continue
                 return line
         return None
