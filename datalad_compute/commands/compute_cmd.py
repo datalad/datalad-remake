@@ -203,24 +203,47 @@ def get_url(dataset: Dataset,
     # the dataset state should be reset to `branch`
     reset_branch = branch or dataset.repo.get_hexsha()
 
-    # create the specification and hash it
-    spec = build_json(template_name, input_pattern, output_pattern, parameters)
-    hasher = hashlib.sha256()
-    hasher.update(spec.encode())
-    digest = hasher.hexdigest()
-
-    # write the specification file
-    (dataset.pathobj / specification_dir).mkdir(exist_ok=True)
-    (dataset.pathobj / specification_dir / digest).write_text(spec)
-    dataset.save(
-        message=f'[DATALAD] saving computation spec: {digest}',
-        recursive=True, result_renderer='disabled')
+    # Write the specification to a file in the dataset
+    digest = write_spec(
+        dataset,
+        template_name,
+        input_pattern,
+        output_pattern,
+        parameters)
 
     return (
         f'{url_scheme}:///'
         + f'?root_version={quote(dataset.repo.get_hexsha())}'
         + f'&specification={quote(digest)}'
     ), reset_branch
+
+
+def write_spec(dataset: Dataset,
+               method: str,
+               input_pattern: list[str],
+               output_pattern: list[str],
+               parameters: dict[str, str]
+                ) -> str:
+
+    # create the specification and hash it
+    spec = build_json(method, input_pattern, output_pattern, parameters)
+    hasher = hashlib.sha256()
+    hasher.update(spec.encode())
+    digest = hasher.hexdigest()
+
+    # write the specification file
+    spec_dir = dataset.pathobj / specification_dir
+    spec_dir.mkdir(exist_ok=True)
+    spec_file = spec_dir / digest
+    with contextlib.chdir(dataset.pathobj):
+        call_git_success(
+            ['annex', 'unlock', str(spec_file)],
+            capture_output=True)
+    spec_file.write_text(spec)
+    dataset.save(
+        message=f'[DATALAD] saving computation spec\n\nfile name: {digest}',
+        recursive=True, result_renderer='disabled')
+    return digest
 
 
 def build_json(method: str,
