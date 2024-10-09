@@ -349,7 +349,7 @@ def execute(worktree: Path,
     unlock_files(worktree_ds, existing_outputs)
 
     # Run the computation in the worktree-directory
-    template_path = template_dir / template_name
+    template_path = Path(template_dir) / template_name
     worktree_ds.get(template_path)
     compute(worktree, worktree / template_path, parameter)
 
