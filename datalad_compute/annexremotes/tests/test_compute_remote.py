@@ -38,13 +38,11 @@ class MockedOutput:
         else:
             self.lines = lineswithout
             self.output = ''
-        print(repr(self.output), repr(self.lines))
 
     def flush(self):
         pass
 
     def next_line(self):
-        print('next_line:', self.lines)
         if self.lines:
             while True:
                 line = self.lines.pop(0)
