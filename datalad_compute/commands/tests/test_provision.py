@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import contextlib
-from contextlib import chdir, contextmanager
+from contextlib import chdir
 from pathlib import Path
 from typing import Iterable
 
@@ -182,3 +182,35 @@ def test_branch_deletion_after_provision(tmp_path):
             l.strip()
             for l in call_git_lines(['branch'])]
     assert worktree.name not in branches
+
+
+def test_not_present_local_datasets(tmp_path):
+    root_ds = Dataset(tmp_path / 'ds1')
+    root_ds.create(cfg_proc='text2git', result_renderer='disabled')
+    root_ds.clone(
+        'https://github.com/OpenNeuroDatasets/ds000102',
+        result_renderer='disabled')
+    provisioned_dataset = Dataset(
+        root_ds.provision(
+            input=['ds000102/README'])[0]['path'])
+    url = _get_submodule_url(provisioned_dataset, 'ds000102')
+    assert url.startswith(f'file://{root_ds.path}')
+
+    root_ds.drop(
+        'ds000102',
+        what='all',
+        reckless='availability',
+        result_renderer='disabled')
+
+    provisioned_dataset_2 = Dataset(
+        root_ds.provision(
+            input=['ds000102/README'])[0]['path'])
+    url_2 = _get_submodule_url(provisioned_dataset_2, 'ds000102')
+    assert url_2 == 'https://github.com/OpenNeuroDatasets/ds000102'
+
+
+def _get_submodule_url(dataset: Dataset, submodule_path: str) -> str:
+    x = call_git_lines(
+        ['config', '-f', str(dataset.pathobj / '.gitmodules'), '--get',
+         f'submodule.{submodule_path}.url'])
+    return x[0].strip()

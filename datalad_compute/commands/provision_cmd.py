@@ -258,6 +258,7 @@ def get_subdataset_info(dataset: Dataset) -> Iterable[tuple[Path, Path, Path]]:
             Path(result['path']).relative_to(dataset.pathobj)
         )
         for result in results
+        if result['state'] == 'present'
     ]
 
 
