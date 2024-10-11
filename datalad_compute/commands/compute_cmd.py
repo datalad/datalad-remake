@@ -283,11 +283,20 @@ def add_url(dataset: Dataset,
     # Build the file-specific URL and store it in the annex
     url = url_base + f'&this={quote(file_path)}'
     file_dataset_path, file_path = get_file_dataset(dataset.pathobj / file_path)
-    is_annexed = call_git_success(
-        ['annex', 'whereis', str(file_path)],
-        cwd=file_dataset_path,
-        capture_output=True)
-    if is_annexed:
+
+    # If the file does not exist and speculative computation is requested, we
+    # can just add the URL.
+    if not (dataset.pathobj / file_path).exists() and url_only:
+        can_add = True
+    else:
+        # Check if the file is annexed, otherwise we cannot add a URL
+        can_add = call_git_success(
+            ['annex', 'whereis', str(file_path)],
+            cwd=file_dataset_path,
+            capture_output=True)
+
+    # Add the URL
+    if can_add:
         success = call_git_success(
             ['annex', 'addurl', url, '--file', file_path]
             + (['--relaxed'] if url_only else []),
