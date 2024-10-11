@@ -15,6 +15,7 @@ from typing import (
 )
 from tempfile import TemporaryDirectory
 
+from datalad.support.constraints import EnsureBool
 from datalad_next.commands import (
     EnsureCommandParameterization,
     ValidatedInterface,
@@ -64,6 +65,7 @@ class Provision(ValidatedInterface):
         input_list=EnsureStr(min_len=1),
         tmp_dir=EnsurePath(is_mode=stat.S_ISDIR),
         delete=EnsureDataset(installed=True),
+        no_globbing=EnsureBool(),
     ))
 
     # parameters of the command, must be exhaustive
@@ -96,6 +98,13 @@ class Provision(ValidatedInterface):
                 "that start with '#' are ignored. Line content is stripped "
                 "before used. This is useful if a large number of input file "
                 "patterns should be provided."),
+        no_globbing=Parameter(
+            args=('-n', '--no-globbing',),
+            action='store_true',
+            doc="Interpret input pattern as file names and do not apply "
+                "globbing. This allows to specify files that are no currently "
+                "present in the source dataset as input. Those files will be "
+                "made available in the worktree by the provisioning stage."),
         worktree_dir=Parameter(
             args=('-w', '--worktree-dir',),
             doc="Path of the directory that should become the temporary "
@@ -110,6 +119,7 @@ class Provision(ValidatedInterface):
                  delete=None,
                  input=None,
                  input_list=None,
+                 no_globbing=False,
                  worktree_dir=None,
                  ):
 
@@ -130,7 +140,7 @@ class Provision(ValidatedInterface):
 
         worktree_dir: Path = worktree_dir or Path(TemporaryDirectory().name)
         inputs = input or [] + read_list(input_list)
-        yield from provide(dataset, worktree_dir, branch, inputs)
+        yield from provide(dataset, worktree_dir, branch, inputs, no_globbing)
 
 
 def remove(dataset: Dataset,
@@ -155,6 +165,7 @@ def provide(dataset: Dataset,
             worktree_dir: Path,
             source_branch: str | None = None,
             input_patterns: Iterable[str] | None = None,
+            no_globbing: bool = False,
             ) -> Generator:
 
     lgr.debug('Provisioning dataset %s at %s', dataset, worktree_dir)
@@ -169,7 +180,10 @@ def provide(dataset: Dataset,
     )
     call_git_lines(args, cwd=dataset.pathobj)
 
-    input_files = resolve_patterns(dataset.path, input_patterns)
+    if no_globbing:
+        input_files = set(input_patterns)
+    else:
+        input_files = resolve_patterns(dataset.path, input_patterns)
 
     unclean_elements = get_unclean_elements(dataset, input_files)
     if unclean_elements:

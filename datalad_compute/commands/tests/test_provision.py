@@ -204,7 +204,9 @@ def test_not_present_local_datasets(tmp_path):
 
     provisioned_dataset_2 = Dataset(
         root_ds.provision(
-            input=['ds000102/README'])[0]['path'])
+            input=['ds000102/README'],
+            no_globbing=True,
+            on_failure='ignore')[0]['path'])
     url_2 = _get_submodule_url(provisioned_dataset_2, 'ds000102')
     assert url_2 == 'https://github.com/OpenNeuroDatasets/ds000102'
 
