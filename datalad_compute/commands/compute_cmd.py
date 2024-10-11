@@ -332,7 +332,8 @@ def provide(dataset: Dataset,
     result = dataset.provision(
         input=input_patterns,
         branch=branch,
-        no_globbing=no_globbing)
+        no_globbing=no_globbing,
+        result_renderer='disabled')
     return Path(result[0]['path'])
 
 
@@ -352,7 +353,7 @@ def provide_context(dataset: Dataset,
         yield worktree
     finally:
         lgr.debug('un_provide: %s %s', dataset, str(worktree))
-        dataset.provision(delete=worktree)
+        dataset.provision(delete=worktree, result_renderer='disabled')
 
 
 def execute(worktree: Path,
