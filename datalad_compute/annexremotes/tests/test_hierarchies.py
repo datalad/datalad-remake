@@ -88,8 +88,6 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch, output_pattern):
     root_dataset.save(result_renderer='disabled')
 
     # set annex security related variables to allow compute-URLs
-    datalad_cfg.set('annex.security.allowed-url-schemes', url_scheme, scope='global')
-    datalad_cfg.set('annex.security.allowed-ip-addresses', 'all', scope='global')
     datalad_cfg.set('annex.security.allow-unverified-downloads', 'ACKTHPPT', scope='global')
 
     # run compute command
