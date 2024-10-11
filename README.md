@@ -40,14 +40,12 @@ pip install .
 
 ## Example usage
 
-Install the extension, create a dataset, configure it to use `compute`-URLs
+Install the extension and create a dataset
 
 
 ```bash
 > datalad create compute-test-1
 > cd compute-test-1
-> git config annex.security.allowed-url-schemes datalad-make
-> git config annex.security.allowed-ip-addresses all
 ```
 
 Create the template directory and a template
@@ -89,9 +87,9 @@ copied there and the output files must be copied back).
 
 ```bash
 > cat name-1.txt
-bob
+content: bob
 > cat name-2.txt
-alice
+content: alice
 ```
 
 Drop the content of `name-1.txt`, verify it is gone, recreate it via
