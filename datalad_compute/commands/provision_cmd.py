@@ -310,5 +310,8 @@ def install_locally_available_subdatasets(source_dataset: Dataset,
                     str(subdataset_path.relative_to(parent_path)),
                     'file://' + str(source_dataset.pathobj / path_from_root)]
             call_git_lines(args)
-            worktree.get(path_from_root, get_data=False)
+            worktree.get(
+                path_from_root,
+                get_data=False,
+                result_renderer='disabled')
             todo.append(path_from_root)
