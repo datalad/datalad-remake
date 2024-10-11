@@ -47,13 +47,13 @@ def test_worktree_basic(tmp_path):
     provision_result = dataset.provision(
         worktree_dir=tmp_path / 'ds1_worktree1',
         input=inputs,
-    )[0]
+        result_renderer='disabled')[0]
 
     worktree = Dataset(provision_result['path'])
     # Check input availability
     assert all((worktree.pathobj / path).exists() for path in inputs)
 
-    dataset.provision(delete=worktree.path)
+    dataset.provision(delete=worktree.path, result_renderer='disabled')
 
     def check_deleted_worktrees(ds: Dataset):
         with chdir(ds.path):
@@ -81,6 +81,7 @@ def test_worktree_globbing(tmp_path):
             '*_subds0/*_subds1/*.txt',
             '*_subds0/*_subds1/*_subds2/*.txt',
         ],
+        result_renderer='disabled',
     )[0]
 
     worktree = Path(result['path'])
@@ -89,7 +90,7 @@ def test_worktree_globbing(tmp_path):
         path.format(ds_name='ds1')
         for path in all_paths
     )
-    dataset.provision(delete=worktree)
+    dataset.provision(delete=worktree, result_renderer='disabled')
 
     result = dataset.provision(
         worktree_dir=tmp_path / 'ds1_worktree2',
@@ -99,6 +100,7 @@ def test_worktree_globbing(tmp_path):
             '*_subds0/*_subds1/b*txt',
             '*_subds0/*_subds1/*_subds2/b*txt',
         ],
+        result_renderer='disabled',
     )[0]
 
     worktree = Path(result['path'])
@@ -107,7 +109,7 @@ def test_worktree_globbing(tmp_path):
         path.format(ds_name='ds1')
         for path in b_paths
     ).issubset(worktree_set)
-    dataset.provision(delete=worktree)
+    dataset.provision(delete=worktree, result_renderer='disabled')
 
     dataset.drop(
         what='all',
@@ -151,7 +153,8 @@ def test_unclean_dataset(tmp_path):
     results = dataset.provision(
         input=input_pattern,
         worktree_dir=tmp_path / 'ds1_worktree1',
-        on_failure='ignore')
+        on_failure='ignore',
+        result_renderer='disabled')
     assert set((result['status'], result['state']) for result in results) == \
         {('error', 'modified'), ('error', 'untracked')}
 
@@ -159,13 +162,15 @@ def test_unclean_dataset(tmp_path):
     dataset.save()
     dataset.provision(
         input=input_pattern,
-        worktree_dir=tmp_path / 'ds1_worktree2')
+        worktree_dir=tmp_path / 'ds1_worktree2',
+        result_renderer='disabled')
 
     # Check that non-input file `c.txt` is ignored
     (dataset.pathobj / 'c.txt').write_text('content')
     dataset.provision(
         input=input_pattern,
-        worktree_dir=tmp_path / 'ds1_worktree3')
+        worktree_dir=tmp_path / 'ds1_worktree3',
+        result_renderer='disabled')
 
 
 def test_branch_deletion_after_provision(tmp_path):
@@ -192,7 +197,8 @@ def test_not_present_local_datasets(tmp_path):
         result_renderer='disabled')
     provisioned_dataset = Dataset(
         root_ds.provision(
-            input=['ds000102/README'])[0]['path'])
+            input=['ds000102/README'],
+            result_renderer='disabled')[0]['path'])
     url = _get_submodule_url(provisioned_dataset, 'ds000102')
     assert url.startswith(f'file://{root_ds.path}')
 
@@ -206,7 +212,8 @@ def test_not_present_local_datasets(tmp_path):
         root_ds.provision(
             input=['ds000102/README'],
             no_globbing=True,
-            on_failure='ignore')[0]['path'])
+            on_failure='ignore',
+            result_renderer='disabled')[0]['path'])
     url_2 = _get_submodule_url(provisioned_dataset_2, 'ds000102')
     assert url_2 == 'https://github.com/OpenNeuroDatasets/ds000102'
 

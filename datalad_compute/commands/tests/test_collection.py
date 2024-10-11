@@ -11,7 +11,9 @@ def test_collect(tmp_path):
 
     worktree_dir = tmp_path / 'ds1_worktree'
     worktree_dir.mkdir(parents=True, exist_ok=False)
-    worktree = dataset.provision(worktree_dir=worktree_dir)
+    worktree = dataset.provision(
+        worktree_dir=worktree_dir,
+        result_renderer='disabled')
 
     result_dir = worktree_dir / 'results' / 'sub-01'
     result_dir.mkdir(parents=True)

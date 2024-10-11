@@ -331,7 +331,7 @@ def provide(dataset: Dataset,
 def provide_context(dataset: Dataset,
                     branch: str | None,
                     input_patterns: list[str],
-                    no_globbing: bool,
+                    no_globbing: bool = False,
                     ) -> Generator:
 
     worktree = provide(
