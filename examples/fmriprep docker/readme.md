@@ -17,6 +17,12 @@ To keep the command line short, input files, output files, and parameter for the
 - `output.txt`
 - `parameter.txt`
 
+Be sure to add a compute special remote to the dataset that contains the folder `derivatives/ds000102`.
+This can be done with the following command:
+```bash
+> git annex initremote compute type=external externaltype=compute encryption=none
+```
+
 The computation can be executed with the following command:
 
 ```bash
