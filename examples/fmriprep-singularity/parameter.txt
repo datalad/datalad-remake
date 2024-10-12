@@ -1,0 +1,5 @@
+container=code/containers/images/bids/bids-fmriprep--24.1.0.sing
+input_dir=data/ds000102
+output_dir=derivatives/ds000102
+participant_label=01
+license_file=/tmp/license.txt
