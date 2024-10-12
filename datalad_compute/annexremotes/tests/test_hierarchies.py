@@ -7,11 +7,9 @@ from datalad.api import get as datalad_get
 from datalad_next.datasets import Dataset
 from datalad_next.tests.fixtures import datalad_cfg
 
-from ... import (
-    template_dir,
-    url_scheme,
+from datalad_compute.commands.tests.create_datasets import (
+    create_simple_computation_dataset,
 )
-from datalad_compute.commands.tests.create_datasets import create_ds_hierarchy
 
 
 test_method = """
@@ -78,17 +76,8 @@ def _check_content(dataset,
 @pytest.mark.parametrize('output_pattern', [output_pattern_static, output_pattern_glob])
 def test_end_to_end(tmp_path, datalad_cfg, monkeypatch, output_pattern):
 
-    datasets = create_ds_hierarchy(tmp_path, 'd2', 3)
-    root_dataset = datasets[0][2]
-
-    # add method template
-    template_path = root_dataset.pathobj / template_dir
-    template_path.mkdir(parents=True)
-    (template_path / 'test_method').write_text(test_method)
-    root_dataset.save(result_renderer='disabled')
-
-    # set annex security related variables to allow compute-URLs
-    datalad_cfg.set('annex.security.allow-unverified-downloads', 'ACKTHPPT', scope='global')
+    root_dataset = create_simple_computation_dataset(
+        tmp_path, 'd2', 3, test_method)
 
     # run compute command
     results = root_dataset.compute(

@@ -1,11 +1,9 @@
-from pathlib import Path
-from typing import Iterable
-
 from datalad_next.datasets import Dataset
 from datalad_next.tests.fixtures import datalad_cfg
 
-from ... import template_dir
-from datalad_compute.commands.tests.create_datasets import create_ds_hierarchy
+from datalad_compute.commands.tests.create_datasets import (
+    create_simple_computation_dataset,
+)
 
 
 test_method = """
@@ -15,27 +13,13 @@ executable = 'echo'
 arguments = ["Hello {name} > {file}"]
 """
 
-
 output_pattern = ['a.txt']
-
-
-def _drop_files(dataset: Dataset,
-                files: Iterable[str]):
-    for file in files:
-        dataset.drop(file, reckless='availability', result_renderer='disabled')
-        assert not (dataset.pathobj / file).exists()
-
-
-def _check_content(dataset,
-                   file_content: Iterable[tuple[str, str]]
-                   ):
-    for file, content in file_content:
-        assert (dataset.pathobj / file).read_text() == content
 
 
 def test_duplicated_computation(tmp_path, datalad_cfg, monkeypatch):
 
-    root_dataset = _setup_simple_computation(tmp_path)
+    root_dataset = create_simple_computation_dataset(
+        tmp_path, 'ds1', 0, test_method)
 
     # run the same command twice
     _run_simple_computation(root_dataset)
@@ -44,7 +28,8 @@ def test_duplicated_computation(tmp_path, datalad_cfg, monkeypatch):
 
 def test_speculative_computation(tmp_path, datalad_cfg, monkeypatch):
 
-    root_dataset = _setup_simple_computation(tmp_path)
+    root_dataset = create_simple_computation_dataset(
+        tmp_path, 'ds1', 0, test_method)
 
     root_dataset.compute(
         template='test_method',
@@ -59,19 +44,6 @@ def test_speculative_computation(tmp_path, datalad_cfg, monkeypatch):
     # Perform the speculative computation
     root_dataset.get('spec.txt')
     assert (root_dataset.pathobj / 'spec.txt').read_text() == 'Hello Robert\n'
-
-
-def _setup_simple_computation(tmp_path: Path) -> Dataset:
-    datasets = create_ds_hierarchy(tmp_path, 'd1', 0)
-    root_dataset = datasets[0][2]
-
-    # add method template
-    template_path = root_dataset.pathobj / template_dir
-    template_path.mkdir(parents=True)
-    (template_path / 'test_method').write_text(test_method)
-    root_dataset.save(result_renderer='disabled')
-
-    return root_dataset
 
 
 def _run_simple_computation(root_dataset: Dataset):

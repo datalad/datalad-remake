@@ -5,7 +5,7 @@ from pathlib import Path
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_success
 
-from datalad_compute import url_scheme
+from datalad_compute import template_dir
 
 
 def update_config_for_compute(dataset: Dataset):
@@ -71,3 +71,21 @@ def create_ds_hierarchy(tmp_path: Path,
         add_compute_remote(Dataset(root_dataset.pathobj / subdataset_path))
 
     return datasets
+
+
+def create_simple_computation_dataset(tmp_path: Path,
+                                      dataset_name: str,
+                                      subdataset_levels: int,
+                                      test_method: str,
+                                      ) -> Dataset:
+
+    datasets = create_ds_hierarchy(tmp_path, dataset_name, subdataset_levels)
+    root_dataset = datasets[0][2]
+
+    # add method template
+    template_path = root_dataset.pathobj / template_dir
+    template_path.mkdir(parents=True)
+    (template_path / 'test_method').write_text(test_method)
+    root_dataset.save(result_renderer='disabled')
+
+    return root_dataset
