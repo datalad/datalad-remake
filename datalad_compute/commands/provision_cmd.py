@@ -138,7 +138,7 @@ class Provision(ValidatedInterface):
                 message=f'delete workspace: {delete.ds.path!r} from dataset {dataset}')
             return
 
-        worktree_dir: Path = worktree_dir or Path(TemporaryDirectory().name)
+        worktree_dir: Path = Path(worktree_dir) or Path(TemporaryDirectory().name)
         inputs = input or [] + read_list(input_list)
         yield from provide(dataset, worktree_dir, branch, inputs, no_globbing)
 
