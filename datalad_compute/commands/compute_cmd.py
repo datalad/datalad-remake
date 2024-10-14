@@ -129,12 +129,6 @@ class Compute(ValidatedInterface):
                 "that start with '#' are ignored. Line content is stripped "
                 "before used. This is useful if a large number of parameters "
                 "should be provided."),
-        no_globbing=Parameter(
-            args=('-n', '--no-globbing',),
-            doc="Use input pattern as file names and do not apply globbing. "
-                "This allows to specify files that are no currently present "
-                "in the source dataset as input. Those files will be made "
-                "available in the worktree."),
     )
 
     @staticmethod
@@ -150,7 +144,6 @@ class Compute(ValidatedInterface):
                  output_list=None,
                  parameter=None,
                  parameter_list=None,
-                 no_globbing=False,
                  ):
 
         dataset : Dataset = dataset.ds if dataset else Dataset('.')
@@ -178,7 +171,6 @@ class Compute(ValidatedInterface):
                     dataset,
                     branch,
                     input_pattern,
-                    no_globbing,
             ) as worktree:
                 execute(worktree, template, parameter_dict, output_pattern)
                 output = collect(worktree, dataset, output_pattern)
@@ -325,14 +317,12 @@ def get_file_dataset(file: Path) -> tuple[Path, Path]:
 def provide(dataset: Dataset,
             branch: str | None,
             input_patterns: list[str],
-            no_globbing: bool,
             ) -> Path:
 
     lgr.debug('provide: %s %s %s', dataset, branch, input_patterns)
     result = dataset.provision(
         input=input_patterns,
         branch=branch,
-        no_globbing=no_globbing,
         result_renderer='disabled')
     return Path(result[0]['path'])
 
@@ -341,14 +331,12 @@ def provide(dataset: Dataset,
 def provide_context(dataset: Dataset,
                     branch: str | None,
                     input_patterns: list[str],
-                    no_globbing: bool = False,
                     ) -> Generator:
 
     worktree = provide(
         dataset,
         branch=branch,
-        input_patterns=input_patterns,
-        no_globbing=no_globbing)
+        input_patterns=input_patterns)
     try:
         yield worktree
     finally:

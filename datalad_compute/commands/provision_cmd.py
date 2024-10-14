@@ -6,7 +6,9 @@ are currently also provisioned.
 from __future__ import annotations
 
 import logging
+import os
 import stat
+import sys
 from contextlib import chdir
 from pathlib import Path
 from typing import (
@@ -32,6 +34,7 @@ from datalad_next.constraints import (
 )
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines, call_git_success
+from hypothesis.strategies import recursive
 
 from datalad_compute.utils.glob import resolve_patterns
 from ..commands.compute_cmd import read_list
@@ -98,13 +101,6 @@ class Provision(ValidatedInterface):
                 "that start with '#' are ignored. Line content is stripped "
                 "before used. This is useful if a large number of input file "
                 "patterns should be provided."),
-        no_globbing=Parameter(
-            args=('-n', '--no-globbing',),
-            action='store_true',
-            doc="Interpret input pattern as file names and do not apply "
-                "globbing. This allows to specify files that are no currently "
-                "present in the source dataset as input. Those files will be "
-                "made available in the worktree by the provisioning stage."),
         worktree_dir=Parameter(
             args=('-w', '--worktree-dir',),
             doc="Path of the directory that should become the temporary "
@@ -119,7 +115,6 @@ class Provision(ValidatedInterface):
                  delete=None,
                  input=None,
                  input_list=None,
-                 no_globbing=False,
                  worktree_dir=None,
                  ):
 
@@ -140,7 +135,7 @@ class Provision(ValidatedInterface):
 
         worktree_dir: Path = Path(worktree_dir or TemporaryDirectory().name)
         inputs = input or [] + read_list(input_list)
-        yield from provide(dataset, worktree_dir, branch, inputs, no_globbing)
+        yield from provide(dataset, worktree_dir, branch, inputs)
 
 
 def remove(dataset: Dataset,
@@ -165,7 +160,6 @@ def provide(dataset: Dataset,
             worktree_dir: Path,
             source_branch: str | None = None,
             input_patterns: Iterable[str] | None = None,
-            no_globbing: bool = False,
             ) -> Generator:
 
     lgr.debug('Provisioning dataset %s at %s', dataset, worktree_dir)
@@ -180,38 +174,91 @@ def provide(dataset: Dataset,
     )
     call_git_lines(args, cwd=dataset.pathobj)
 
-    if no_globbing:
-        input_files = set(input_patterns)
-    else:
-        input_files = resolve_patterns(dataset.path, input_patterns)
-
-    unclean_elements = get_unclean_elements(dataset, input_files)
-    if unclean_elements:
-        for element in unclean_elements:
-            yield get_status_dict(
-                action='provision',
-                path=element['path'],
-                status='error',
-                state=element['state'],
-                message=f'cannot provision {element["state"]} input: {element["path"]!r} from dataset {dataset}')
+    is_dirty = False
+    for element in get_dirty_elements(dataset):
+        is_dirty = True
+        yield get_status_dict(
+            action='provision',
+            path=element['path'],
+            status='error',
+            state=element['state'],
+            message=f'cannot provision {element["state"]} input: {element["path"]!r} from dataset {dataset}')
+    if is_dirty:
         return
 
     worktree_dataset = Dataset(worktree_dir)
-    install_required_locally_available_datasets(
-        dataset,
-        [Path(i) for i in input_files],
-        worktree_dataset)
 
     # Get all input files in the worktree
     with chdir(worktree_dataset.path):
-        for file in input_files:
-            lgr.debug('provisioning input file %s', file)
-            worktree_dataset.get(file, result_renderer='disabled')
+        for pattern in input_patterns:
+            print(f'XXXXX: pattern: {pattern}', file=sys.stderr, flush=True)
+            worktree_dataset.get(pattern)
+
     yield get_status_dict(
         action='provision',
         path=str(worktree_dir),
         status='ok',
         message=f'provisioned dataset: {dataset} in workspace: {worktree_dir!r}',)
+
+
+def resolve_pattern(dataset: Dataset,
+                    pattern_list: list[str]
+                    ) -> set[Path]:
+    """Resolve a pattern in the dataset, install all subdatasets that might lead
+    to a potential match.
+
+    Once all subdatasets are determined and installed, get the content of the
+    matching files.
+    """
+
+    uninstalled_subdataset = get_uninstalled_subdatasets(dataset)
+    result = set()
+    for pattern in pattern_list:
+        pattern_elements = pattern.split(os.sep)
+        if pattern_elements[0] == '':
+            lgr.warning('Ignoring absolute input pattern %s', pattern)
+            continue
+        result = result.union(
+            set(
+                glob_pattern(
+                    dataset,
+                    Path(),
+                    pattern.split(os.sep),
+                    uninstalled_subdataset)))
+    return result
+
+
+def get_uninstalled_subdatasets(dataset: Dataset) -> list[Path]:
+    # get the list of all non-installed subdatasets
+    return [
+        Path(result['path'])
+        for result in dataset.subdatasets(recursive=True, result_renderer='disabled')
+        if result['state'] == 'absent']
+
+
+def glob_pattern(root: Dataset,
+                 position: Path,
+                 pattern: list[str],
+                 uninstalled_subdatasets: list[Path]
+                 ) -> list[Path]:
+
+    if not pattern:
+        return [position]
+
+    if pattern[0] == '**':
+        result = glob_pattern(root, position, pattern[1:], uninstalled_subdatasets)
+    else:
+        result = []
+
+    for match in (root.pathobj / position).glob(pattern[0]):
+        if match.is_dir() and match in uninstalled_subdatasets:
+            lgr.info('Installing subdataset %s to glob input', match)
+            root.get(str(match), get_data=False)
+            uninstalled_subdatasets.remove(match)
+            uninstalled_subdatasets.extend(get_uninstalled_subdatasets(root))
+        for submatch in glob_pattern(root, match, pattern[1:], uninstalled_subdatasets):
+            result.append(submatch)
+    return result
 
 
 def check_results(results: Iterable[dict[str, Any]]):
@@ -220,12 +267,11 @@ def check_results(results: Iterable[dict[str, Any]]):
         for result in results)
 
 
-def get_unclean_elements(dataset: Dataset,
-                         paths: Iterable[str]
-                         ) -> list[dict]:
-    if not paths:
-        return []
-    return list(filter(lambda x: x['state'] != 'clean', dataset.status(paths)))
+def get_dirty_elements(dataset: Dataset) -> Generator:
+    for result in dataset.status(recursive=True):
+        if result['state'] != 'clean':
+            if result['type'] == 'file':
+                yield result
 
 
 def install_required_locally_available_datasets(root_dataset: Dataset,
