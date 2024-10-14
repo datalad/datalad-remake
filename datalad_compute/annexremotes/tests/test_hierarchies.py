@@ -3,7 +3,7 @@ from typing import Iterable
 
 import pytest
 
-from datalad.api import get as datalad_get
+from datalad.distribution.get import Get as datalad_get
 from datalad_next.datasets import Dataset
 from datalad_next.tests.fixtures import datalad_cfg
 

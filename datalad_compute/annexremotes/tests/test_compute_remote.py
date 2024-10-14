@@ -26,7 +26,7 @@ class MockedOutput:
         self.output = ''
         self.lines = []
 
-    def write(self, *args, **kwargs):
+    def write(self, *args, **_):
         self.output += ''.join(args)
         lineswith = self.output.splitlines(keepends=True)
         lineswithout = self.output.splitlines(keepends=False)
