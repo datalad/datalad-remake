@@ -34,9 +34,7 @@ from datalad_next.constraints import (
 )
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines, call_git_success
-from hypothesis.strategies import recursive
 
-from datalad_compute.utils.glob import resolve_patterns
 from ..commands.compute_cmd import read_list
 
 
@@ -91,8 +89,9 @@ class Provision(ValidatedInterface):
             args=('-i', '--input',),
             action='append',
             doc="An input file pattern (repeat for multiple inputs, "
-                "file pattern support python globbing, globbing is expanded "
-                "in the source dataset"),
+                "file pattern support python globbing, globbing is done in the "
+                "worktree and through all matching subdatasets, installing "
+                "if necessary)."),
         input_list=Parameter(
             args=('-I', '--input-list',),
             doc="Name of a file that contains a list of input file patterns. "
