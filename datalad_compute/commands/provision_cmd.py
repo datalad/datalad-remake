@@ -8,8 +8,8 @@ from __future__ import annotations
 import logging
 import os
 import stat
-import sys
 from contextlib import chdir
+from glob import glob
 from pathlib import Path
 from typing import (
     Any,
@@ -158,7 +158,7 @@ def prune_worktrees(dataset: Dataset) -> None:
 def provide(dataset: Dataset,
             worktree_dir: Path,
             source_branch: str | None = None,
-            input_patterns: Iterable[str] | None = None,
+            input_patterns: list[str] | None = None,
             ) -> Generator:
 
     lgr.debug('Provisioning dataset %s at %s', dataset, worktree_dir)
@@ -189,9 +189,8 @@ def provide(dataset: Dataset,
 
     # Get all input files in the worktree
     with chdir(worktree_dataset.path):
-        for pattern in input_patterns:
-            print(f'XXXXX: pattern: {pattern}', file=sys.stderr, flush=True)
-            worktree_dataset.get(pattern)
+        for path in resolve_patterns(worktree_dataset, input_patterns):
+            worktree_dataset.get(path)
 
     yield get_status_dict(
         action='provision',
@@ -200,30 +199,31 @@ def provide(dataset: Dataset,
         message=f'provisioned dataset: {dataset} in workspace: {worktree_dir!r}',)
 
 
-def resolve_pattern(dataset: Dataset,
-                    pattern_list: list[str]
-                    ) -> set[Path]:
-    """Resolve a pattern in the dataset, install all subdatasets that might lead
-    to a potential match.
+def resolve_patterns(dataset: Dataset,
+                     pattern_list: list[str]
+                     ) -> set[Path]:
+    """Resolve patterns in the dataset, install all necessary subdatasets and get content
 
     Once all subdatasets are determined and installed, get the content of the
     matching files.
     """
 
     uninstalled_subdataset = get_uninstalled_subdatasets(dataset)
+
     result = set()
     for pattern in pattern_list:
-        pattern_elements = pattern.split(os.sep)
-        if pattern_elements[0] == '':
+        pattern_parts = pattern.split(os.sep)
+
+        if pattern_parts[0] == '':
             lgr.warning('Ignoring absolute input pattern %s', pattern)
             continue
-        result = result.union(
-            set(
-                glob_pattern(
-                    dataset,
-                    Path(),
-                    pattern.split(os.sep),
-                    uninstalled_subdataset)))
+
+        result = result.union(set(
+            glob_pattern(
+                dataset,
+                Path(),
+                pattern_parts,
+                uninstalled_subdataset)))
     return result
 
 
@@ -249,13 +249,16 @@ def glob_pattern(root: Dataset,
     else:
         result = []
 
-    for match in (root.pathobj / position).glob(pattern[0]):
-        if match.is_dir() and match in uninstalled_subdatasets:
+    for match in glob(pattern[0], root_dir=root.pathobj / position):
+        match = position / match
+        absolute_match = root.pathobj / match
+        if absolute_match.is_dir() and absolute_match in uninstalled_subdatasets:
             lgr.info('Installing subdataset %s to glob input', match)
             root.get(str(match), get_data=False)
-            uninstalled_subdatasets.remove(match)
+            uninstalled_subdatasets.remove(absolute_match)
             uninstalled_subdatasets.extend(get_uninstalled_subdatasets(root))
-        for submatch in glob_pattern(root, match, pattern[1:], uninstalled_subdatasets):
+        submatch_pattern = pattern if pattern[0] == '**' else pattern[1:]
+        for submatch in glob_pattern(root, match, submatch_pattern, uninstalled_subdatasets):
             result.append(submatch)
     return result
 

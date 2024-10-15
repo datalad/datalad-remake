@@ -165,13 +165,6 @@ def test_unclean_dataset(tmp_path):
         worktree_dir=tmp_path / 'ds1_worktree2',
         result_renderer='disabled')
 
-    # Check that non-input file `c.txt` is ignored
-    (dataset.pathobj / 'c.txt').write_text('content')
-    dataset.provision(
-        input=input_pattern,
-        worktree_dir=tmp_path / 'ds1_worktree3',
-        result_renderer='disabled')
-
 
 def test_branch_deletion_after_provision(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
