@@ -104,7 +104,7 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch, output_pattern):
     # Go to the subdataset `d2_subds0/d2_subds1` and fetch the content of `a1.txt`
     # from a compute remote.
     monkeypatch.chdir(root_dataset.pathobj / 'd2_subds0' / 'd2_subds1')
-    datalad_get('a1.txt')
+    datalad_get()('a1.txt')
 
     # check that all known files that were computed are added to the annex
     _check_content(root_dataset, test_file_content)
@@ -113,6 +113,6 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch, output_pattern):
 
     # check get in subdatasets
     monkeypatch.chdir(root_dataset.pathobj)
-    datalad_get('d2_subds0/d2_subds1/a1.txt')
+    datalad_get()('d2_subds0/d2_subds1/a1.txt')
 
     _check_content(root_dataset, test_file_content)
