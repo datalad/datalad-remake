@@ -294,10 +294,10 @@ def add_url(dataset: Dataset,
             + (['--relaxed'] if url_only else []),
             cwd=file_dataset_path,
             capture_output=True)
-        assert (
-            success,
-            f'\naddurl failed:\nfile_dataset_path: {file_dataset_path}\n'
-            f'url: {url!r}\nfile_path: {file_path!r}')
+        assert \
+            success, \
+            f'\naddurl failed:\nfile_dataset_path: {file_dataset_path}\n' \
+            f'url: {url!r}\nfile_path: {file_path!r}'
     return url
 
 
