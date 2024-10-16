@@ -12,8 +12,8 @@ from contextlib import chdir
 from glob import glob
 from pathlib import Path
 from typing import (
-    Any,
-    Iterable, Generator,
+    Iterable,
+    Generator,
 )
 from tempfile import TemporaryDirectory
 
@@ -36,9 +36,6 @@ from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines, call_git_success
 
 from ..commands.compute_cmd import read_list
-
-
-__docformat__ = 'restructuredtext'
 
 
 lgr = logging.getLogger('datalad.compute.provision_cmd')
@@ -134,7 +131,7 @@ class Provision(ValidatedInterface):
 
         worktree_dir: Path = Path(worktree_dir or TemporaryDirectory().name)
         inputs = input or [] + read_list(input_list)
-        yield from provide(dataset, worktree_dir, branch, inputs)
+        yield from provide(dataset, worktree_dir, inputs, branch)
 
 
 def remove(dataset: Dataset,
@@ -157,9 +154,26 @@ def prune_worktrees(dataset: Dataset) -> None:
 
 def provide(dataset: Dataset,
             worktree_dir: Path,
+            input_patterns: list[str],
             source_branch: str | None = None,
-            input_patterns: list[str] | None = None,
             ) -> Generator:
+    """Provide paths defined by input_patterns in a temporary worktree
+
+    Parameters
+    ----------
+    dataset: Dataset
+        Dataset that should be provisioned
+    worktree_dir: Path
+        Path to a directory that should contain the provisioned worktree
+    input_patterns: list[str]
+        List of patterns that describe the input files
+    source_branch: str | None
+        Branch that should be provisioned, if None HEAD will be used [optional]
+
+    Returns
+    -------
+
+    """
 
     lgr.debug('Provisioning dataset %s at %s', dataset, worktree_dir)
 
@@ -202,15 +216,26 @@ def provide(dataset: Dataset,
 def resolve_patterns(dataset: Dataset,
                      pattern_list: list[str]
                      ) -> set[Path]:
-    """Resolve patterns in the dataset, install all necessary subdatasets and get content
+    """Resolve file patterns in the dataset
 
-    Once all subdatasets are determined and installed, get the content of the
-    matching files.
+    This method will resolve relative path-patterns in the dataset. It will
+    install all subdatasets that are matched by the patterns. Pattern are
+    described as outline in `glob.glob`. The method support recursive globbing
+    of zero or more directories with the pattern: `**`.
+
+    Parameters
+    ----------
+    dataset : Dataset
+        Dataset in which the patterns should be resolved.
+    pattern_list : list[str]
+        List of patterns thatThat should be resolved.
+
+    Returns
+    -------
+    set[Path]
+        Set of paths that match the patterns.
     """
-
-    uninstalled_subdataset = get_uninstalled_subdatasets(dataset)
-
-    result = set()
+    matches = set()
     for pattern in pattern_list:
         pattern_parts = pattern.split(os.sep)
 
@@ -218,62 +243,91 @@ def resolve_patterns(dataset: Dataset,
             lgr.warning('Ignoring absolute input pattern %s', pattern)
             continue
 
-        result = result.union(set(
+        matches.update(
             glob_pattern(
                 dataset,
                 Path(),
                 pattern_parts,
-                uninstalled_subdataset)))
-    return result
+                get_uninstalled_subdatasets(dataset)))
+    return matches
 
 
-def get_uninstalled_subdatasets(dataset: Dataset) -> list[Path]:
-    # get the list of all non-installed subdatasets
-    return [
-        Path(result['path'])
+def get_uninstalled_subdatasets(dataset: Dataset) -> set[Path]:
+    """Get a list of the paths of all visible, non-installed subdatasets"""
+    return set([
+        Path(result['path']).relative_to(dataset.pathobj)
         for result in dataset.subdatasets(recursive=True, result_renderer='disabled')
-        if result['state'] == 'absent']
+        if result['state'] == 'absent'])
 
 
 def glob_pattern(root: Dataset,
                  position: Path,
                  pattern: list[str],
-                 uninstalled_subdatasets: list[Path]
-                 ) -> list[Path]:
+                 uninstalled_subdatasets: set[Path],
+                 ) -> set[Path]:
+    """Glob a pattern in a dataset installing subdatasets if necessary
 
+    Parameters
+    ----------
+    root: Dataset
+        The dataset in which the pattern should be resolved.
+    position: Path
+        A relative path that denotes the position in the dataset from which a
+        pattern is matched.
+    pattern: list[str]
+        The path-elements of the pattern. For example `['*', 'a', '*.txt']`
+        represents the pattern `'*/a/*.txt'`.
+    uninstalled_subdatasets: set[Path]
+        A set that contains all currently known uninstalled subdatasets. This
+        set will be updated in the method
+
+    Returns
+    -------
+    set[Path]
+        A set that contains all paths that match the pattern.
+    """
     if not pattern:
-        return [position]
+        return {position}
 
+    # If the pattern starts with `**` we have to glob the remainder of the
+    # pattern from this position.
     if pattern[0] == '**':
-        result = glob_pattern(root, position, pattern[1:], uninstalled_subdatasets)
+        result = glob_pattern(
+            root,
+            position,
+            pattern[1:],
+            uninstalled_subdatasets)
     else:
-        result = []
+        result = set()
 
-    for match in glob(pattern[0], root_dir=root.pathobj / position):
+    # Match all elements at the current position with the first part of the
+    # pattern.
+    for match in glob(
+            '*' if pattern[0] == '**' else pattern[0],
+            root_dir=root.pathobj / position
+    ):
         match = position / match
-        absolute_match = root.pathobj / match
-        if absolute_match.is_dir() and absolute_match in uninstalled_subdatasets:
+
+        # If the match is a directory that is in uninstalled subdatasets,
+        # install the dataset and updated uninstalled datasets before proceeding
+        # with matching the pattern.
+        if match.is_dir() and match in uninstalled_subdatasets:
             lgr.info('Installing subdataset %s to glob input', match)
-            root.get(str(match), get_data=False)
-            uninstalled_subdatasets.remove(absolute_match)
-            uninstalled_subdatasets.extend(get_uninstalled_subdatasets(root))
+            root.get(str(match), get_data=False, result_renderer='disabled')
+            uninstalled_subdatasets.remove(match)
+            uninstalled_subdatasets.update(get_uninstalled_subdatasets(root))
+
+        # We have a match, try to match the remainder of the pattern.
         submatch_pattern = pattern if pattern[0] == '**' else pattern[1:]
-        for submatch in glob_pattern(root, match, submatch_pattern, uninstalled_subdatasets):
-            result.append(submatch)
+        result.update(glob_pattern(root, match, submatch_pattern, uninstalled_subdatasets))
     return result
 
 
-def check_results(results: Iterable[dict[str, Any]]):
-    assert not any(
-        result['status'] in ('impossible', 'error')
-        for result in results)
-
-
 def get_dirty_elements(dataset: Dataset) -> Generator:
+    """Get all dirty elements in the dataset"""
     for result in dataset.status(recursive=True):
-        if result['state'] != 'clean':
-            if result['type'] == 'file':
-                yield result
+        if result['type'] == 'file' and result['state'] != 'clean':
+            yield result
 
 
 def install_required_locally_available_datasets(root_dataset: Dataset,

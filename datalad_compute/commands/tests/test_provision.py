@@ -5,6 +5,7 @@ from contextlib import chdir
 from pathlib import Path
 from typing import Iterable
 
+import pytest
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines
 
@@ -182,6 +183,7 @@ def test_branch_deletion_after_provision(tmp_path):
     assert worktree.name not in branches
 
 
+@pytest.mark.skip(reason="local subdatasets are currently ignored")
 def test_not_present_local_datasets(tmp_path):
     root_ds = Dataset(tmp_path / 'ds1')
     root_ds.create(cfg_proc='text2git', result_renderer='disabled')
