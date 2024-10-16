@@ -203,7 +203,7 @@ def provide(dataset: Dataset,
 
     # Get all input files in the worktree
     with chdir(worktree_dataset.path):
-        for path in resolve_patterns(worktree_dataset, input_patterns):
+        for path in resolve_patterns(dataset, worktree_dataset, input_patterns):
             worktree_dataset.get(path)
 
     yield get_status_dict(
@@ -214,6 +214,7 @@ def provide(dataset: Dataset,
 
 
 def resolve_patterns(dataset: Dataset,
+                     worktree: Dataset,
                      pattern_list: list[str]
                      ) -> set[Path]:
     """Resolve file patterns in the dataset
@@ -225,8 +226,10 @@ def resolve_patterns(dataset: Dataset,
 
     Parameters
     ----------
-    dataset : Dataset
-        Dataset in which the patterns should be resolved.
+    dataset: Dataset,
+        Dataset that should be provisioned.
+    worktree : Dataset
+        Worktree dataset, in which the patterns should be resolved.
     pattern_list : list[str]
         List of patterns thatThat should be resolved.
 
@@ -245,10 +248,11 @@ def resolve_patterns(dataset: Dataset,
 
         matches.update(
             glob_pattern(
-                dataset,
+                worktree,
                 Path(),
                 pattern_parts,
-                get_uninstalled_subdatasets(dataset)))
+                get_uninstalled_subdatasets(worktree),
+                get_installed_subdatasets(dataset)))
     return matches
 
 
@@ -264,6 +268,7 @@ def glob_pattern(root: Dataset,
                  position: Path,
                  pattern: list[str],
                  uninstalled_subdatasets: set[Path],
+                 locally_available_subdatasets: Iterable[tuple[Path, Path, Path]],
                  ) -> set[Path]:
     """Glob a pattern in a dataset installing subdatasets if necessary
 
@@ -279,7 +284,10 @@ def glob_pattern(root: Dataset,
         represents the pattern `'*/a/*.txt'`.
     uninstalled_subdatasets: set[Path]
         A set that contains all currently known uninstalled subdatasets. This
-        set will be updated in the method
+        set will be updated in the method.
+    locally_available_subdatasets: set[Path]
+        A set that contains all datasets that are available in the dataset for
+        which the worktree is created.
 
     Returns
     -------
@@ -296,7 +304,8 @@ def glob_pattern(root: Dataset,
             root,
             position,
             pattern[1:],
-            uninstalled_subdatasets)
+            uninstalled_subdatasets,
+            locally_available_subdatasets)
     else:
         result = set()
 
@@ -313,13 +322,22 @@ def glob_pattern(root: Dataset,
         # with matching the pattern.
         if match.is_dir() and match in uninstalled_subdatasets:
             lgr.info('Installing subdataset %s to glob input', match)
-            root.get(str(match), get_data=False, result_renderer='disabled')
-            uninstalled_subdatasets.remove(match)
-            uninstalled_subdatasets.update(get_uninstalled_subdatasets(root))
+            install_subdataset(
+                root,
+                match,
+                uninstalled_subdatasets,
+                locally_available_subdatasets)
 
         # We have a match, try to match the remainder of the pattern.
         submatch_pattern = pattern if pattern[0] == '**' else pattern[1:]
-        result.update(glob_pattern(root, match, submatch_pattern, uninstalled_subdatasets))
+        result.update(
+            glob_pattern(
+                root,
+                match,
+                submatch_pattern,
+                uninstalled_subdatasets,
+                locally_available_subdatasets))
+
     return result
 
 
@@ -330,90 +348,44 @@ def get_dirty_elements(dataset: Dataset) -> Generator:
             yield result
 
 
-def install_required_locally_available_datasets(root_dataset: Dataset,
-                                                input_files: list[Path],
-                                                worktree: Dataset,
-                                                ) -> None:
-    """Ensure that local and locally changed subdatasets can be provisioned.
+def install_subdataset(worktree: Dataset,
+                       subdataset_path: Path,
+                       uninstalled_subdatasets: set[Path],
+                       locally_available_datasets: Iterable[tuple[Path, Path, Path]],
+                       ) -> None:
+    """Install a subdataset, prefer locally available subdatasets"""
+    local_subdataset = ([
+        l
+        for l in locally_available_datasets
+        if l[2] == subdataset_path] or [None])[0]
 
-    If subdatasets are only available within the root dataset, either because
-    they are not published or because they are locally modified, the provision
-    has to use those.
-
-    This means we have to adapt cloning candidates before trying to install
-    a subdataset. This is done by:
-
-    - Determining which subdatasets are installed in the root dataset
-    - Determining which of those subdatasets are required by the input files
-    - Adjust the `.gitmodules` files and install the required local datasets
-    - All other datasets are installed as usual, e.g. via `datalad get`.
-    """
-
-    # Determine which subdatasets are installed in the root dataset
-    subdataset_info = get_subdataset_info(root_dataset)
-
-    # Determine which subdatasets are required by the input files
-    required_subdatasets = determine_required_subdatasets(
-        subdataset_info,
-        input_files)
-
-    install_locally_available_subdatasets(
-        root_dataset,
-        required_subdatasets,
-        worktree)
+    if local_subdataset:
+        absolute_path, parent_ds_path, path_from_root = local_subdataset
+        # Set the URL to the full source path
+        args = ['-C', str(worktree.pathobj / parent_ds_path),
+                'submodule', 'set-url', '--',
+                str(path_from_root.relative_to(parent_ds_path)),
+                'file://' + str(absolute_path)]
+        call_git_lines(args)
+    worktree.get(
+        str(subdataset_path),
+        get_data=False,
+        result_renderer='disabled')
+    uninstalled_subdatasets.remove(subdataset_path)
+    uninstalled_subdatasets.update(get_uninstalled_subdatasets(worktree))
 
 
-def get_subdataset_info(dataset: Dataset) -> Iterable[tuple[Path, Path, Path]]:
+def get_installed_subdatasets(dataset: Dataset
+                              ) -> Iterable[tuple[Path, Path, Path]]:
     results = dataset.subdatasets(
         recursive=True,
         result_renderer='disabled')
     return [
         (
             Path(result['path']),
-            Path(result['parentds']),
+            Path(result['parentds']).relative_to(dataset.pathobj),
             Path(result['path']).relative_to(dataset.pathobj)
         )
         for result in results
         if result['state'] == 'present'
     ]
-
-
-def determine_required_subdatasets(subdataset_info: Iterable[tuple[Path, Path, Path]],
-                                   input_files: list[Path],
-                                   ) -> set[tuple[Path, Path, Path]]:
-    required_set = set()
-    for file in input_files:
-        # if the path can be expressed as relative to the subdataset path.
-        # the subdataset is required, and so are all subdatasets above it.
-        for subdataset_path, parent_path, path_from_root in subdataset_info:
-            try:
-                file.relative_to(path_from_root)
-                required_set.add((subdataset_path, parent_path, path_from_root))
-            except ValueError:
-                pass
-    return required_set
-
-
-def install_locally_available_subdatasets(source_dataset: Dataset,
-                                          required_subdatasets: set[tuple[Path, Path, Path]],
-                                          worktree: Dataset,
-                                          ) -> None:
-    """Install the required subdatasets from the source dataset in the worktree.
-    """
-    todo = [Path('.')]
-    while todo:
-        current_root = todo.pop()
-        for subdataset_path, parent_path, path_from_root in required_subdatasets:
-            if not current_root == parent_path.relative_to(source_dataset.pathobj):
-                continue
-            # Set the URL to the full source path
-            args = ['-C', str(worktree.pathobj / current_root),
-                    'submodule', 'set-url', '--',
-                    str(subdataset_path.relative_to(parent_path)),
-                    'file://' + str(source_dataset.pathobj / path_from_root)]
-            call_git_lines(args)
-            worktree.get(
-                path_from_root,
-                get_data=False,
-                result_renderer='disabled')
-            todo.append(path_from_root)

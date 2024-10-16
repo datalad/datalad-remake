@@ -183,7 +183,6 @@ def test_branch_deletion_after_provision(tmp_path):
     assert worktree.name not in branches
 
 
-@pytest.mark.skip(reason="local subdatasets are currently ignored")
 def test_not_present_local_datasets(tmp_path):
     root_ds = Dataset(tmp_path / 'ds1')
     root_ds.create(cfg_proc='text2git', result_renderer='disabled')
@@ -206,7 +205,6 @@ def test_not_present_local_datasets(tmp_path):
     provisioned_dataset_2 = Dataset(
         root_ds.provision(
             input=['ds000102/README'],
-            no_globbing=True,
             on_failure='ignore',
             result_renderer='disabled')[0]['path'])
     url_2 = _get_submodule_url(provisioned_dataset_2, 'ds000102')
