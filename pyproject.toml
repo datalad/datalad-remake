@@ -68,6 +68,7 @@ version-file = "datalad_remake/_version.py"
 [tool.hatch.envs.hatch-test]
 default-args = ["datalad_remake"]
 extra-dependencies = [
+  "hypothesis",
   "pytest",
   # if you come here, because coverage combination crashed for you
   # run `hatch test --cover` and/or see
