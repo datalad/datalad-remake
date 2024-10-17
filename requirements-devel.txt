@@ -1,8 +1,11 @@
 # requirements for a development environment
+annexremote
 coverage
 datalad
 datalad-next
 datasalad
+hatch
+hatch-vcs
 hypothesis
 pytest
 pytest-cov

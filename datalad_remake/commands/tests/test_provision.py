@@ -5,12 +5,11 @@ from contextlib import chdir
 from pathlib import Path
 from typing import Iterable
 
-import pytest
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines
 
 from .create_datasets import create_ds_hierarchy
-from ..compute_cmd import provide_context
+from ..make_cmd import provide_context
 
 
 file_path_templates = [

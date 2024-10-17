@@ -1,4 +1,4 @@
-"""DataLad compute command"""
+"""DataLad make command"""
 
 from __future__ import annotations
 
@@ -45,15 +45,13 @@ from ..utils.compute import compute
 from ..utils.glob import resolve_patterns
 
 
-__docformat__ = 'restructuredtext'
-
-lgr = logging.getLogger('datalad.compute.compute_cmd')
+lgr = logging.getLogger('datalad.remake.make_cmd')
 
 
 # decoration auto-generates standard help
 @build_doc
 # all commands must be derived from Interface
-class Compute(ValidatedInterface):
+class Make(ValidatedInterface):
     # first docstring line is used a short description in the cmdline help
     # the rest is put in the verbose help and manpage
     """Specify a computation and optionally execute it
@@ -84,7 +82,7 @@ class Compute(ValidatedInterface):
         template=Parameter(
             args=('template',),
             doc="Name of the computing template (template should be present "
-                "in $DATASET/.datalad/compute/methods)"),
+                "in $DATASET/.datalad/remake/methods)"),
         branch=Parameter(
             args=('-b', '--branch',),
             doc="Branch (or commit) that should be used for computation, if "
@@ -132,7 +130,7 @@ class Compute(ValidatedInterface):
     )
 
     @staticmethod
-    @datasetmethod(name='compute')
+    @datasetmethod(name='make')
     @eval_results
     def __call__(dataset=None,
                  url_only=False,
@@ -178,7 +176,7 @@ class Compute(ValidatedInterface):
         for out in output:
             url = add_url(dataset, out, url_base, url_only)
             yield get_status_dict(
-                    action='compute',
+                    action='make',
                     path=str(dataset.pathobj / out),
                     status='ok',
                     message=f'added url: {url!r} to {out!r} in {dataset.pathobj}',)
@@ -203,7 +201,7 @@ def get_url(dataset: Dataset,
             output_pattern: list[str],
             ) -> tuple[str, str]:
 
-    # If something goes wrong after the compute specification was saved,
+    # If something goes wrong after the make specification was saved,
     # the dataset state should be reset to `branch`
     reset_branch = branch or dataset.repo.get_hexsha()
 

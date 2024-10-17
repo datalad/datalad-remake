@@ -28,17 +28,18 @@ from .. import (
     url_scheme,
 )
 
-from ..commands.compute_cmd import (
+from ..commands.make_cmd import (
     execute,
     get_file_dataset,
     provide_context,
 )
 from ..utils.glob import resolve_patterns
 
-lgr = logging.getLogger('datalad.compute.annexremotes.compute')
+
+lgr = logging.getLogger('datalad.remake.annexremotes.remake')
 
 
-class ComputeRemote(SpecialRemote):
+class RemakeRemote(SpecialRemote):
 
     def __init__(self, annex: Master):
         super().__init__(annex)
@@ -136,7 +137,7 @@ class ComputeRemote(SpecialRemote):
             self.annex.debug('Leaving provision context')
 
     def checkpresent(self, key: str) -> bool:
-        # See if at least one URL with the compute url-scheme is present
+        # See if at least one URL with the remake url-scheme is present
         return self.annex.geturls(key, f'{url_scheme}:') != []
 
     def _find_dataset(self,
@@ -195,7 +196,7 @@ class ComputeRemote(SpecialRemote):
 def main():
     """cmdline entry point"""
     super_main(
-        cls=ComputeRemote,
-        remote_name='compute',
-        description="Access to computed data",
+        cls=RemakeRemote,
+        remote_name='datalad-remake',
+        description='Remake data based on datalad-remake specifications',
     )

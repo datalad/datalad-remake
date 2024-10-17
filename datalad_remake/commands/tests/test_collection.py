@@ -2,7 +2,7 @@ from pathlib import Path
 
 from .create_datasets import create_ds_hierarchy
 from .test_provision import get_file_list
-from ..compute_cmd import collect
+from ..make_cmd import collect
 
 
 def test_collect(tmp_path):

@@ -35,10 +35,10 @@ from datalad_next.constraints import (
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines, call_git_success
 
-from ..commands.compute_cmd import read_list
+from ..commands.make_cmd import read_list
 
 
-lgr = logging.getLogger('datalad.compute.provision_cmd')
+lgr = logging.getLogger('datalad.remake.provision_cmd')
 
 
 # decoration auto-generates standard help
@@ -47,14 +47,14 @@ lgr = logging.getLogger('datalad.compute.provision_cmd')
 class Provision(ValidatedInterface):
     # first docstring line is used a short description in the cmdline help
     # the rest is put in the verbose help and manpage
-    """Provision inputs for a compute command
+    """Provision inputs for a `make` command
 
     This command provides a temporary, partial copy of the dataset in a separate
     tree, called a "worktree". The worktree will contain all files that are
     specified by the input patterns. All necessary subdatasets will be
     installed. If a subdataset is locally available in the source dataset, it
     will be installed from there. Its main purpose is to provide an isolated
-    environment for "compute" commands.
+    environment for `make` commands.
     """
 
     _validator_ = EnsureCommandParameterization(dict(

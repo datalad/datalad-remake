@@ -10,7 +10,7 @@ name = "datalad-remake"
 dynamic = ["version"]
 description = ''
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = "MIT"
 keywords = [
   "datalad",
@@ -35,15 +35,15 @@ classifiers = [
   "Topic :: Software Development :: Version Control :: Git",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
+  "annexremote",
   "datalad_next",
+  "datasalad",
 ]
 
 [project.urls]
@@ -52,6 +52,12 @@ Documentation = "https://github.com/datalad/datalad-remake#readme"
 Issues = "https://github.com/datalad/datalad-remake/issues"
 Source = "https://github.com/datalad/datalad-remake"
 Changelog = "https://github.com/datalad/datalad-remake/blob/main/CHANGELOG.md"
+
+[project.scripts]
+git-annex-remote-datalad-remake = "datalad_remake.annexremotes.remake_remote:main"
+
+[project.entry-points."datalad.extensions"]
+remake = "datalad_remake:command_suite"
 
 [tool.hatch.version]
 source = "vcs"
@@ -69,13 +75,12 @@ extra-dependencies = [
   "pytest-cov",
 ]
 
-
 [tool.hatch.envs.tests]
 description = "run tests across Python versions"
 template = "hatch-test"
 
 [[tool.hatch.envs.tests.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12"]
+python = ["3.11", "3.12"]
 
 [tool.hatch.envs.tests.scripts]
 run = 'python -m pytest {args}'
@@ -86,9 +91,10 @@ extra-dependencies = [
   "mypy>=1.0.0",
   "pytest",
 ]
+
 [tool.hatch.envs.types.scripts]
 check = [
-  "mypy --install-types --non-interactive --python-version 3.9 --pretty --show-error-context datalad_remake",
+  "mypy --install-types --non-interactive --python-version 3.11 --pretty --show-error-context datalad_remake",
 ]
 
 [tool.hatch.envs.docs]
@@ -96,6 +102,7 @@ description = "build Sphinx-based docs"
 extra-dependencies = [
   "sphinx",
 ]
+
 [tool.hatch.envs.docs.scripts]
 build = [
   "make -C docs html",
@@ -111,6 +118,7 @@ detached = true
 extra-dependencies = [
   "commitizen",
 ]
+
 [tool.hatch.envs.cz.scripts]
 check-commits = [
   # check all commit messages since the (before) beginning
@@ -131,6 +139,7 @@ detached = true
 extra-dependencies = [
   "codespell",
 ]
+
 [tool.hatch.envs.codespell.scripts]
 check = "codespell"
 fix = "codespell --write-changes"

@@ -1,6 +1,6 @@
 import tempfile
 from pathlib import Path
-from datalad_compute.commands.compute_cmd import read_list
+from datalad_remake.commands.make_cmd import read_list
 
 from hypothesis import given
 from hypothesis.strategies import lists, text

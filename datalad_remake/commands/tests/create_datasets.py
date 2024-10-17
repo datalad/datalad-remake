@@ -5,11 +5,11 @@ from pathlib import Path
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_success
 
-from datalad_compute import template_dir
+from datalad_remake import template_dir
 
 
-def update_config_for_compute(dataset: Dataset):
-    # set annex security related variables to allow compute-URLs
+def update_config_for_remake(dataset: Dataset):
+    # set annex security related variables to allow remake-URLs
     dataset.configuration(
         action='set',
         scope='local',
@@ -18,11 +18,11 @@ def update_config_for_compute(dataset: Dataset):
         result_renderer='disabled')
 
 
-def add_compute_remote(dataset: Dataset):
+def add_remake_remote(dataset: Dataset):
     call_git_success([
         '-C', dataset.path,
-        'annex', 'initremote', 'compute',
-        'type=external', 'externaltype=compute',
+        'annex', 'initremote', 'remake',
+        'type=external', 'externaltype=datalad-remake',
         'encryption=none'],
         capture_output=True)
 
@@ -61,14 +61,14 @@ def create_ds_hierarchy(tmp_path: Path,
         dataset[2].save(result_renderer='disabled')
 
     root_dataset.get(recursive=True, result_renderer='disabled')
-    update_config_for_compute(root_dataset)
+    update_config_for_remake(root_dataset)
 
-    # Add compute remotes to the root dataset and all subdatasets
-    add_compute_remote(root_dataset)
+    # Add datalad-remake remotes to the root dataset and all subdatasets
+    add_remake_remote(root_dataset)
     subdataset_path = Path()
     for index in range(subdataset_levels):
         subdataset_path /= f'{name}_subds{index}'
-        add_compute_remote(Dataset(root_dataset.pathobj / subdataset_path))
+        add_remake_remote(Dataset(root_dataset.pathobj / subdataset_path))
 
     return datasets
 

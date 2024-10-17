@@ -1,13 +1,13 @@
 import subprocess
-import sys
 from queue import Queue
 
 from annexremote import Master
 
-from ..compute_remote import ComputeRemote
-from datalad_compute.commands.tests.create_datasets import create_ds_hierarchy
+from ..remake_remote import RemakeRemote
 from ... import specification_dir
-from ...commands.compute_cmd import build_json
+from ...commands.make_cmd import build_json
+from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
+
 
 template = """
 inputs = ['content']
@@ -68,7 +68,7 @@ def test_compute_remote_main(tmp_path, monkeypatch):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 0)[0][2]
     monkeypatch.chdir(dataset.path)
 
-    template_path = dataset.pathobj / '.datalad' / 'compute' / 'methods'
+    template_path = dataset.pathobj / '.datalad' / 'make' / 'methods'
     template_path.mkdir(parents=True)
     (template_path / 'echo').write_text(template)
     dataset.save()
@@ -95,7 +95,7 @@ def test_compute_remote_main(tmp_path, monkeypatch):
     # single thread and do not get back control once `master.listen` is called
     # below.
     input.send('PREPARE\n')
-    input.send(f'TRANSFER RETRIEVE {key} {str(tmp_path / "computed.txt")}\n')
+    input.send(f'TRANSFER RETRIEVE {key} {str(tmp_path / "remade.txt")}\n')
     url = (
         'datalad-make:///?'
         f'root_version={dataset.repo.get_hexsha()}'
@@ -110,10 +110,10 @@ def test_compute_remote_main(tmp_path, monkeypatch):
     output = MockedOutput()
 
     master = Master(output=output)
-    remote = ComputeRemote(master)
+    remote = RemakeRemote(master)
     master.LinkRemote(remote)
     master.Listen(input=input)
 
-    # At this point the compute remote should have executed the computation
-    # and written the result.
-    assert (tmp_path / 'computed.txt').read_text().strip() == 'content: some_string'
+    # At this point the datalad-remake remote should have executed the
+    # computation and written the result.
+    assert (tmp_path / 'remade.txt').read_text().strip() == 'content: some_string'

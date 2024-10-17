@@ -7,7 +7,7 @@ from datalad.distribution.get import Get as datalad_get
 from datalad_next.datasets import Dataset
 from datalad_next.tests.fixtures import datalad_cfg
 
-from datalad_compute.commands.tests.create_datasets import (
+from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
 
@@ -79,8 +79,8 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch, output_pattern):
     root_dataset = create_simple_computation_dataset(
         tmp_path, 'd2', 3, test_method)
 
-    # run compute command
-    results = root_dataset.compute(
+    # run `make` command
+    results = root_dataset.make(
         template='test_method',
         parameter=[
             'first=first',
@@ -102,7 +102,7 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch, output_pattern):
     _drop_files(root_dataset, collected_output)
 
     # Go to the subdataset `d2_subds0/d2_subds1` and fetch the content of `a1.txt`
-    # from a compute remote.
+    # from a datalad-remake remote.
     monkeypatch.chdir(root_dataset.pathobj / 'd2_subds0' / 'd2_subds1')
     datalad_get()('a1.txt')
 

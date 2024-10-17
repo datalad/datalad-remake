@@ -1,7 +1,7 @@
 from datalad_next.datasets import Dataset
 from datalad_next.tests.fixtures import datalad_cfg
 
-from datalad_compute.commands.tests.create_datasets import (
+from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
 
@@ -31,14 +31,15 @@ def test_speculative_computation(tmp_path, datalad_cfg, monkeypatch):
     root_dataset = create_simple_computation_dataset(
         tmp_path, 'ds1', 0, test_method)
 
-    root_dataset.compute(
+    root_dataset.make(
         template='test_method',
         parameter=['name=Robert', 'file=spec.txt'],
         output=['spec.txt'],
         url_only=True,
         result_renderer='disabled')
 
-    # set annex security related variables to allow compute-URLs
+    # set annex security related variables to allow datalad-remake-URLs
+    # in speculative make commands
     datalad_cfg.set('annex.security.allow-unverified-downloads', 'ACKTHPPT', scope='global')
 
     # Perform the speculative computation
@@ -47,7 +48,7 @@ def test_speculative_computation(tmp_path, datalad_cfg, monkeypatch):
 
 
 def _run_simple_computation(root_dataset: Dataset):
-    root_dataset.compute(
+    root_dataset.make(
         template='test_method',
         parameter=['name=Robert', 'file=a.txt'],
         output=['a.txt'],

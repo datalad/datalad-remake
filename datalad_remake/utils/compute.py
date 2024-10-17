@@ -73,8 +73,8 @@ def compute(root_directory: Path,
 
     with contextlib.chdir(root_directory):
         if template.get('use_shell', 'false') == 'true':
-            lgr.debug(f'compute(): RUNNING: with shell=True: {" ".join([substituted_executable] + substituted_arguments)}')
+            lgr.debug(f'compute: RUNNING: with shell=True: {" ".join([substituted_executable] + substituted_arguments)}')
             subprocess.run(' '.join([substituted_executable] + substituted_arguments), shell=True, check=True)
         else:
-            lgr.debug(f'compute(): RUNNING: {[substituted_executable] + substituted_arguments}')
+            lgr.debug(f'compute: RUNNING: {[substituted_executable] + substituted_arguments}')
             subprocess.run([substituted_executable] + substituted_arguments, check=True)
