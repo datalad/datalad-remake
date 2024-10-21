@@ -3,11 +3,11 @@ from queue import Queue
 
 from annexremote import Master
 
-from ..remake_remote import RemakeRemote
-from ... import specification_dir
-from ...commands.make_cmd import build_json
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
 
+from ... import specification_dir
+from ...commands.make_cmd import build_json
+from ..remake_remote import RemakeRemote
 
 template = """
 inputs = ['content']
@@ -73,13 +73,13 @@ def test_compute_remote_main(tmp_path, monkeypatch):
     (template_path / 'echo').write_text(template)
     dataset.save()
 
-    key = tuple(
+    key = next(
         filter(
             lambda line: line.startswith(b'key: '),
             subprocess.run(
-                ['git', 'annex', 'info', 'a.txt'],
+                ['git', 'annex', 'info', 'a.txt'],  # noqa: S607
                 stdout=subprocess.PIPE,
-                check=True).stdout.splitlines()))[0].split(b': ')[1]
+                check=True).stdout.splitlines())).split(b': ')[1]
 
     (dataset.pathobj / specification_dir).mkdir(parents=True)
     (dataset.pathobj / specification_dir / '000001111122222').write_text(
@@ -89,30 +89,30 @@ def test_compute_remote_main(tmp_path, monkeypatch):
             ['a.txt'],
             {'content': 'some_string'}))
 
-    input = MockedInput()
+    input_ = MockedInput()
 
     # We send all messages into the queue upfront because we do the test in a
     # single thread and do not get back control once `master.listen` is called
     # below.
-    input.send('PREPARE\n')
-    input.send(f'TRANSFER RETRIEVE {key} {str(tmp_path / "remade.txt")}\n')
+    input_.send('PREPARE\n')
+    input_.send(f'TRANSFER RETRIEVE {key} {tmp_path / "remade.txt"!s}\n')
     url = (
         'datalad-make:///?'
         f'root_version={dataset.repo.get_hexsha()}'
         '&specification=000001111122222'
         '&this=a.txt'
     )
-    input.send(f'VALUE {url}\n')
-    input.send('VALUE\n')
-    input.send('VALUE .git\n')
-    input.send('')
+    input_.send(f'VALUE {url}\n')
+    input_.send('VALUE\n')
+    input_.send('VALUE .git\n')
+    input_.send('')
 
     output = MockedOutput()
 
     master = Master(output=output)
     remote = RemakeRemote(master)
     master.LinkRemote(remote)
-    master.Listen(input=input)
+    master.Listen(input=input_)
 
     # At this point the datalad-remake remote should have executed the
     # computation and written the result.

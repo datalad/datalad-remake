@@ -6,35 +6,34 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
-    Iterable,
 )
 from urllib.parse import (
     unquote,
     urlparse,
 )
 
-from annexremote import Master
 from datalad.customremotes import RemoteError
-from datalad_next.annexremotes import (
-    SpecialRemote,
-    super_main
-)
+from datalad_next.annexremotes import SpecialRemote, super_main
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_success
 
-from .. import (
+from datalad_remake import (
     specification_dir,
     url_scheme,
 )
-
-from ..commands.make_cmd import (
+from datalad_remake.commands.make_cmd import (
     execute,
     get_file_dataset,
     provide_context,
 )
-from ..utils.glob import resolve_patterns
+from datalad_remake.utils.glob import resolve_patterns
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from annexremote import Master
 
 lgr = logging.getLogger('datalad.remake.annexremotes.remake')
 
@@ -51,19 +50,19 @@ class RemakeRemote(SpecialRemote):
         pass
 
     def _check_url(self, url: str) -> bool:
-        return url.startswith(f'URL--{url_scheme}:') or url.startswith(f'{url_scheme}:')
+        return url.startswith((f'URL--{url_scheme}:', f'{url_scheme}:'))
 
     def prepare(self):
-        self.annex.debug(f'PREPARE')
+        self.annex.debug('PREPARE')
 
     def initremote(self):
-        self.annex.debug(f'INITREMOTE')
+        self.annex.debug('INITREMOTE')
 
     def remove(self, key: str):
         self.annex.debug(f'REMOVE {key!r}')
 
     def transfer_store(self, key: str, local_file: str):
-        self.annex.debug(f'TRANSFER STORE')
+        self.annex.debug(f'TRANSFER STORE {key!r}, {local_file!r}')
 
     def claimurl(self, url: str) -> bool:
         self.annex.debug(f'CLAIMURL {url!r}')
@@ -74,7 +73,7 @@ class RemakeRemote(SpecialRemote):
         return self._check_url(url)
 
     def getcost(self) -> int:
-        self.annex.debug(f'GETCOST')
+        self.annex.debug('GETCOST')
         return 100
 
     def get_url_encoded_info(self, url: str) -> list[str]:
@@ -94,10 +93,10 @@ class RemakeRemote(SpecialRemote):
         def get_assigned_value(assignment: str) -> str:
             return assignment.split('=', 1)[1]
 
-        root_version, spec_name, this = list(
-            map(
-                lambda expr: unquote(get_assigned_value(expr)),
-                self.get_url_encoded_info(self.get_url_for_key(key))))
+        root_version, spec_name, this = (
+            unquote(get_assigned_value(expr))
+            for expr in self.get_url_encoded_info(self.get_url_for_key(key))
+        )
 
         dataset = self._find_dataset(root_version)
         spec_path = dataset.pathobj / specification_dir / spec_name
@@ -149,15 +148,16 @@ class RemakeRemote(SpecialRemote):
         current_dir = start_dir
         while current_dir != Path('/'):
             result = subprocess.run(
-                ['git', 'cat-file', '-t', commit],
+                ['git', 'cat-file', '-t', commit],  # noqa: S607
                 stdout=subprocess.PIPE,
-                cwd=current_dir)
+                cwd=current_dir, check=False)
             if result.returncode == 0 and result.stdout.strip() == b'commit':
                 return Dataset(current_dir)
             current_dir = current_dir.parent
-        raise RemoteError(
+        msg = (
             f'Could not find dataset with commit {commit!r}, starting from '
             f'{start_dir}')
+        raise RemoteError(msg)
 
     def _collect(self,
                  worktree: Path,

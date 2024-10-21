@@ -9,17 +9,14 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import (
-    Generator,
-    Iterable,
-)
+from typing import TYPE_CHECKING
 from urllib.parse import quote
 
 from datalad.support.exceptions import IncompleteResultsError
 from datalad_next.commands import (
     EnsureCommandParameterization,
-    ValidatedInterface,
     Parameter,
+    ValidatedInterface,
     build_doc,
     datasetmethod,
     eval_results,
@@ -36,14 +33,20 @@ from datalad_next.runners import (
     call_git_success,
 )
 
-from .. import (
+from datalad_remake import (
     specification_dir,
     template_dir,
     url_scheme,
 )
-from ..utils.compute import compute
-from ..utils.glob import resolve_patterns
+from datalad_remake.utils.compute import compute
+from datalad_remake.utils.glob import resolve_patterns
 
+if TYPE_CHECKING:
+    from collections.abc import (
+        Generator,
+        Iterable,
+    )
+    from typing import ClassVar
 
 lgr = logging.getLogger('datalad.remake.make_cmd')
 
@@ -57,43 +60,43 @@ class Make(ValidatedInterface):
     """Specify a computation and optionally execute it
     """
 
-    _validator_ = EnsureCommandParameterization(dict(
-        dataset=EnsureDataset(installed=True),
-        input=EnsureListOf(EnsureStr(min_len=1)),
-        input_list=EnsureStr(min_len=1),
-        output=EnsureListOf(EnsureStr(min_len=1), min_len=1),
-        output_list=EnsureStr(min_len=1),
-        parameter=EnsureListOf(EnsureStr(min_len=3)),
-        parameter_list=EnsureStr(min_len=1),
-    ))
+    _validator_ = EnsureCommandParameterization({
+        'dataset': EnsureDataset(installed=True),
+        'input': EnsureListOf(EnsureStr(min_len=1)),
+        'input_list': EnsureStr(min_len=1),
+        'output': EnsureListOf(EnsureStr(min_len=1), min_len=1),
+        'output_list': EnsureStr(min_len=1),
+        'parameter': EnsureListOf(EnsureStr(min_len=3)),
+        'parameter_list': EnsureStr(min_len=1),
+    })
 
     # parameters of the command, must be exhaustive
-    _params_ = dict(
-        dataset=Parameter(
+    _params_: ClassVar[dict[int, Parameter]] = {
+        'dataset': Parameter(
             args=('-d', '--dataset'),
             doc="Dataset to be used as a configuration source. Beyond "
             "reading configuration items, this command does not interact with "
             "the dataset."),
-        url_only=Parameter(
+        'url_only': Parameter(
             args=('-u', '--url-only'),
             action="store_true",
             doc="Don't perform the computation, register an URL-key "
             "instead. A `git annex get <file>` will trigger the computation"),
-        template=Parameter(
+        'template': Parameter(
             args=('template',),
             doc="Name of the computing template (template should be present "
                 "in $DATASET/.datalad/remake/methods)"),
-        branch=Parameter(
+        'branch': Parameter(
             args=('-b', '--branch',),
             doc="Branch (or commit) that should be used for computation, if "
                 "not specified HEAD will be used"),
-        input=Parameter(
+        'input': Parameter(
             args=('-i', '--input',),
             action='append',
             doc="An input file pattern (repeat for multiple inputs, "
                 "file pattern support python globbing, globbing is expanded "
                 "in the source dataset)"),
-        input_list=Parameter(
+        'input_list': Parameter(
             args=('-I', '--input-list',),
             doc="Name of a file that contains a list of input file patterns. "
                 "Format is one file per line, relative path from `dataset`. "
@@ -101,25 +104,25 @@ class Make(ValidatedInterface):
                 "that start with '#' are ignored. Line content is stripped "
                 "before used. This is useful if a large number of input file "
                 "patterns should be provided."),
-        output=Parameter(
+        'output': Parameter(
             args=('-o', '--output',),
             action='append',
             doc="An output file pattern (repeat for multiple outputs)"
                 "file pattern support python globbing, globbing is expanded "
                 "in the worktree)"),
-        output_list=Parameter(
+        'output_list': Parameter(
             args=('-O', '--output-list',),
             doc="Name of a file that contains a list of output patterns. Format "
                 "is one file per line, relative path from `dataset`. Empty "
                 "lines, i.e. lines that contain only newlines, arg ignored. "
                 "This is useful if a large number of output files should be "
                 "provided."),
-        parameter=Parameter(
+        'parameter': Parameter(
             args=('-p', '--parameter',),
             action='append',
             doc="Input parameter in the form <name>=<value> (repeat for "
                 "multiple parameters)"),
-        parameter_list=Parameter(
+        'parameter_list': Parameter(
             args=('-P', '--parameter-list',),
             doc="Name of a file that contains a list of parameters. Format "
                 "is one `<name>=<value>` string per line. "
@@ -127,16 +130,17 @@ class Make(ValidatedInterface):
                 "that start with '#' are ignored. Line content is stripped "
                 "before used. This is useful if a large number of parameters "
                 "should be provided."),
-    )
+    }
 
     @staticmethod
     @datasetmethod(name='make')
     @eval_results
     def __call__(dataset=None,
+                 *,
                  url_only=False,
                  template=None,
                  branch=None,
-                 input=None,
+                 input_=None,
                  input_list=None,
                  output=None,
                  output_list=None,
@@ -146,7 +150,7 @@ class Make(ValidatedInterface):
 
         dataset : Dataset = dataset.ds if dataset else Dataset('.')
 
-        input_pattern = (input or []) + read_list(input_list)
+        input_pattern = (input_ or []) + read_list(input_list)
         output_pattern = (output or []) + read_list(output_list)
         parameter = (parameter or []) + read_list(parameter_list)
 
@@ -174,7 +178,7 @@ class Make(ValidatedInterface):
                 output = collect(worktree, dataset, output_pattern)
 
         for out in output:
-            url = add_url(dataset, out, url_base, url_only)
+            url = add_url(dataset, out, url_base, url_only=url_only)
             yield get_status_dict(
                     action='make',
                     path=str(dataset.pathobj / out),
@@ -215,8 +219,8 @@ def get_url(dataset: Dataset,
 
     return (
         f'{url_scheme}:///'
-        + f'?root_version={quote(dataset.repo.get_hexsha())}'
-        + f'&specification={quote(digest)}'
+        f'?root_version={quote(dataset.repo.get_hexsha())}'
+        f'&specification={quote(digest)}'
     ), reset_branch
 
 
@@ -263,6 +267,7 @@ def build_json(method: str,
 def add_url(dataset: Dataset,
             file_path: str,
             url_base: str,
+            *,
             url_only: bool
             ) -> str:
 
@@ -292,10 +297,11 @@ def add_url(dataset: Dataset,
             + (['--relaxed'] if url_only else []),
             cwd=file_dataset_path,
             capture_output=True)
-        assert \
-            success, \
-            f'\naddurl failed:\nfile_dataset_path: {file_dataset_path}\n' \
-            f'url: {url!r}\nfile_path: {file_path!r}'
+        if not success:
+            msg = (
+                f'\naddurl failed:\nfile_dataset_path: {file_dataset_path}\n'
+                f'url: {url!r}\nfile_path: {file_path!r}')
+            raise RuntimeError(msg)
     return url
 
 
@@ -416,8 +422,5 @@ def create_output_space(dataset: Dataset,
                         ) -> None:
     """Get all files that are part of the output space."""
     for f in files:
-        try:
+        with contextlib.suppress(IncompleteResultsError):
             dataset.get(f, result_renderer='disabled')
-        except IncompleteResultsError:
-            # Ignore non-existing files
-            pass

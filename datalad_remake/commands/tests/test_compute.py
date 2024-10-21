@@ -1,10 +1,8 @@
 from datalad_next.datasets import Dataset
-from datalad_next.tests.fixtures import datalad_cfg
 
 from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
-
 
 test_method = """
 inputs = ['name', 'file']
@@ -16,7 +14,7 @@ arguments = ["Hello {name} > {file}"]
 output_pattern = ['a.txt']
 
 
-def test_duplicated_computation(tmp_path, datalad_cfg, monkeypatch):
+def test_duplicated_computation(tmp_path):
 
     root_dataset = create_simple_computation_dataset(
         tmp_path, 'ds1', 0, test_method)
@@ -26,7 +24,7 @@ def test_duplicated_computation(tmp_path, datalad_cfg, monkeypatch):
     _run_simple_computation(root_dataset)
 
 
-def test_speculative_computation(tmp_path, datalad_cfg, monkeypatch):
+def test_speculative_computation(tmp_path, datalad_cfg):
 
     root_dataset = create_simple_computation_dataset(
         tmp_path, 'ds1', 0, test_method)

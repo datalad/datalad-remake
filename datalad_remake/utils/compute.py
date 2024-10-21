@@ -4,10 +4,10 @@ import contextlib
 import logging
 import subprocess
 import tomllib
+from typing import TYPE_CHECKING, Any
 
-from pathlib import Path
-from typing import Any
-
+if TYPE_CHECKING:
+    from pathlib import Path
 
 lgr = logging.getLogger('datalad.compute')
 
@@ -40,12 +40,17 @@ def get_substitutions(template: dict[str, Any],
     # Check the user specified inputs
     inputs = template['inputs']
     if len(inputs) != len(arguments.keys()):
-        raise ValueError('Template inputs and arguments have different lengths')
+        msg = 'Template inputs and arguments have different lengths'
+        raise ValueError(msg)
     if not all(input_name in arguments for input_name in inputs):
-        raise ValueError(f'Template inputs and arguments have different names: inputs: {inputs}, arguments: {arguments}')
+        msg = (
+            f'Template inputs and arguments have different names: '
+            f'inputs: {inputs}, arguments: {arguments}')
+        raise ValueError(msg)
 
     if len(inputs) != len(set(inputs)):
-        raise ValueError('Template inputs contain duplicates')
+        msg = 'Template inputs contain duplicates'
+        raise ValueError(msg)
 
     return {
         input_name: arguments[input_name]
@@ -73,8 +78,8 @@ def compute(root_directory: Path,
 
     with contextlib.chdir(root_directory):
         if template.get('use_shell', 'false') == 'true':
-            lgr.debug(f'compute: RUNNING: with shell=True: {" ".join([substituted_executable] + substituted_arguments)}')
-            subprocess.run(' '.join([substituted_executable] + substituted_arguments), shell=True, check=True)
+            lgr.debug(f'compute: RUNNING: with shell=True: {" ".join([substituted_executable, *substituted_arguments])}')
+            subprocess.run(' '.join([substituted_executable, *substituted_arguments]), shell=True, check=True) # noqa: S602
         else:
-            lgr.debug(f'compute: RUNNING: {[substituted_executable] + substituted_arguments}')
-            subprocess.run([substituted_executable] + substituted_arguments, check=True)
+            lgr.debug(f'compute: RUNNING: {[substituted_executable, *substituted_arguments]}')
+            subprocess.run([substituted_executable, *substituted_arguments], check=True)

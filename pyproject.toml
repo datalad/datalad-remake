@@ -18,7 +18,7 @@ keywords = [
   "git-annex",
 ]
 authors = [
-#  { name = "Michael Hanke", email = "michael.hanke@gmail.com" },
+  { name = "The DataLad Team and Contributors", email = "team@datalad.org" },
 ]
 maintainers = [
 #  { name = "Michael Hanke", email = "michael.hanke@gmail.com" },
@@ -42,6 +42,7 @@ classifiers = [
 ]
 dependencies = [
   "annexremote",
+  "datalad",
   "datalad_next",
   "datasalad",
 ]
@@ -75,6 +76,9 @@ extra-dependencies = [
   # https://github.com/pypa/hatch/issues/1565#issuecomment-2163773123
   "pytest-cov",
 ]
+
+[tool.hatch.envs.hatch-test.env-vars]
+DATALAD_EXTENSIONS_LOAD = "next"
 
 [tool.hatch.envs.tests]
 description = "run tests across Python versions"
@@ -159,7 +163,7 @@ data_file = "${COVERAGE_ROOT-.}/.coverage"
 
 [tool.coverage.paths]
 datalad_remake = ["src/datalad_remake", "*/datalad_remake/src/datalad_remake"]
-tests = ["tests", "*/datalad_remake/tests"]
+tests = ["tests", "*/datalad_remake/*/tests"]
 
 [tool.coverage.report]
 show_missing = true
@@ -177,7 +181,7 @@ exclude = [
 ]
 line-length = 88
 indent-width = 4
-target-version = "py39"
+target-version = "py311"
 [tool.ruff.format]
 # Prefer single quotes over double quotes.
 quote-style = "single"

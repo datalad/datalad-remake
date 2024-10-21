@@ -3,7 +3,10 @@ from __future__ import annotations
 from glob import glob
 from itertools import chain
 from pathlib import Path
-from typing import Iterable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 # Resolve input file patterns in the original dataset

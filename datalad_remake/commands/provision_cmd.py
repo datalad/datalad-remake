@@ -11,17 +11,17 @@ import stat
 from contextlib import chdir
 from glob import glob
 from pathlib import Path
-from typing import (
-    Iterable,
-    Generator,
-)
 from tempfile import TemporaryDirectory
+from typing import (
+    TYPE_CHECKING,
+    ClassVar,
+)
 
 from datalad.support.constraints import EnsureBool
 from datalad_next.commands import (
     EnsureCommandParameterization,
-    ValidatedInterface,
     Parameter,
+    ValidatedInterface,
     build_doc,
     datasetmethod,
     eval_results,
@@ -30,13 +30,16 @@ from datalad_next.commands import (
 from datalad_next.constraints import (
     EnsureDataset,
     EnsureListOf,
-    EnsureStr, EnsurePath,
+    EnsurePath,
+    EnsureStr,
 )
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines, call_git_success
 
-from ..commands.make_cmd import read_list
+from datalad_remake.commands.make_cmd import read_list
 
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
 
 lgr = logging.getLogger('datalad.remake.provision_cmd')
 
@@ -57,39 +60,39 @@ class Provision(ValidatedInterface):
     environment for `make` commands.
     """
 
-    _validator_ = EnsureCommandParameterization(dict(
-        dataset=EnsureDataset(installed=True),
-        input=EnsureListOf(EnsureStr(min_len=1)),
-        input_list=EnsureStr(min_len=1),
-        tmp_dir=EnsurePath(is_mode=stat.S_ISDIR),
-        delete=EnsureDataset(installed=True),
-        no_globbing=EnsureBool(),
-    ))
+    _validator_ = EnsureCommandParameterization({
+        'dataset': EnsureDataset(installed=True),
+        'input': EnsureListOf(EnsureStr(min_len=1)),
+        'input_list': EnsureStr(min_len=1),
+        'tmp_dir': EnsurePath(is_mode=stat.S_ISDIR),
+        'delete': EnsureDataset(installed=True),
+        'no_globbing': EnsureBool(),
+    })
 
     # parameters of the command, must be exhaustive
-    _params_ = dict(
-        dataset=Parameter(
+    _params_: ClassVar[dict[str, Parameter]] = {
+        'dataset': Parameter(
             args=('-d', '--dataset'),
             doc="Dataset to be used as a configuration source. Beyond "
                 "reading configuration items, this command does not interact with "
                 "the dataset."),
-        branch=Parameter(
+        'branch': Parameter(
             args=('-b', '--branch',),
             doc="Branch (or commit) that should be provisioned, if "
                 "not specified HEAD will be used"),
-        delete=Parameter(
+        'delete': Parameter(
             args=('--delete',),
             doc="Delete the temporary worktree WORKTREE that belongs the the "
                 "dataset (cannot be used with `-b`, `--branch`, `-i`,"
                 "`--input`, `-I`, or `--input-list`)."),
-        input=Parameter(
+        'input': Parameter(
             args=('-i', '--input',),
             action='append',
             doc="An input file pattern (repeat for multiple inputs, "
                 "file pattern support python globbing, globbing is done in the "
                 "worktree and through all matching subdatasets, installing "
                 "if necessary)."),
-        input_list=Parameter(
+        'input_list': Parameter(
             args=('-I', '--input-list',),
             doc="Name of a file that contains a list of input file patterns. "
                 "Format is one file per line, relative path from `dataset`. "
@@ -97,11 +100,11 @@ class Provision(ValidatedInterface):
                 "that start with '#' are ignored. Line content is stripped "
                 "before used. This is useful if a large number of input file "
                 "patterns should be provided."),
-        worktree_dir=Parameter(
+        'worktree_dir': Parameter(
             args=('-w', '--worktree-dir',),
             doc="Path of the directory that should become the temporary "
                 "worktree, defaults to `tempfile.TemporaryDirectory().name`."),
-    )
+    }
 
     @staticmethod
     @datasetmethod(name='provision')
@@ -109,17 +112,20 @@ class Provision(ValidatedInterface):
     def __call__(dataset=None,
                  branch=None,
                  delete=None,
-                 input=None,
+                 input_=None,
                  input_list=None,
                  worktree_dir=None,
                  ):
 
         dataset : Dataset = dataset.ds if dataset else Dataset('.')
         if delete:
-            if branch or input:
-                raise ValueError(
+            if branch or input_:
+                msg = (
                     'Cannot use `-d`, `--delete` with `-b`, `--branch`,'
-                    ' `-i`, or `--input`')
+                    ' `-i`, or `--input`'
+                )
+                raise ValueError(
+                    msg)
 
             remove(dataset, delete.ds)
             yield get_status_dict(
@@ -130,7 +136,7 @@ class Provision(ValidatedInterface):
             return
 
         worktree_dir: Path = Path(worktree_dir or TemporaryDirectory().name)
-        inputs = input or [] + read_list(input_list)
+        inputs = input_ or [*read_list(input_list)]
         yield from provide(dataset, worktree_dir, inputs, branch)
 
 
@@ -258,10 +264,10 @@ def resolve_patterns(dataset: Dataset,
 
 def get_uninstalled_subdatasets(dataset: Dataset) -> set[Path]:
     """Get a list of the paths of all visible, non-installed subdatasets"""
-    return set([
+    return {
         Path(result['path']).relative_to(dataset.pathobj)
         for result in dataset.subdatasets(recursive=True, result_renderer='disabled')
-        if result['state'] == 'absent'])
+        if result['state'] == 'absent'}
 
 
 def glob_pattern(root: Dataset,
@@ -311,11 +317,11 @@ def glob_pattern(root: Dataset,
 
     # Match all elements at the current position with the first part of the
     # pattern.
-    for match in glob(
+    for rec_match in glob(
             '*' if pattern[0] == '**' else pattern[0],
             root_dir=root.pathobj / position
     ):
-        match = position / match
+        match = position / rec_match
 
         # If the match is a directory that is in uninstalled subdatasets,
         # install the dataset and updated uninstalled datasets before proceeding
@@ -355,9 +361,9 @@ def install_subdataset(worktree: Dataset,
                        ) -> None:
     """Install a subdataset, prefer locally available subdatasets"""
     local_subdataset = ([
-        l
-        for l in locally_available_datasets
-        if l[2] == subdataset_path] or [None])[0]
+        dataset
+        for dataset in locally_available_datasets
+        if dataset[2] == subdataset_path] or [None])[0]
 
     if local_subdataset:
         absolute_path, parent_ds_path, path_from_root = local_subdataset

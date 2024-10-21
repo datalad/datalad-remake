@@ -1,16 +1,13 @@
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import pytest
-
-from datalad.distribution.get import Get as datalad_get
+from datalad.distribution.get import Get as datalad_Get
 from datalad_next.datasets import Dataset
-from datalad_next.tests.fixtures import datalad_cfg
 
 from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
-
 
 test_method = """
 inputs = ['first', 'second', 'third']
@@ -50,13 +47,10 @@ output_pattern_glob = [
 ]
 
 
-test_file_content = [
-    (file, content)
-    for file, content in
-    zip(
-        output_pattern_static,
-        ['content: first\n', 'content: second\n', 'content: third\n'] * 4)
-]
+test_file_content = list(zip(
+    output_pattern_static,
+    ['content: first\n', 'content: second\n', 'content: third\n'] * 4, strict=False)
+)
 
 
 def _drop_files(dataset: Dataset,
@@ -74,7 +68,7 @@ def _check_content(dataset,
 
 
 @pytest.mark.parametrize('output_pattern', [output_pattern_static, output_pattern_glob])
-def test_end_to_end(tmp_path, datalad_cfg, monkeypatch, output_pattern):
+def test_end_to_end(tmp_path, monkeypatch, output_pattern):
 
     root_dataset = create_simple_computation_dataset(
         tmp_path, 'd2', 3, test_method)
@@ -104,7 +98,7 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch, output_pattern):
     # Go to the subdataset `d2_subds0/d2_subds1` and fetch the content of `a1.txt`
     # from a datalad-remake remote.
     monkeypatch.chdir(root_dataset.pathobj / 'd2_subds0' / 'd2_subds1')
-    datalad_get()('a1.txt')
+    datalad_Get()('a1.txt')
 
     # check that all known files that were computed are added to the annex
     _check_content(root_dataset, test_file_content)
@@ -113,6 +107,6 @@ def test_end_to_end(tmp_path, datalad_cfg, monkeypatch, output_pattern):
 
     # check get in subdatasets
     monkeypatch.chdir(root_dataset.pathobj)
-    datalad_get()('d2_subds0/d2_subds1/a1.txt')
+    datalad_Get()('d2_subds0/d2_subds1/a1.txt')
 
     _check_content(root_dataset, test_file_content)

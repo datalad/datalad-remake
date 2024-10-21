@@ -1,8 +1,8 @@
 from pathlib import Path
 
+from ..make_cmd import collect
 from .create_datasets import create_ds_hierarchy
 from .test_provision import get_file_list
-from ..make_cmd import collect
 
 
 def test_collect(tmp_path):

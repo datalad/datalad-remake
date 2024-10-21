@@ -3,14 +3,16 @@ from __future__ import annotations
 import contextlib
 from contextlib import chdir
 from pathlib import Path
-from typing import Iterable
+from typing import TYPE_CHECKING
 
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines
 
-from .create_datasets import create_ds_hierarchy
 from ..make_cmd import provide_context
+from .create_datasets import create_ds_hierarchy
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 file_path_templates = [
     '{file}.txt',
@@ -86,10 +88,10 @@ def test_worktree_globbing(tmp_path):
 
     worktree = Path(result['path'])
     worktree_set = set(get_file_list(worktree))
-    assert worktree_set == set(
+    assert worktree_set == {
         path.format(ds_name='ds1')
         for path in all_paths
-    )
+    }
     dataset.provision(delete=worktree, result_renderer='disabled')
 
     result = dataset.provision(
@@ -105,10 +107,10 @@ def test_worktree_globbing(tmp_path):
 
     worktree = Path(result['path'])
     worktree_set = set(get_file_list(worktree))
-    assert set(
+    assert {
         path.format(ds_name='ds1')
         for path in b_paths
-    ).issubset(worktree_set)
+    }.issubset(worktree_set)
     dataset.provision(delete=worktree, result_renderer='disabled')
 
     dataset.drop(
@@ -155,7 +157,7 @@ def test_unclean_dataset(tmp_path):
         worktree_dir=tmp_path / 'ds1_worktree1',
         on_failure='ignore',
         result_renderer='disabled')
-    assert set((result['status'], result['state']) for result in results) == \
+    assert {(result['status'], result['state']) for result in results} == \
         {('error', 'modified'), ('error', 'untracked')}
 
     # Check that a saved dataset can be provisioned
@@ -177,8 +179,8 @@ def test_branch_deletion_after_provision(tmp_path):
     assert not worktree.exists()
     with contextlib.chdir(dataset.path):
         branches = [
-            l.strip()
-            for l in call_git_lines(['branch'])]
+            line.strip()
+            for line in call_git_lines(['branch'])]
     assert worktree.name not in branches
 
 
