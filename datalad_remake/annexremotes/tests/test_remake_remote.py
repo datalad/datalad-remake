@@ -64,7 +64,6 @@ class MockedInput:
 
 
 def test_compute_remote_main(tmp_path, monkeypatch):
-
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 0)[0][2]
     monkeypatch.chdir(dataset.path)
 
@@ -79,15 +78,15 @@ def test_compute_remote_main(tmp_path, monkeypatch):
             subprocess.run(
                 ['git', 'annex', 'info', 'a.txt'],  # noqa: S607
                 stdout=subprocess.PIPE,
-                check=True).stdout.splitlines())).split(b': ')[1]
+                check=True,
+            ).stdout.splitlines(),
+        )
+    ).split(b': ')[1]
 
     (dataset.pathobj / specification_dir).mkdir(parents=True)
     (dataset.pathobj / specification_dir / '000001111122222').write_text(
-        build_json(
-            'echo',
-            [],
-            ['a.txt'],
-            {'content': 'some_string'}))
+        build_json('echo', [], ['a.txt'], {'content': 'some_string'})
+    )
 
     input_ = MockedInput()
 

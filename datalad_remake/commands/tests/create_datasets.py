@@ -15,23 +15,29 @@ def update_config_for_remake(dataset: Dataset):
         scope='local',
         recursive=True,
         spec=[('annex.security.allow-unverified-downloads', 'ACKTHPPT')],
-        result_renderer='disabled')
+        result_renderer='disabled',
+    )
 
 
 def add_remake_remote(dataset: Dataset):
-    call_git_success([
-        '-C', dataset.path,
-        'annex', 'initremote', 'remake',
-        'type=external', 'externaltype=datalad-remake',
-        'encryption=none'],
-        capture_output=True)
+    call_git_success(
+        [
+            '-C',
+            dataset.path,
+            'annex',
+            'initremote',
+            'remake',
+            'type=external',
+            'externaltype=datalad-remake',
+            'encryption=none',
+        ],
+        capture_output=True,
+    )
 
 
-def create_ds_hierarchy(tmp_path: Path,
-                        name: str,
-                        subdataset_levels: int = 2
-                        ) -> list[tuple[str, Path, Dataset]]:
-
+def create_ds_hierarchy(
+    tmp_path: Path, name: str, subdataset_levels: int = 2
+) -> list[tuple[str, Path, Dataset]]:
     # Create root dataset
     root_dataset = Dataset(tmp_path / name)
     root_dataset.create(force=True, result_renderer='disabled')
@@ -52,7 +58,7 @@ def create_ds_hierarchy(tmp_path: Path,
 
     # Link the datasets
     for index in range(len(datasets) - 2, -1, -1):
-        dataset, subdataset = datasets[index:index+2]
+        dataset, subdataset = datasets[index : index + 2]
         dataset[2].install(
             path=subdataset[0],
             source='file://' + subdataset[2].path,
@@ -73,12 +79,12 @@ def create_ds_hierarchy(tmp_path: Path,
     return datasets
 
 
-def create_simple_computation_dataset(tmp_path: Path,
-                                      dataset_name: str,
-                                      subdataset_levels: int,
-                                      test_method: str,
-                                      ) -> Dataset:
-
+def create_simple_computation_dataset(
+    tmp_path: Path,
+    dataset_name: str,
+    subdataset_levels: int,
+    test_method: str,
+) -> Dataset:
     datasets = create_ds_hierarchy(tmp_path, dataset_name, subdataset_levels)
     root_dataset = datasets[0][2]
 

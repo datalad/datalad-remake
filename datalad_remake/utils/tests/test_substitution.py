@@ -1,5 +1,3 @@
-
-
 from ..compute import (
     substitute_arguments,
     substitute_string,
@@ -7,10 +5,13 @@ from ..compute import (
 
 
 def test_multiple_substitutions():
-    assert substitute_string(
-        'This is a {test} with {multiple} substitutions',
-        {'test': 'string', 'multiple': 'multiple'},
-    ) == 'This is a string with multiple substitutions'
+    assert (
+        substitute_string(
+            'This is a {test} with {multiple} substitutions',
+            {'test': 'string', 'multiple': 'multiple'},
+        )
+        == 'This is a string with multiple substitutions'
+    )
 
 
 def test_argument_substitution():
@@ -20,11 +21,12 @@ def test_argument_substitution():
     ]
     s = substitute_arguments(
         {'arguments': arguments},
-        {'root_directory': '/path/to/root',
+        {
+            'root_directory': '/path/to/root',
             'input_dir': 'input',
             'output_dir': 'output',
         },
-        'arguments'
+        'arguments',
     )
     assert s == [
         '/path/to/root/input',

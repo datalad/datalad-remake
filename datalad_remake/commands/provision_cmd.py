@@ -3,6 +3,7 @@ A data provisioner that works with local git repositories.
 Data is provisioned in a temporary worktree. All subdatasets
 are currently also provisioned.
 """
+
 from __future__ import annotations
 
 import logging
@@ -60,79 +61,99 @@ class Provision(ValidatedInterface):
     environment for `make` commands.
     """
 
-    _validator_ = EnsureCommandParameterization({
-        'dataset': EnsureDataset(installed=True),
-        'input': EnsureListOf(EnsureStr(min_len=1)),
-        'input_list': EnsureStr(min_len=1),
-        'tmp_dir': EnsurePath(is_mode=stat.S_ISDIR),
-        'delete': EnsureDataset(installed=True),
-        'no_globbing': EnsureBool(),
-    })
+    _validator_ = EnsureCommandParameterization(
+        {
+            'dataset': EnsureDataset(installed=True),
+            'input': EnsureListOf(EnsureStr(min_len=1)),
+            'input_list': EnsureStr(min_len=1),
+            'tmp_dir': EnsurePath(is_mode=stat.S_ISDIR),
+            'delete': EnsureDataset(installed=True),
+            'no_globbing': EnsureBool(),
+        }
+    )
 
     # parameters of the command, must be exhaustive
     _params_: ClassVar[dict[str, Parameter]] = {
         'dataset': Parameter(
             args=('-d', '--dataset'),
-            doc="Dataset to be used as a configuration source. Beyond "
-                "reading configuration items, this command does not interact with "
-                "the dataset."),
+            doc='Dataset to be used as a configuration source. Beyond '
+            'reading configuration items, this command does not interact with '
+            'the dataset.',
+        ),
         'branch': Parameter(
-            args=('-b', '--branch',),
-            doc="Branch (or commit) that should be provisioned, if "
-                "not specified HEAD will be used"),
+            args=(
+                '-b',
+                '--branch',
+            ),
+            doc='Branch (or commit) that should be provisioned, if '
+            'not specified HEAD will be used',
+        ),
         'delete': Parameter(
             args=('--delete',),
-            doc="Delete the temporary worktree WORKTREE that belongs the the "
-                "dataset (cannot be used with `-b`, `--branch`, `-i`,"
-                "`--input`, `-I`, or `--input-list`)."),
+            doc='Delete the temporary worktree WORKTREE that belongs the the '
+            'dataset (cannot be used with `-b`, `--branch`, `-i`,'
+            '`--input`, `-I`, or `--input-list`).',
+        ),
         'input': Parameter(
-            args=('-i', '--input',),
+            args=(
+                '-i',
+                '--input',
+            ),
             action='append',
-            doc="An input file pattern (repeat for multiple inputs, "
-                "file pattern support python globbing, globbing is done in the "
-                "worktree and through all matching subdatasets, installing "
-                "if necessary)."),
+            doc='An input file pattern (repeat for multiple inputs, '
+            'file pattern support python globbing, globbing is done in the '
+            'worktree and through all matching subdatasets, installing '
+            'if necessary).',
+        ),
         'input_list': Parameter(
-            args=('-I', '--input-list',),
-            doc="Name of a file that contains a list of input file patterns. "
-                "Format is one file per line, relative path from `dataset`. "
-                "Empty lines, i.e. lines that contain only newlines, and lines "
-                "that start with '#' are ignored. Line content is stripped "
-                "before used. This is useful if a large number of input file "
-                "patterns should be provided."),
+            args=(
+                '-I',
+                '--input-list',
+            ),
+            doc='Name of a file that contains a list of input file patterns. '
+            'Format is one file per line, relative path from `dataset`. '
+            'Empty lines, i.e. lines that contain only newlines, and lines '
+            "that start with '#' are ignored. Line content is stripped "
+            'before used. This is useful if a large number of input file '
+            'patterns should be provided.',
+        ),
         'worktree_dir': Parameter(
-            args=('-w', '--worktree-dir',),
-            doc="Path of the directory that should become the temporary "
-                "worktree, defaults to `tempfile.TemporaryDirectory().name`."),
+            args=(
+                '-w',
+                '--worktree-dir',
+            ),
+            doc='Path of the directory that should become the temporary '
+            'worktree, defaults to `tempfile.TemporaryDirectory().name`.',
+        ),
     }
 
     @staticmethod
     @datasetmethod(name='provision')
     @eval_results
-    def __call__(dataset=None,
-                 branch=None,
-                 delete=None,
-                 input_=None,
-                 input_list=None,
-                 worktree_dir=None,
-                 ):
-
-        dataset : Dataset = dataset.ds if dataset else Dataset('.')
+    def __call__(
+        dataset=None,
+        branch=None,
+        delete=None,
+        input_=None,
+        input_list=None,
+        worktree_dir=None,
+    ):
+        dataset: Dataset = dataset.ds if dataset else Dataset('.')
         if delete:
             if branch or input_:
                 msg = (
                     'Cannot use `-d`, `--delete` with `-b`, `--branch`,'
                     ' `-i`, or `--input`'
                 )
-                raise ValueError(
-                    msg)
+                raise ValueError(msg)
 
             remove(dataset, delete.ds)
             yield get_status_dict(
                 action='provision [delete]',
                 path=delete.ds.path,
                 status='ok',
-                message=f'delete workspace: {delete.ds.path!r} from dataset {dataset}')
+                message=f'delete workspace: {delete.ds.path!r} from dataset {dataset}',
+            )
             return
 
         worktree_dir: Path = Path(worktree_dir or TemporaryDirectory().name)
@@ -140,29 +161,24 @@ class Provision(ValidatedInterface):
         yield from provide(dataset, worktree_dir, inputs, branch)
 
 
-def remove(dataset: Dataset,
-           worktree: Dataset
-           ) -> None:
+def remove(dataset: Dataset, worktree: Dataset) -> None:
     worktree.drop(
-        what='all',
-        reckless='kill',
-        recursive=True,
-        result_renderer='disabled')
+        what='all', reckless='kill', recursive=True, result_renderer='disabled'
+    )
     prune_worktrees(dataset)
-    call_git_success(
-        ['branch', '-d', worktree.pathobj.name],
-        cwd=dataset.pathobj)
+    call_git_success(['branch', '-d', worktree.pathobj.name], cwd=dataset.pathobj)
 
 
 def prune_worktrees(dataset: Dataset) -> None:
     call_git_lines(['worktree', 'prune'], cwd=dataset.pathobj)
 
 
-def provide(dataset: Dataset,
-            worktree_dir: Path,
-            input_patterns: list[str],
-            source_branch: str | None = None,
-            ) -> Generator:
+def provide(
+    dataset: Dataset,
+    worktree_dir: Path,
+    input_patterns: list[str],
+    source_branch: str | None = None,
+) -> Generator:
     """Provide paths defined by input_patterns in a temporary worktree
 
     Parameters
@@ -186,10 +202,10 @@ def provide(dataset: Dataset,
     worktree_dir.mkdir(parents=True, exist_ok=True)
 
     # Create a worktree
-    args = ['worktree', 'add'] + [str(worktree_dir)] + (
-        [source_branch]
-        if source_branch
-        else []
+    args = (
+        ['worktree', 'add']
+        + [str(worktree_dir)]
+        + ([source_branch] if source_branch else [])
     )
     call_git_lines(args, cwd=dataset.pathobj)
 
@@ -201,7 +217,8 @@ def provide(dataset: Dataset,
             path=element['path'],
             status='error',
             state=element['state'],
-            message=f'cannot provision {element["state"]} input: {element["path"]!r} from dataset {dataset}')
+            message=f'cannot provision {element["state"]} input: {element["path"]!r} from dataset {dataset}',
+        )
     if is_dirty:
         return
 
@@ -216,13 +233,13 @@ def provide(dataset: Dataset,
         action='provision',
         path=str(worktree_dir),
         status='ok',
-        message=f'provisioned dataset: {dataset} in workspace: {worktree_dir!r}',)
+        message=f'provisioned dataset: {dataset} in workspace: {worktree_dir!r}',
+    )
 
 
-def resolve_patterns(dataset: Dataset,
-                     worktree: Dataset,
-                     pattern_list: list[str]
-                     ) -> set[Path]:
+def resolve_patterns(
+    dataset: Dataset, worktree: Dataset, pattern_list: list[str]
+) -> set[Path]:
     """Resolve file patterns in the dataset
 
     This method will resolve relative path-patterns in the dataset. It will
@@ -258,7 +275,9 @@ def resolve_patterns(dataset: Dataset,
                 Path(),
                 pattern_parts,
                 get_uninstalled_subdatasets(worktree),
-                get_installed_subdatasets(dataset)))
+                get_installed_subdatasets(dataset),
+            )
+        )
     return matches
 
 
@@ -267,15 +286,17 @@ def get_uninstalled_subdatasets(dataset: Dataset) -> set[Path]:
     return {
         Path(result['path']).relative_to(dataset.pathobj)
         for result in dataset.subdatasets(recursive=True, result_renderer='disabled')
-        if result['state'] == 'absent'}
+        if result['state'] == 'absent'
+    }
 
 
-def glob_pattern(root: Dataset,
-                 position: Path,
-                 pattern: list[str],
-                 uninstalled_subdatasets: set[Path],
-                 locally_available_subdatasets: Iterable[tuple[Path, Path, Path]],
-                 ) -> set[Path]:
+def glob_pattern(
+    root: Dataset,
+    position: Path,
+    pattern: list[str],
+    uninstalled_subdatasets: set[Path],
+    locally_available_subdatasets: Iterable[tuple[Path, Path, Path]],
+) -> set[Path]:
     """Glob a pattern in a dataset installing subdatasets if necessary
 
     Parameters
@@ -311,15 +332,15 @@ def glob_pattern(root: Dataset,
             position,
             pattern[1:],
             uninstalled_subdatasets,
-            locally_available_subdatasets)
+            locally_available_subdatasets,
+        )
     else:
         result = set()
 
     # Match all elements at the current position with the first part of the
     # pattern.
     for rec_match in glob(
-            '*' if pattern[0] == '**' else pattern[0],
-            root_dir=root.pathobj / position
+        '*' if pattern[0] == '**' else pattern[0], root_dir=root.pathobj / position
     ):
         match = position / rec_match
 
@@ -329,10 +350,8 @@ def glob_pattern(root: Dataset,
         if match.is_dir() and match in uninstalled_subdatasets:
             lgr.info('Installing subdataset %s to glob input', match)
             install_subdataset(
-                root,
-                match,
-                uninstalled_subdatasets,
-                locally_available_subdatasets)
+                root, match, uninstalled_subdatasets, locally_available_subdatasets
+            )
 
         # We have a match, try to match the remainder of the pattern.
         submatch_pattern = pattern if pattern[0] == '**' else pattern[1:]
@@ -342,7 +361,9 @@ def glob_pattern(root: Dataset,
                 match,
                 submatch_pattern,
                 uninstalled_subdatasets,
-                locally_available_subdatasets))
+                locally_available_subdatasets,
+            )
+        )
 
     return result
 
@@ -354,43 +375,47 @@ def get_dirty_elements(dataset: Dataset) -> Generator:
             yield result
 
 
-def install_subdataset(worktree: Dataset,
-                       subdataset_path: Path,
-                       uninstalled_subdatasets: set[Path],
-                       locally_available_datasets: Iterable[tuple[Path, Path, Path]],
-                       ) -> None:
+def install_subdataset(
+    worktree: Dataset,
+    subdataset_path: Path,
+    uninstalled_subdatasets: set[Path],
+    locally_available_datasets: Iterable[tuple[Path, Path, Path]],
+) -> None:
     """Install a subdataset, prefer locally available subdatasets"""
-    local_subdataset = ([
-        dataset
-        for dataset in locally_available_datasets
-        if dataset[2] == subdataset_path] or [None])[0]
+    local_subdataset = (
+        [
+            dataset
+            for dataset in locally_available_datasets
+            if dataset[2] == subdataset_path
+        ]
+        or [None]
+    )[0]
 
     if local_subdataset:
         absolute_path, parent_ds_path, path_from_root = local_subdataset
         # Set the URL to the full source path
-        args = ['-C', str(worktree.pathobj / parent_ds_path),
-                'submodule', 'set-url', '--',
-                str(path_from_root.relative_to(parent_ds_path)),
-                'file://' + str(absolute_path)]
+        args = [
+            '-C',
+            str(worktree.pathobj / parent_ds_path),
+            'submodule',
+            'set-url',
+            '--',
+            str(path_from_root.relative_to(parent_ds_path)),
+            'file://' + str(absolute_path),
+        ]
         call_git_lines(args)
-    worktree.get(
-        str(subdataset_path),
-        get_data=False,
-        result_renderer='disabled')
+    worktree.get(str(subdataset_path), get_data=False, result_renderer='disabled')
     uninstalled_subdatasets.remove(subdataset_path)
     uninstalled_subdatasets.update(get_uninstalled_subdatasets(worktree))
 
 
-def get_installed_subdatasets(dataset: Dataset
-                              ) -> Iterable[tuple[Path, Path, Path]]:
-    results = dataset.subdatasets(
-        recursive=True,
-        result_renderer='disabled')
+def get_installed_subdatasets(dataset: Dataset) -> Iterable[tuple[Path, Path, Path]]:
+    results = dataset.subdatasets(recursive=True, result_renderer='disabled')
     return [
         (
             Path(result['path']),
             Path(result['parentds']).relative_to(dataset.pathobj),
-            Path(result['path']).relative_to(dataset.pathobj)
+            Path(result['path']).relative_to(dataset.pathobj),
         )
         for result in results
         if result['state'] == 'present'

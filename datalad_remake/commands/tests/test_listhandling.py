@@ -27,17 +27,19 @@ def test_list_reading_strip(tmp_path: Path):
     assert read_list(str(list_file)) == ['a', 'b', 'c']
 
 
-def _test_wordlist(tmp_path: Path,
-                   word_list: list[str],
-                   ) -> None:
+def _test_wordlist(
+    tmp_path: Path,
+    word_list: list[str],
+) -> None:
     list_file = _write_list(tmp_path, word_list)
     assert read_list(str(list_file)) == word_list
     assert read_list(list_file) == word_list
 
 
-def _write_list(tmp_path: Path,
-                word_list: list[str],
-                ) -> Path:
+def _write_list(
+    tmp_path: Path,
+    word_list: list[str],
+) -> Path:
     list_file = tmp_path / 'list.txt'
     list_file.write_text('\n'.join(word_list))
     return list_file

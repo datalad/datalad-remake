@@ -15,9 +15,7 @@ output_pattern = ['a.txt']
 
 
 def test_duplicated_computation(tmp_path):
-
-    root_dataset = create_simple_computation_dataset(
-        tmp_path, 'ds1', 0, test_method)
+    root_dataset = create_simple_computation_dataset(tmp_path, 'ds1', 0, test_method)
 
     # run the same command twice
     _run_simple_computation(root_dataset)
@@ -25,20 +23,21 @@ def test_duplicated_computation(tmp_path):
 
 
 def test_speculative_computation(tmp_path, datalad_cfg):
-
-    root_dataset = create_simple_computation_dataset(
-        tmp_path, 'ds1', 0, test_method)
+    root_dataset = create_simple_computation_dataset(tmp_path, 'ds1', 0, test_method)
 
     root_dataset.make(
         template='test_method',
         parameter=['name=Robert', 'file=spec.txt'],
         output=['spec.txt'],
         url_only=True,
-        result_renderer='disabled')
+        result_renderer='disabled',
+    )
 
     # set annex security related variables to allow datalad-remake-URLs
     # in speculative make commands
-    datalad_cfg.set('annex.security.allow-unverified-downloads', 'ACKTHPPT', scope='global')
+    datalad_cfg.set(
+        'annex.security.allow-unverified-downloads', 'ACKTHPPT', scope='global'
+    )
 
     # Perform the speculative computation
     root_dataset.get('spec.txt')
@@ -50,7 +49,8 @@ def _run_simple_computation(root_dataset: Dataset):
         template='test_method',
         parameter=['name=Robert', 'file=a.txt'],
         output=['a.txt'],
-        result_renderer='disabled')
+        result_renderer='disabled',
+    )
 
     # check that the output is correct
     assert (root_dataset.pathobj / 'a.txt').read_text() == 'Hello Robert\n'

@@ -15,7 +15,7 @@ __all__ = [
 # to be found by datalad
 command_suite = (
     # description of the command suite, displayed in cmdline help
-    "DataLad remake command suite",
+    'DataLad remake command suite',
     [
         # specification of a command, any number of commands can be defined
         (
@@ -26,7 +26,7 @@ command_suite = (
             # optional name of the command in the cmdline API
             'make',
             # optional name of the command in the Python API
-            'make'
+            'make',
         ),
         (
             # importable module that contains the command implementation
@@ -36,9 +36,9 @@ command_suite = (
             # optional name of the command in the cmdline API
             'provision',
             # optional name of the command in the Python API
-            'provision'
+            'provision',
         ),
-    ]
+    ],
 )
 
 

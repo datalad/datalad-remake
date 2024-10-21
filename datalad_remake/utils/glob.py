@@ -10,12 +10,13 @@ if TYPE_CHECKING:
 
 
 # Resolve input file patterns in the original dataset
-def resolve_patterns(root_dir: str | Path,
-                     patterns: Iterable[str]
-                     ) -> set[str]:
+def resolve_patterns(root_dir: str | Path, patterns: Iterable[str]) -> set[str]:
     return set(
         filter(
             lambda p: not (Path(root_dir) / p).is_dir(),
             chain.from_iterable(
                 glob(pattern, root_dir=str(root_dir), recursive=True)
-                for pattern in patterns)))
+                for pattern in patterns
+            ),
+        )
+    )

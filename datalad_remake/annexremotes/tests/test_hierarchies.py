@@ -32,10 +32,18 @@ arguments = [
 
 
 output_pattern_static = [
-    'a.txt', 'b.txt', 'new.txt',
-    'd2_subds0/a0.txt', 'd2_subds0/b0.txt', 'd2_subds0/new.txt',
-    'd2_subds0/d2_subds1/a1.txt', 'd2_subds0/d2_subds1/b1.txt', 'd2_subds0/d2_subds1/new.txt',
-    'd2_subds0/d2_subds1/d2_subds2/a2.txt', 'd2_subds0/d2_subds1/d2_subds2/b2.txt', 'd2_subds0/d2_subds1/d2_subds2/new.txt',
+    'a.txt',
+    'b.txt',
+    'new.txt',
+    'd2_subds0/a0.txt',
+    'd2_subds0/b0.txt',
+    'd2_subds0/new.txt',
+    'd2_subds0/d2_subds1/a1.txt',
+    'd2_subds0/d2_subds1/b1.txt',
+    'd2_subds0/d2_subds1/new.txt',
+    'd2_subds0/d2_subds1/d2_subds2/a2.txt',
+    'd2_subds0/d2_subds1/d2_subds2/b2.txt',
+    'd2_subds0/d2_subds1/d2_subds2/new.txt',
 ]
 
 
@@ -47,31 +55,29 @@ output_pattern_glob = [
 ]
 
 
-test_file_content = list(zip(
-    output_pattern_static,
-    ['content: first\n', 'content: second\n', 'content: third\n'] * 4, strict=False)
+test_file_content = list(
+    zip(
+        output_pattern_static,
+        ['content: first\n', 'content: second\n', 'content: third\n'] * 4,
+        strict=False,
+    )
 )
 
 
-def _drop_files(dataset: Dataset,
-                files: Iterable[str]):
+def _drop_files(dataset: Dataset, files: Iterable[str]):
     for file in files:
         dataset.drop(file, reckless='availability', result_renderer='disabled')
         assert not (dataset.pathobj / file).exists()
 
 
-def _check_content(dataset,
-                   file_content: Iterable[tuple[str, str]]
-                   ):
+def _check_content(dataset, file_content: Iterable[tuple[str, str]]):
     for file, content in file_content:
         assert (dataset.pathobj / file).read_text() == content
 
 
 @pytest.mark.parametrize('output_pattern', [output_pattern_static, output_pattern_glob])
 def test_end_to_end(tmp_path, monkeypatch, output_pattern):
-
-    root_dataset = create_simple_computation_dataset(
-        tmp_path, 'd2', 3, test_method)
+    root_dataset = create_simple_computation_dataset(tmp_path, 'd2', 3, test_method)
 
     # run `make` command
     results = root_dataset.make(
@@ -82,11 +88,13 @@ def test_end_to_end(tmp_path, monkeypatch, output_pattern):
             'third=third',
         ],
         output=output_pattern,
-        result_renderer='disabled')
+        result_renderer='disabled',
+    )
 
     collected_output = [
         str(Path(result['path']).relative_to(root_dataset.pathobj))
-        for result in results]
+        for result in results
+    ]
     assert set(collected_output) == set(output_pattern_static)
 
     # check computation success

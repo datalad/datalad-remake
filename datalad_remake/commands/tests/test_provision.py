@@ -23,33 +23,29 @@ file_path_templates = [
 
 
 all_paths = [
-    template.format(file=f)
-    for template in file_path_templates
-    for f in ['a', 'b']
+    template.format(file=f) for template in file_path_templates for f in ['a', 'b']
 ]
 
-a_paths = [
-    path.format(file='a')
-    for path in file_path_templates
-]
+a_paths = [path.format(file='a') for path in file_path_templates]
 
-b_paths = [
-    path.format(file='b')
-    for path in file_path_templates
-]
+b_paths = [path.format(file='b') for path in file_path_templates]
 
 
 def test_worktree_basic(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     inputs = [
-        'a.txt', 'b.txt',
-        'ds1_subds0/a0.txt', 'ds1_subds0/b0.txt',
-        'ds1_subds0/ds1_subds1/a1.txt', 'ds1_subds0/ds1_subds1/b1.txt'
+        'a.txt',
+        'b.txt',
+        'ds1_subds0/a0.txt',
+        'ds1_subds0/b0.txt',
+        'ds1_subds0/ds1_subds1/a1.txt',
+        'ds1_subds0/ds1_subds1/b1.txt',
     ]
     provision_result = dataset.provision(
         worktree_dir=tmp_path / 'ds1_worktree1',
         input=inputs,
-        result_renderer='disabled')[0]
+        result_renderer='disabled',
+    )[0]
 
     worktree = Dataset(provision_result['path'])
     # Check input availability
@@ -67,10 +63,8 @@ def test_worktree_basic(tmp_path):
 
     check_deleted_worktrees(dataset)
     dataset.drop(
-        what='all',
-        reckless='kill',
-        recursive=True,
-        result_renderer='disabled')
+        what='all', reckless='kill', recursive=True, result_renderer='disabled'
+    )
 
 
 def test_worktree_globbing(tmp_path):
@@ -88,10 +82,7 @@ def test_worktree_globbing(tmp_path):
 
     worktree = Path(result['path'])
     worktree_set = set(get_file_list(worktree))
-    assert worktree_set == {
-        path.format(ds_name='ds1')
-        for path in all_paths
-    }
+    assert worktree_set == {path.format(ds_name='ds1') for path in all_paths}
     dataset.provision(delete=worktree, result_renderer='disabled')
 
     result = dataset.provision(
@@ -107,23 +98,17 @@ def test_worktree_globbing(tmp_path):
 
     worktree = Path(result['path'])
     worktree_set = set(get_file_list(worktree))
-    assert {
-        path.format(ds_name='ds1')
-        for path in b_paths
-    }.issubset(worktree_set)
+    assert {path.format(ds_name='ds1') for path in b_paths}.issubset(worktree_set)
     dataset.provision(delete=worktree, result_renderer='disabled')
 
     dataset.drop(
-        what='all',
-        reckless='kill',
-        recursive=True,
-        result_renderer='disabled')
+        what='all', reckless='kill', recursive=True, result_renderer='disabled'
+    )
 
 
-def get_file_list(root: Path,
-                  path: Path|None = None,
-                  prefix: Path|None = None
-                  ) -> Iterable[str]:
+def get_file_list(
+    root: Path, path: Path | None = None, prefix: Path | None = None
+) -> Iterable[str]:
     prefix = prefix or Path('')
     path = path or root
     for child in path.iterdir():
@@ -156,31 +141,31 @@ def test_unclean_dataset(tmp_path):
         input=input_pattern,
         worktree_dir=tmp_path / 'ds1_worktree1',
         on_failure='ignore',
-        result_renderer='disabled')
-    assert {(result['status'], result['state']) for result in results} == \
-        {('error', 'modified'), ('error', 'untracked')}
+        result_renderer='disabled',
+    )
+    assert {(result['status'], result['state']) for result in results} == {
+        ('error', 'modified'),
+        ('error', 'untracked'),
+    }
 
     # Check that a saved dataset can be provisioned
     dataset.save()
     dataset.provision(
         input=input_pattern,
         worktree_dir=tmp_path / 'ds1_worktree2',
-        result_renderer='disabled')
+        result_renderer='disabled',
+    )
 
 
 def test_branch_deletion_after_provision(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     with provide_context(
-            dataset=dataset,
-            branch=None,
-            input_patterns=['a.txt']
+        dataset=dataset, branch=None, input_patterns=['a.txt']
     ) as worktree:
         assert worktree.exists()
     assert not worktree.exists()
     with contextlib.chdir(dataset.path):
-        branches = [
-            line.strip()
-            for line in call_git_lines(['branch'])]
+        branches = [line.strip() for line in call_git_lines(['branch'])]
     assert worktree.name not in branches
 
 
@@ -188,32 +173,37 @@ def test_not_present_local_datasets(tmp_path):
     root_ds = Dataset(tmp_path / 'ds1')
     root_ds.create(cfg_proc='text2git', result_renderer='disabled')
     root_ds.clone(
-        'https://github.com/OpenNeuroDatasets/ds000102',
-        result_renderer='disabled')
+        'https://github.com/OpenNeuroDatasets/ds000102', result_renderer='disabled'
+    )
     provisioned_dataset = Dataset(
-        root_ds.provision(
-            input=['ds000102/README'],
-            result_renderer='disabled')[0]['path'])
+        root_ds.provision(input=['ds000102/README'], result_renderer='disabled')[0][
+            'path'
+        ]
+    )
     url = _get_submodule_url(provisioned_dataset, 'ds000102')
     assert url.startswith(f'file://{root_ds.path}')
 
     root_ds.drop(
-        'ds000102',
-        what='all',
-        reckless='availability',
-        result_renderer='disabled')
+        'ds000102', what='all', reckless='availability', result_renderer='disabled'
+    )
 
     provisioned_dataset_2 = Dataset(
         root_ds.provision(
-            input=['ds000102/README'],
-            on_failure='ignore',
-            result_renderer='disabled')[0]['path'])
+            input=['ds000102/README'], on_failure='ignore', result_renderer='disabled'
+        )[0]['path']
+    )
     url_2 = _get_submodule_url(provisioned_dataset_2, 'ds000102')
     assert url_2 == 'https://github.com/OpenNeuroDatasets/ds000102'
 
 
 def _get_submodule_url(dataset: Dataset, submodule_path: str) -> str:
     x = call_git_lines(
-        ['config', '-f', str(dataset.pathobj / '.gitmodules'), '--get',
-         f'submodule.{submodule_path}.url'])
+        [
+            'config',
+            '-f',
+            str(dataset.pathobj / '.gitmodules'),
+            '--get',
+            f'submodule.{submodule_path}.url',
+        ]
+    )
     return x[0].strip()
