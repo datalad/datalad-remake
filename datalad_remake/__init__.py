@@ -7,6 +7,8 @@ from datalad_remake._version import __version__
 __all__ = [
     '__version__',
     'command_suite',
+    'specification_dir',
+    'template_dir',
 ]
 
 

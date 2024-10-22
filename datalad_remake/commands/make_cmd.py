@@ -392,7 +392,7 @@ def execute(
 
     # Run the computation in the worktree-directory
     template_path = Path(template_dir) / template_name
-    worktree_ds.get(template_path)
+    worktree_ds.get(template_path, result_renderer='disabled')
     compute(worktree, worktree / template_path, parameter)
 
 

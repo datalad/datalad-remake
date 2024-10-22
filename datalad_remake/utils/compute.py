@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from pathlib import Path
 
-lgr = logging.getLogger('datalad.compute')
+lgr = logging.getLogger('datalad.remake')
 
 
 def substitute_string(
@@ -38,23 +38,23 @@ def get_substitutions(
     template: dict[str, Any],
     arguments: dict[str, str],
 ) -> dict[str, str]:
-    # Check the user specified inputs
-    inputs = template['inputs']
-    if len(inputs) != len(arguments.keys()):
-        msg = 'Template inputs and arguments have different lengths'
+    # Check the user specified parameters
+    parameters = template['parameters']
+    if len(parameters) != len(arguments.keys()):
+        msg = 'Method template parameters and arguments have different lengths'
         raise ValueError(msg)
-    if not all(input_name in arguments for input_name in inputs):
+    if not all(param_name in arguments for param_name in parameters):
         msg = (
-            f'Template inputs and arguments have different names: '
-            f'inputs: {inputs}, arguments: {arguments}'
+            f'Method template parameters and arguments have different names: '
+            f'parameters: {parameters}, arguments: {arguments}'
         )
         raise ValueError(msg)
 
-    if len(inputs) != len(set(inputs)):
-        msg = 'Template inputs contain duplicates'
+    if len(parameters) != len(set(parameters)):
+        msg = f'Method template parameters contain duplicates: {parameters}'
         raise ValueError(msg)
 
-    return {input_name: arguments[input_name] for input_name in inputs}
+    return {param_name: arguments[param_name] for param_name in parameters}
 
 
 def compute(
@@ -68,15 +68,13 @@ def compute(
     substitutions = get_substitutions(template, compute_arguments)
     substitutions['root_directory'] = str(root_directory)
 
-    substituted_executable = substitute_string(template['executable'], substitutions)
-    substituted_arguments = substitute_arguments(template, substitutions, 'arguments')
+    substituted_command = substitute_arguments(template, substitutions, 'command')
 
     with contextlib.chdir(root_directory):
         if template.get('use_shell', 'false') == 'true':
-            cmd = ' '.join([substituted_executable, *substituted_arguments])
+            cmd = ' '.join(substituted_command)
             lgr.debug(f'compute: RUNNING: with shell=True: {cmd}')
             subprocess.run(cmd, shell=True, check=True)  # noqa: S602
         else:
-            cmd_list = [substituted_executable, *substituted_arguments]
-            lgr.debug(f'compute: RUNNING: {cmd_list}')
-            subprocess.run(cmd_list, check=True)
+            lgr.debug(f'compute: RUNNING: {substituted_command}')
+            subprocess.run(substituted_command, check=True)

@@ -5,10 +5,9 @@ from datalad_remake.commands.tests.create_datasets import (
 )
 
 test_method = """
-inputs = ['name', 'file']
+parameters = ['name', 'file']
 use_shell = 'true'
-executable = 'echo'
-arguments = ["Hello {name} > {file}"]
+command = ["echo Hello {name} > {file}"]
 """
 
 output_pattern = ['a.txt']
@@ -40,7 +39,7 @@ def test_speculative_computation(tmp_path, datalad_cfg):
     )
 
     # Perform the speculative computation
-    root_dataset.get('spec.txt')
+    root_dataset.get('spec.txt', result_renderer='disabled')
     assert (root_dataset.pathobj / 'spec.txt').read_text() == 'Hello Robert\n'
 
 

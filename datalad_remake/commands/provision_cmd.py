@@ -226,7 +226,7 @@ def provide(
     # Get all input files in the worktree
     with chdir(worktree_dataset.path):
         for path in resolve_patterns(dataset, worktree_dataset, input_patterns):
-            worktree_dataset.get(path)
+            worktree_dataset.get(path, result_renderer='disabled')
 
     yield get_status_dict(
         action='provision',

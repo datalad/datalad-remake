@@ -23,9 +23,9 @@ jobs:
       - name: Type check project
         run: |
           # get any type stubs that mypy thinks it needs
-          hatch run types:mypy --install-types --non-interactive --follow-imports skip datalad_remake
+          # specify `--disable-error-code=import-untyped` until the
+          # datalad-packages have type stubs for all their modules.
+          hatch run types:mypy --disable-error-code=import-untyped --install-types --non-interactive --follow-imports skip datalad_remake
           # run mypy on the full project.
           # run on the oldest supported Python version.
-          # specify `--ignore-missing-imports` until the datalad-packages have
-          # type stubs for all their modules.
-          hatch run types:mypy --python-version 3.11 --ignore-missing-imports --pretty --show-error-context datalad_remake
+          hatch run types:mypy --python-version 3.11 --disable-error-code=import-untyped --pretty --show-error-context datalad_remake

@@ -20,22 +20,17 @@
 # each input variable. In this case the invocation could look like this:
 # `datalad make -p first=bob -p second=alice -p output=name ... one-to-many`
 #
-inputs = ['first', 'second', 'output']
+parameters = ['first', 'second', 'output']
 
 # Use a shell to interpret `arguments`. By default, `use_shell` is 'false'.
 #
 use_shell = 'true'
 
-# The name of the executable. This will be the prepended to the argument list
-# given in `arguments`.
-#
-executable = 'echo'
 
-# Arguments to the executable. The curly braces are placeholders for the
-# input variables that were defined above. They will be replaced with the
-# values provided in the parameter arguments of `datalad make`.
+# The command line that should be executed. The curly braces are placeholders
+# for the input variables that were defined above. They will be replaced with
+# the values provided in the parameter arguments of `datalad make`.
 #
-arguments = [
-    "content: {first} > '{output}-1.txt';",
-    "echo content: {second} > '{output}-2.txt'",
+command = [
+    "echo content: {first} > '{output}-1.txt'; echo content: {second} > '{output}-2.txt'",
 ]
