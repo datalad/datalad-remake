@@ -31,28 +31,29 @@ There is no pypi-package yet. To install the extension, clone the repository
 and install it via `pip` (preferably in a virtual environment):
 
 ```bash
-git clone https://github.com/christian-monch/datalad-compute.git
-cd datalad-compute
-pip install -r requirements-devel.txt
-pip install .
+> git clone https://github.com/datalad/datalad-remake.git
+> cd datalad-remake
+> pip install -r requirements-devel.txt
+> pip install .
 ```
 
 
 ## Example usage
 
-Install the extension and create a dataset
+Create a dataset
 
 
 ```bash
-> datalad create compute-test-1
-> cd compute-test-1
+> datalad create remake-test-1
+> cd remake-test-1
 ```
 
 Create the template directory and a template
 
 ```bash
-> mkdir -p .datalad/compute/methods
-> cat > .datalad/compute/methods/one-to-many <<EOF
+> mkdir -p .datalad/make/specifications
+> mkdir -p .datalad/make/methods
+> cat > .datalad/make/methods/one-to-many <<EOF
 inputs = ['first', 'second', 'output']
 
 use_shell = 'true'
@@ -62,17 +63,17 @@ arguments = [
     "echo content: {second} > '{output}-2.txt'",
 ]
 EOF
-> datalad save -m "add `one-to-many` compute method"
+> datalad save -m "add `one-to-many` remake method"
 ```
 
-Create a "compute" annex special remote:
+Create a "datalad-remake" annex special remote:
 ```bash
-> git annex initremote compute encryption=none type=external externaltype=compute
+> git annex initremote datalad-remake encryption=none type=external externaltype=datalad-remake
 ```
 
 Execute a computation and save the result:
 ```bash
-> datalad compute -p first=bob -p second=alice -p output=name -o name-1.txt \
+> datalad make -p first=bob -p second=alice -p output=name -o name-1.txt \
 -o name-2.txt one-to-many
 ```
 The method `one-to-many` will create two files with the names `<output>-1.txt`
@@ -80,7 +81,7 @@ and `<output>-2.txt`. That is why the two files `name-1.txt` and `name-2.txt`
 are listed as outputs in the command above.
 
 Note that only output files that are defined by the `-o/--output` option will
-be available in the dataset after `datalad compute`. Similarly, only the files
+be available in the dataset after `datalad make`. Similarly, only the files
 defined by `-i/--input` will be available as inputs to the computation (the
 computation is performed in a "scratch" directory, so the input files must be
 copied there and the output files must be copied back).
@@ -102,7 +103,7 @@ Drop the content of `name-1.txt`, verify it is gone, recreate it via
 > cat name-1.txt
 ``` 
 
-The command `datalad compute` does also support to just record the parameters
+The command `datalad make` does also support to just record the parameters
 that would lead to a certain computation, without actually performing the
 computation. We refer to this as *speculative computation*.
 
@@ -113,17 +114,17 @@ To use this feature, the following configuration value has to be set:
 ```
 
 Afterward, a speculative computation can be recorded by providing the `-u` option
-(url-only) to `datalad compute`.
+(url-only) to `datalad make`.
 
 ```bash
-> datalad compute -p first=john -p second=susan -p output=person \
+> datalad make -p first=john -p second=susan -p output=person \
 -o person-1.txt -o person-2.txt -u one-to-many
 > cat person-1.txt    # this will fail, because the computation has not yet been performed
 ```
 
 `ls -l person-1.txt` will show a link to a not-downloaded URL-KEY.
 `git annex whereis person-1.txt` will show the associated computation description URL.
-No computation has been performed yet, `datalad compute` just creates an URL-KEY and
+No computation has been performed yet, `datalad make` just creates an URL-KEY and
 associates a computation description URL with the URL-KEY.
 
 Use `datalad get` to perform the computation for the first time and receive the result::
