@@ -14,18 +14,20 @@ This example requires Singularity.
 
 Please note, that there is no need to install fMRIprep. The singularity container will be automatically retrieved from the ReproNim containers collection. However, in order to use fMRIprep you need to obtain a [FreeSurfer license](https://surfer.nmr.mgh.harvard.edu/fswiki/License). 
 
+Please also note that fMRIprep is invoced with the option `--sloppy`. This is done to reduce the runtime. For reproducible results, please run fMRIprep without the option `--sloppy`.
+
 It is assumed that the license file is located in `/tmp`. Make sure to copy it there or modify the `parameter.txt` file accordingly (see the [Add template](#add-template) section below).
 
 ## How to install
 
-Install `datalad-compute` extension, as described [here](https://github.com/christian-monch/datalad-compute/tree/main?tab=readme-ov-file#installation).
+Install `datalad-remake` extension, as described [here](https://github.com/christian-monch/datalad-compute/tree/main?tab=readme-ov-file#installation).
 
 ## How to use
 
-It is assumed that you have a local copy of `datalad-compute` repository in your `$HOME` directory. If this not the case, adjust the path below:
+It is assumed that you have a local copy of the `datalad-remake` project in your `$HOME` directory. If this not the case, adjust the path below:
 
 ```
-EXAMPLE=$HOME/datalad-compute/examples/fmriprep-singularity
+EXAMPLE=$HOME/datalad-remake/examples/fmriprep-singularity
 ```
 
 ### Create dataset
@@ -69,29 +71,24 @@ Configure the dataset in which you want to collect the results of the (re)comput
 cd $HOME/my-project/derivatives/ds000102
 ```
 
-First, add the `compute` special remote:
+Add a `datalad-remake` special remote:
 
 ```
-git annex initremote compute type=external externaltype=compute encryption=none
+git annex initremote compute type=external externaltype=datalad-remake encryption=none
 ```
 
-Second, adjust git configuration:
-```
-git config annex.security.allowed-url-schemes datalad-make
-git config annex.security.allowed-ip-addresses all
-```
 
 ### Add template
 
-Place the `fmriprep-singularity` template in the `.datalad/compute/methods` of the root dataset:
+Place the `fmriprep-singularity` template in the `.datalad/remake/methods` of the root dataset:
 
 ```
 cd $HOME/my-project
 
-mkdir -p .datalad/compute/methods
-cp $EXAMPLE/fmriprep-singularity .datalad/compute/methods/fmriprep-singularity
+mkdir -p .datalad/remake/methods
+cp $EXAMPLE/fmriprep-singularity .datalad/remake/methods/fmriprep-singularity
 
-datalad save -m "Add a compute method"
+datalad save -m "Add a remake method"
 ```
 
 Place the `input.txt`, `output.txt` and `parameter.txt` files in the root dataset. These files do not have to be tracked in git history, so no `datalad save` is required at this point.
@@ -106,11 +103,11 @@ To test the example, run:
 
 ```
 cd $HOME/my-project
-datalad compute -I input.txt -O output.txt -P parameter.txt fmriprep-singularity
+datalad make -I input.txt -O output.txt -P parameter.txt fmriprep-singularity
 ```
 
 You can also do that in `debug` mode:
 
 ```
-datalad -l debug compute -I input.txt -O output.txt -P parameter.txt fmriprep-singularity
+datalad -l debug make -I input.txt -O output.txt -P parameter.txt fmriprep-singularity
 ```
