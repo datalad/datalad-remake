@@ -183,17 +183,13 @@ class Make(ValidatedInterface):
         parameter: list[str] | None = None,
         parameter_list: Path | None = None,
     ) -> Generator:
-
         ds: Dataset = dataset.ds if dataset else Dataset('.')
 
         input_pattern = (input or []) + read_list(input_list)
         output_pattern = (output or []) + read_list(output_list)
         parameter = (parameter or []) + read_list(parameter_list)
 
-        parameter_dict = {
-            p.split('=', 1)[0]: p.split('=', 1)[1]
-            for p in parameter
-        }
+        parameter_dict = {p.split('=', 1)[0]: p.split('=', 1)[1] for p in parameter}
 
         # We have to get the URL first, because saving the specification to
         # the dataset will change the version.
@@ -296,16 +292,8 @@ def build_json(
     )
 
 
-def add_url(dataset: Dataset,
-            file_path: str,
-            url_base: str,
-            *,
-            url_only: bool
-            ) -> str:
-    lgr.debug(
-        'add_url: %s %s %s %s',
-        str(dataset), file_path, url_base, repr(url_only)
-    )
+def add_url(dataset: Dataset, file_path: str, url_base: str, *, url_only: bool) -> str:
+    lgr.debug('add_url: %s %s %s %s', str(dataset), file_path, url_base, repr(url_only))
 
     # Build the file-specific URL and store it in the annex
     url = url_base + f'&this={quote(file_path)}'
