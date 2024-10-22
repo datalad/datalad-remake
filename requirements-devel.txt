@@ -1,0 +1,16 @@
+# requirements for a development environment
+annexremote
+coverage
+datalad
+datalad-next
+datasalad
+hatch
+hatch-vcs
+hypothesis
+pytest
+pytest-cov
+
+# requirements for a document building
+sphinx
+sphinx_rtd_theme
+sphinx_copybutton

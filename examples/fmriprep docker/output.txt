@@ -1,0 +1,2 @@
+# Paths are relative to the dataset in which `datalad compute` was executed
+derivatives/ds000102/**

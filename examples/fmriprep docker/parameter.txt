@@ -1,0 +1,4 @@
+input_dir=datasets/ds000102
+output_dir=derivatives/ds000102
+participant_label=01
+license_file=license.txt
