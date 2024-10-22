@@ -93,6 +93,7 @@ run = 'python -m pytest {args}'
 [tool.hatch.envs.types]
 description = "type checking with MyPy"
 extra-dependencies = [
+  "hypothesis",
   "mypy>=1.0.0",
   "pytest",
 ]
