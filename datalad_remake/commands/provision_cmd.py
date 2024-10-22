@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import logging
 import os
-import stat
 from contextlib import chdir
 from glob import glob
 from pathlib import Path
@@ -28,11 +27,12 @@ from datalad_next.commands import (
     get_status_dict,
 )
 from datalad_next.constraints import (
+    AnyOf,
+    DatasetParameter,
     EnsureDataset,
     EnsureListOf,
     EnsurePath,
     EnsureStr,
-    DatasetParameter, AnyOf,
 )
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines, call_git_success
@@ -133,7 +133,7 @@ class Provision(ValidatedInterface):
         dataset: DatasetParameter | None = None,
         branch: str | None = None,
         delete: DatasetParameter | None = None,
-        input: list[str] | None = None,
+        input: list[str] | None = None,  # noqa: A002
         input_list: Path | None = None,
         worktree_dir: str | Path | None = None,
     ):

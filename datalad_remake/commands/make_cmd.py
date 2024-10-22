@@ -23,11 +23,11 @@ from datalad_next.commands import (
     get_status_dict,
 )
 from datalad_next.constraints import (
+    DatasetParameter,
     EnsureDataset,
     EnsureListOf,
     EnsurePath,
     EnsureStr,
-    DatasetParameter,
 )
 from datalad_next.datasets import Dataset
 from datalad_next.runners import (
@@ -176,7 +176,7 @@ class Make(ValidatedInterface):
         template: str = '',
         url_only: bool = False,
         branch: str | None = None,
-        input: list[str] | None = None,
+        input: list[str] | None = None,  # noqa: A002
         input_list: Path | None = None,
         output: list[str] | None = None,
         output_list: Path | None = None,
