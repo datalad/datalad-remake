@@ -18,7 +18,6 @@ from typing import (
     ClassVar,
 )
 
-from datalad.support.constraints import EnsureBool
 from datalad_next.commands import (
     EnsureCommandParameterization,
     Parameter,
@@ -33,6 +32,7 @@ from datalad_next.constraints import (
     EnsureListOf,
     EnsurePath,
     EnsureStr,
+    DatasetParameter, AnyOf,
 )
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines, call_git_success
@@ -65,10 +65,9 @@ class Provision(ValidatedInterface):
         {
             'dataset': EnsureDataset(installed=True),
             'input': EnsureListOf(EnsureStr(min_len=1)),
-            'input_list': EnsureStr(min_len=1),
-            'tmp_dir': EnsurePath(is_mode=stat.S_ISDIR),
+            'input_list': EnsurePath(),
             'delete': EnsureDataset(installed=True),
-            'no_globbing': EnsureBool(),
+            'worktree_dir': AnyOf(EnsurePath(), EnsureStr(min_len=1)),
         }
     )
 
@@ -131,34 +130,34 @@ class Provision(ValidatedInterface):
     @datasetmethod(name='provision')
     @eval_results
     def __call__(
-        dataset=None,
-        branch=None,
-        delete=None,
-        input_=None,
-        input_list=None,
-        worktree_dir=None,
+        dataset: DatasetParameter | None = None,
+        branch: str | None = None,
+        delete: DatasetParameter | None = None,
+        input: list[str] | None = None,
+        input_list: Path | None = None,
+        worktree_dir: str | Path | None = None,
     ):
-        dataset: Dataset = dataset.ds if dataset else Dataset('.')
+        ds: Dataset = dataset.ds if dataset else Dataset('.')
         if delete:
-            if branch or input_:
+            if branch or input:
                 msg = (
                     'Cannot use `-d`, `--delete` with `-b`, `--branch`,'
                     ' `-i`, or `--input`'
                 )
                 raise ValueError(msg)
 
-            remove(dataset, delete.ds)
+            remove(ds, delete.ds)
             yield get_status_dict(
                 action='provision [delete]',
                 path=delete.ds.path,
                 status='ok',
-                message=f'delete workspace: {delete.ds.path!r} from dataset {dataset}',
+                message=f'delete workspace: {delete.ds.path!r} from dataset {ds!r}',
             )
             return
 
-        worktree_dir: Path = Path(worktree_dir or TemporaryDirectory().name)
-        inputs = input_ or [*read_list(input_list)]
-        yield from provide(dataset, worktree_dir, inputs, branch)
+        resolved_worktree_dir: Path = Path(worktree_dir or TemporaryDirectory().name)
+        inputs = input or [*read_list(input_list)]
+        yield from provide(ds, resolved_worktree_dir, inputs, branch)
 
 
 def remove(dataset: Dataset, worktree: Dataset) -> None:
@@ -382,17 +381,14 @@ def install_subdataset(
     locally_available_datasets: Iterable[tuple[Path, Path, Path]],
 ) -> None:
     """Install a subdataset, prefer locally available subdatasets"""
-    local_subdataset = (
-        [
-            dataset
-            for dataset in locally_available_datasets
-            if dataset[2] == subdataset_path
-        ]
-        or [None]
-    )[0]
+    local_subdataset = [
+        dataset_info
+        for dataset_info in locally_available_datasets
+        if dataset_info[2] == subdataset_path
+    ]
 
     if local_subdataset:
-        absolute_path, parent_ds_path, path_from_root = local_subdataset
+        absolute_path, parent_ds_path, path_from_root = local_subdataset[0]
         # Set the URL to the full source path
         args = [
             '-C',

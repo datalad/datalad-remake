@@ -25,7 +25,9 @@ from datalad_next.commands import (
 from datalad_next.constraints import (
     EnsureDataset,
     EnsureListOf,
+    EnsurePath,
     EnsureStr,
+    DatasetParameter,
 )
 from datalad_next.datasets import Dataset
 from datalad_next.runners import (
@@ -62,17 +64,18 @@ class Make(ValidatedInterface):
     _validator_ = EnsureCommandParameterization(
         {
             'dataset': EnsureDataset(installed=True),
+            'template': EnsureStr(min_len=1),
             'input': EnsureListOf(EnsureStr(min_len=1)),
-            'input_list': EnsureStr(min_len=1),
+            'input_list': EnsurePath(),
             'output': EnsureListOf(EnsureStr(min_len=1), min_len=1),
-            'output_list': EnsureStr(min_len=1),
+            'output_list': EnsurePath(),
             'parameter': EnsureListOf(EnsureStr(min_len=3)),
-            'parameter_list': EnsureStr(min_len=1),
+            'parameter_list': EnsurePath(),
         }
     )
 
     # parameters of the command, must be exhaustive
-    _params_: ClassVar[dict[int, Parameter]] = {
+    _params_: ClassVar[dict[str, Parameter]] = {
         'dataset': Parameter(
             args=('-d', '--dataset'),
             doc='Dataset to be used as a configuration source. Beyond '
@@ -168,48 +171,54 @@ class Make(ValidatedInterface):
     @datasetmethod(name='make')
     @eval_results
     def __call__(
-        dataset=None,
+        dataset: DatasetParameter | None = None,
         *,
-        url_only=False,
-        template=None,
-        branch=None,
-        input_=None,
-        input_list=None,
-        output=None,
-        output_list=None,
-        parameter=None,
-        parameter_list=None,
-    ):
-        dataset: Dataset = dataset.ds if dataset else Dataset('.')
+        template: str = '',
+        url_only: bool = False,
+        branch: str | None = None,
+        input: list[str] | None = None,
+        input_list: Path | None = None,
+        output: list[str] | None = None,
+        output_list: Path | None = None,
+        parameter: list[str] | None = None,
+        parameter_list: Path | None = None,
+    ) -> Generator:
 
-        input_pattern = (input_ or []) + read_list(input_list)
+        ds: Dataset = dataset.ds if dataset else Dataset('.')
+
+        input_pattern = (input or []) + read_list(input_list)
         output_pattern = (output or []) + read_list(output_list)
         parameter = (parameter or []) + read_list(parameter_list)
 
-        parameter_dict = {p.split('=', 1)[0]: p.split('=', 1)[1] for p in parameter}
+        parameter_dict = {
+            p.split('=', 1)[0]: p.split('=', 1)[1]
+            for p in parameter
+        }
 
         # We have to get the URL first, because saving the specification to
         # the dataset will change the version.
         url_base, reset_commit = get_url(
-            dataset, branch, template, parameter_dict, input_pattern, output_pattern
+            ds, branch, template, parameter_dict, input_pattern, output_pattern
         )
 
         if not url_only:
             with provide_context(
-                dataset,
+                ds,
                 branch,
                 input_pattern,
             ) as worktree:
                 execute(worktree, template, parameter_dict, output_pattern)
-                output = collect(worktree, dataset, output_pattern)
+                resolved_output = collect(worktree, ds, output_pattern)
+        else:
+            resolved_output = set(output_pattern)
 
-        for out in output:
-            url = add_url(dataset, out, url_base, url_only=url_only)
+        for out in resolved_output:
+            url = add_url(ds, out, url_base, url_only=url_only)
             yield get_status_dict(
                 action='make',
-                path=str(dataset.pathobj / out),
+                path=str(ds.pathobj / out),
                 status='ok',
-                message=f'added url: {url!r} to {out!r} in {dataset.pathobj}',
+                message=f'added url: {url!r} to {out!r} in {ds.pathobj}',
             )
 
 
@@ -287,39 +296,45 @@ def build_json(
     )
 
 
-def add_url(dataset: Dataset, file_path: str, url_base: str, *, url_only: bool) -> str:
+def add_url(dataset: Dataset,
+            file_path: str,
+            url_base: str,
+            *,
+            url_only: bool
+            ) -> str:
     lgr.debug(
-        'add_url: %s %s %s %s', str(dataset), str(file_path), url_base, repr(url_only)
+        'add_url: %s %s %s %s',
+        str(dataset), file_path, url_base, repr(url_only)
     )
 
     # Build the file-specific URL and store it in the annex
     url = url_base + f'&this={quote(file_path)}'
-    file_dataset_path, file_path = get_file_dataset(dataset.pathobj / file_path)
+    dataset_path, path = get_file_dataset(dataset.pathobj / file_path)
 
     # If the file does not exist and speculative computation is requested, we
     # can just add the URL.
-    if not (dataset.pathobj / file_path).exists() and url_only:
+    if not (dataset.pathobj / path).exists() and url_only:
         can_add = True
     else:
         # Check if the file is annexed, otherwise we cannot add a URL
         can_add = call_git_success(
-            ['annex', 'whereis', str(file_path)],
-            cwd=file_dataset_path,
+            ['annex', 'whereis', str(path)],
+            cwd=dataset_path,
             capture_output=True,
         )
 
     # Add the URL
     if can_add:
         success = call_git_success(
-            ['annex', 'addurl', url, '--file', file_path]
+            ['annex', 'addurl', url, '--file', str(path)]
             + (['--relaxed'] if url_only else []),
-            cwd=file_dataset_path,
+            cwd=dataset_path,
             capture_output=True,
         )
         if not success:
             msg = (
-                f'\naddurl failed:\nfile_dataset_path: {file_dataset_path}\n'
-                f'url: {url!r}\nfile_path: {file_path!r}'
+                f'\naddurl failed:\ndataset_path: {dataset_path}\n'
+                f'url: {url!r}\nfile_path: {path!r}'
             )
             raise RuntimeError(msg)
     return url
