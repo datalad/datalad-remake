@@ -20,4 +20,4 @@ jobs:
         run: python -m pip install commitizen
       - name: Run commit message checks
         run: |
-          cz check --rev-range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+          cz check --rev-range 630c2f514fd8d42c4def3d7ee588487ffa64cc38..${{ github.event.pull_request.head.sha }}
