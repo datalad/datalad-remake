@@ -39,7 +39,7 @@ def test_speculative_computation(tmp_path, datalad_cfg):
     )
 
     # Perform the speculative computation
-    root_dataset.get('spec.txt')
+    root_dataset.get('spec.txt', result_renderer='disabled')
     assert (root_dataset.pathobj / 'spec.txt').read_text() == 'Hello Robert\n'
 
 
