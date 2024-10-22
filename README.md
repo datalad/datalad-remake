@@ -53,13 +53,11 @@ Create the template directory and a template
 ```bash
 > mkdir -p .datalad/make/methods
 > cat > .datalad/make/methods/one-to-many <<EOF
-inputs = ['first', 'second', 'output']
+parameter = ['first', 'second', 'output']
 
 use_shell = 'true'
-executable = 'echo'
-arguments = [
-    "content: {first} > '{output}-1.txt';",
-    "echo content: {second} > '{output}-2.txt'",
+command = [
+    "echo content: {first} > '{output}-1.txt'; echo content: {second} > '{output}-2.txt'",
 ]
 EOF
 > datalad save -m "add `one-to-many` remake method"

@@ -10,11 +10,10 @@ from datalad_remake.commands.tests.create_datasets import (
 )
 
 test_method = """
-inputs = ['first', 'second', 'third']
+parameters = ['first', 'second', 'third']
 use_shell = 'true'
-executable = 'echo'
-arguments = [
-    "content: {first} > 'a.txt';",
+command = [
+    "echo content: {first} > 'a.txt';",
     "mkdir -p 'd2_subds0/d2_subds1/d2_subds2';",
     "echo content: {second} > 'b.txt';",
     "echo content: {third} > 'new.txt';",

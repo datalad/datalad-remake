@@ -20,14 +20,14 @@
 #
 # `datalad compute -I input.txt -O output.txt -P parameter.txt fmriprep_template`
 
-inputs = ['input_dir', 'output_dir', 'participant_label', 'license_file']
+parameters = ['input_dir', 'output_dir', 'participant_label', 'license_file']
 
 use_shell = 'false'
-executable = 'fmriprep-docker'
 
 # Note: `{root_directory}` resolves to the directory of the dataset in which the
 # computation was started with `datalad compute`.
-arguments = [
+command = [
+    'fmriprep-docker',
     '{root_directory}/{input_dir}',
     '{root_directory}/{output_dir}',
     'participant',

@@ -10,14 +10,11 @@ from ...commands.make_cmd import build_json
 from ..remake_remote import RemakeRemote
 
 template = """
-inputs = ['content']
+parameters = ['content']
 
 use_shell = 'true'
-executable = "echo"
 
-arguments = [
-    "content: {content} > 'a.txt';",
-]
+command = ["echo content: {content} > 'a.txt'"]
 """
 
 

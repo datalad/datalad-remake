@@ -5,10 +5,9 @@ from datalad_remake.commands.tests.create_datasets import (
 )
 
 test_method = """
-inputs = ['name', 'file']
+parameters = ['name', 'file']
 use_shell = 'true'
-executable = 'echo'
-arguments = ["Hello {name} > {file}"]
+command = ["echo Hello {name} > {file}"]
 """
 
 output_pattern = ['a.txt']
