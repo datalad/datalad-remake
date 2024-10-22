@@ -51,7 +51,6 @@ Create a dataset
 Create the template directory and a template
 
 ```bash
-> mkdir -p .datalad/make/specifications
 > mkdir -p .datalad/make/methods
 > cat > .datalad/make/methods/one-to-many <<EOF
 inputs = ['first', 'second', 'output']
