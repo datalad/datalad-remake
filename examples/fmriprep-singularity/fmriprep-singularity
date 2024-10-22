@@ -15,7 +15,7 @@
 # the lists: `input.txt`, `output.txt`, and `parameter.txt` to keep the command
 # line short.
 #
-# `datalad compute -I input.txt -O output.txt -P parameter.txt fmriprep-singularity`
+# `datalad make -I input.txt -O output.txt -P parameter.txt fmriprep-singularity`
 
 inputs = ['container', 'input_dir', 'output_dir', 'participant_label', 'license_file']
 
@@ -23,7 +23,7 @@ use_shell = 'false'
 executable = 'singularity'
 
 # Note: `{root_directory}` resolves to the directory of the dataset in which the
-# computation was started with `datalad compute`.
+# computation was started with `datalad make`.
 
 arguments = [
     'run', '{container}',

@@ -1,4 +1,4 @@
-# Paths are relative to the dataset in which `datalad compute` was executed
+# Paths are relative to the dataset in which `datalad make` was executed
 data/ds000102/dataset_description.json
 data/ds000102/participants.tsv
 data/ds000102/T1w.json
