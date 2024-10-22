@@ -83,7 +83,7 @@ def test_compute_remote_main(tmp_path, monkeypatch):
         )
     ).split(b': ')[1]
 
-    (dataset.pathobj / specification_dir).mkdir(parents=True)
+    (dataset.pathobj / specification_dir).mkdir(parents=True, exist_ok=True)
     (dataset.pathobj / specification_dir / '000001111122222').write_text(
         build_json('echo', [], ['a.txt'], {'content': 'some_string'})
     )

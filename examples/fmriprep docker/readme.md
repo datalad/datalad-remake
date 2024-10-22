@@ -10,21 +10,21 @@ root-dataset
     ├── ds000102
 ```
 
-Executing the computation requires installation of this extension (see https://github.com/christian-monch/datalad-compute/tree/main/README.md), and the installation of the python package `fmriprep-docker`. The template, i.e. `fmriprep-docker` has to be placed in the folder `.datalad/compute/methods` of the root-dataset (and the dataset has to be saved).
+Executing the computation requires installation of this extension (see https://github.com/datalad/datalad-remake/tree/main/README.md), and the installation of the python package `fmriprep-docker`. The template, i.e. `fmriprep-docker` has to be placed in the folder `.datalad/make/methods` of the root-dataset (and the dataset has to be saved).
 
 To keep the command line short, input files, output files, and parameter for the computation are defined in the lists:
 - `input.txt`
 - `output.txt`
 - `parameter.txt`
 
-Be sure to add a compute special remote to the dataset that contains the folder `derivatives/ds000102`.
+Be sure to add a datalad-remake special remote to the dataset that contains the folder `derivatives/ds000102`.
 This can be done with the following command:
 ```bash
-> git annex initremote compute type=external externaltype=compute encryption=none
+> git annex initremote datalad-remake type=external externaltype=datalad-remake encryption=none
 ```
 
 The computation can be executed with the following command:
 
 ```bash
-> datalad compute -I input.txt -O output.txt -P parameter.txt fmriprep-docker
+> datalad make -I input.txt -O output.txt -P parameter.txt fmriprep-docker
 ```

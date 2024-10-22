@@ -2,7 +2,7 @@
 # multiple output files.
 #
 # Templates are addressed by their name. They should be stored in
-# `$DATASET_ROOT/.datalad/compute/methods`
+# `$DATASET_ROOT/.datalad/make/methods`
 #
 # Each template must define the following variables:
 # - `inputs`:  a list of strings that define the input variables
@@ -14,11 +14,11 @@
 # will be invoked.
 # Variable placeholders, i.e `{<variable name>}` in `arguments` will be
 # replaced with the values provided in the parameter arguments of
-# `datalad compute`.
+# `datalad make`.
 
-# An invocation of `datalad compute` has to provide a parameter argument for
+# An invocation of `datalad make` has to provide a parameter argument for
 # each input variable. In this case the invocation could look like this:
-# `datalad compute -p first=bob -p second=alice -p output=name ... one-to-many`
+# `datalad make -p first=bob -p second=alice -p output=name ... one-to-many`
 #
 inputs = ['first', 'second', 'output']
 
@@ -33,7 +33,7 @@ executable = 'echo'
 
 # Arguments to the executable. The curly braces are placeholders for the
 # input variables that were defined above. They will be replaced with the
-# values provided in the parameter arguments of `datalad compute`.
+# values provided in the parameter arguments of `datalad make`.
 #
 arguments = [
     "content: {first} > '{output}-1.txt';",

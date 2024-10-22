@@ -271,7 +271,7 @@ def write_spec(
 
     # write the specification file
     spec_dir = dataset.pathobj / specification_dir
-    spec_dir.mkdir(exist_ok=True)
+    spec_dir.mkdir(parents=True, exist_ok=True)
     spec_file = spec_dir / digest
     with contextlib.chdir(dataset.pathobj):
         call_git_success(['annex', 'unlock', str(spec_file)], capture_output=True)

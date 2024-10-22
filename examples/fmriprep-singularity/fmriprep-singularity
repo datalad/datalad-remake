@@ -1,0 +1,39 @@
+# This example template runs fMRIprep in a singularity container on a single
+# subject of a BIDS dataset.
+#
+# The template takes the following inputs:
+# - container: the path to fMRIprep singularity container image
+# - input_dir: the path to the input directory (BIDS dataset)
+# - output_dir: the path to the output directory
+# - participant_label: the label of the participant to be processed, e.g. `01`
+# - license_file: the path to the FreeSurfer license file
+#
+# The template assumes that the BIDS dataset referenced in `input_dir` is
+# a subdataset of the dataset in which the computation is started.
+#
+# Input files, output files, and parameter for the computation are defined in
+# the lists: `input.txt`, `output.txt`, and `parameter.txt` to keep the command
+# line short.
+#
+# `datalad compute -I input.txt -O output.txt -P parameter.txt fmriprep-singularity`
+
+inputs = ['container', 'input_dir', 'output_dir', 'participant_label', 'license_file']
+
+use_shell = 'false'
+executable = 'singularity'
+
+# Note: `{root_directory}` resolves to the directory of the dataset in which the
+# computation was started with `datalad compute`.
+
+arguments = [
+    'run', '{container}',
+    '{root_directory}/{input_dir}',
+    '{root_directory}/{output_dir}',
+    'participant',
+    '--participant-label', '{participant_label}',
+    '--sloppy',
+    '--fs-license-file', '{license_file}',
+    '--fs-no-reconall',
+    '--skip-bids-validation',
+    '--ignore', 'slicetiming',
+]
