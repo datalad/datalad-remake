@@ -12,9 +12,7 @@ The example comprises the following files:
 
 This example requires Singularity.
 
-Please note, that there is no need to install fMRIprep. The singularity container will be automatically retrieved from the ReproNim containers collection. However, in order to use fMRIprep you need to obtain a [FreeSurfer license](https://surfer.nmr.mgh.harvard.edu/fswiki/License). 
-
-Please also note that fMRIprep is invoked with the option `--sloppy`. This is done to reduce the runtime. For reproducible results, please run fMRIprep without the option `--sloppy`.
+Please note, that there is no need to install fMRIprep. The singularity container will be automatically retrieved from the ReproNim containers collection. However, in order to use fMRIprep you need to obtain a [FreeSurfer license](https://surfer.nmr.mgh.harvard.edu/fswiki/License).
 
 It is assumed that the license file is located in `/tmp`. Make sure to copy it there or modify the `parameter.txt` file accordingly (see the [Add template](#add-template) section below).
 
@@ -103,3 +101,7 @@ You can also do that in `debug` mode:
 ```bash
 > datalad -l debug make -I input.txt -O output.txt -P parameter.txt fmriprep-singularity
 ```
+
+### Final note
+
+In this example fMRIprep is invoked with the option `--sloppy` to reduce the runtime. For reproducible results, run fMRIprep without `--sloppy`.
