@@ -63,7 +63,6 @@ class MockedInput:
         self.input.put(value)
 
 
-@skip_if_on_windows
 def test_compute_remote_main(tmp_path, monkeypatch):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 0)[0][2]
     monkeypatch.chdir(dataset.path)

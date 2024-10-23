@@ -75,7 +75,6 @@ def _check_content(dataset, file_content: Iterable[tuple[str, str]]):
         assert (dataset.pathobj / file).read_text() == content
 
 
-@skip_if_on_windows
 @pytest.mark.parametrize('output_pattern', [output_pattern_static, output_pattern_glob])
 def test_end_to_end(tmp_path, monkeypatch, output_pattern):
     root_dataset = create_simple_computation_dataset(tmp_path, 'd2', 3, test_method)
