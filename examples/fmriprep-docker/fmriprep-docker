@@ -1,8 +1,7 @@
-# This example template runs fMRIPrep in a singularity container on a single
-# subject of a BIDS dataset.
+# This example template runs fMRIPrep with the `fmriprep-docker` wrapper on a 
+# single subject of a BIDS dataset.
 #
 # The template takes the following inputs:
-# - container: the path to fMRIPrep singularity container image
 # - input_dir: the path to the input directory (BIDS dataset)
 # - output_dir: the path to the output directory
 # - participant_label: the label of the participant to be processed, e.g. `01`
@@ -15,9 +14,9 @@
 # the lists: `input.txt`, `output.txt`, and `parameter.txt` to keep the command
 # line short.
 #
-# `datalad make -I input.txt -O output.txt -P parameter.txt fmriprep-singularity`
+# `datalad make -I input.txt -O output.txt -P parameter.txt fmriprep-docker`
 
-parameters = ['container', 'input_dir', 'output_dir', 'participant_label', 'license_file']
+parameters = ['input_dir', 'output_dir', 'participant_label', 'license_file']
 
 use_shell = 'false'
 
@@ -25,8 +24,7 @@ use_shell = 'false'
 # computation was started with `datalad make`.
 
 command = [
-    'singularity',
-    'run', '{container}',
+    'fmriprep-docker',
     '{root_directory}/{input_dir}',
     '{root_directory}/{output_dir}',
     'participant',
