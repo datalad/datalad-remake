@@ -4,7 +4,6 @@ from queue import Queue
 from typing import cast
 
 from annexremote import Master
-from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
 

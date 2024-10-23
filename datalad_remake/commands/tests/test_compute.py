@@ -1,5 +1,4 @@
 from datalad_next.datasets import Dataset
-from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,

@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines
-from datalad_next.tests import skip_if_on_windows
 
 from ..make_cmd import provide_context
 from .create_datasets import create_ds_hierarchy
