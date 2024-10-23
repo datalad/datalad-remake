@@ -1,8 +1,10 @@
+from typing import Any
+
 from annexremote import UnsupportedRequest as UnsupportedRequest
 from annexremote import main as super_main
-from datalad.customremotes import RemoteError as RemoteError, SpecialRemote as _SpecialRemote
+from datalad.customremotes import RemoteError as RemoteError
+from datalad.customremotes import SpecialRemote as _SpecialRemote
 from datalad_next.datasets import LeanAnnexRepo as LeanAnnexRepo
-from typing import Any
 
 __all__ = ['super_main', 'SpecialRemote']
 

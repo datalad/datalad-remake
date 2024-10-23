@@ -1,4 +1,5 @@
-from annexremote import RemoteError as _RemoteError, SpecialRemote as _SpecialRemote
+from annexremote import RemoteError as _RemoteError
+from annexremote import SpecialRemote as _SpecialRemote
 
 __all__ = ['RemoteError', 'SpecialRemote']
 
