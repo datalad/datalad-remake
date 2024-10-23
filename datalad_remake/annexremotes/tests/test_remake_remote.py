@@ -52,7 +52,7 @@ class MockedOutput:
 
 class MockedInput:
     def __init__(self):
-        self.input = Queue()
+        self.input: Queue = Queue()
 
     def readline(self):
         return self.input.get()
@@ -93,7 +93,7 @@ def test_compute_remote_main(tmp_path, monkeypatch):
     # single thread and do not get back control once `master.listen` is called
     # below.
     input_.send('PREPARE\n')
-    input_.send(f'TRANSFER RETRIEVE {key} {tmp_path / "remade.txt"!s}\n')
+    input_.send(f'TRANSFER RETRIEVE {key.decode()} {tmp_path / "remade.txt"!s}\n')
     url = (
         'datalad-make:///?'
         f'root_version={dataset.repo.get_hexsha()}'
