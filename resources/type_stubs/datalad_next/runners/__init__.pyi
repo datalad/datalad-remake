@@ -14,12 +14,15 @@ from datalad.runner.nonasyncrunner import ThreadedRunner as ThreadedRunner
 from datalad.runner.protocol import GeneratorMixIn as GeneratorMixIn
 from datalad.runner.utils import LineSplitter as LineSplitter
 from datalad_next.exceptions import CommandError as CommandError
-
-from .git import call_git as call_git
-from .git import call_git_lines as call_git_lines
-from .git import call_git_oneline as call_git_oneline
-from .git import call_git_success as call_git_success
-from .git import iter_git_subproc as iter_git_subproc
-from .iter_subproc import iter_subproc as iter_subproc
-from .protocols import NoCaptureGeneratorProtocol as NoCaptureGeneratorProtocol
-from .protocols import StdOutCaptureGeneratorProtocol as StdOutCaptureGeneratorProtocol
+from datalad_next.runners.git import call_git as call_git
+from datalad_next.runners.git import call_git_lines as call_git_lines
+from datalad_next.runners.git import call_git_oneline as call_git_oneline
+from datalad_next.runners.git import call_git_success as call_git_success
+from datalad_next.runners.git import iter_git_subproc as iter_git_subproc
+from datalad_next.runners.iter_subproc import iter_subproc as iter_subproc
+from datalad_next.runners.protocols import (
+    NoCaptureGeneratorProtocol as NoCaptureGeneratorProtocol,
+)
+from datalad_next.runners.protocols import (
+    StdOutCaptureGeneratorProtocol as StdOutCaptureGeneratorProtocol,
+)
