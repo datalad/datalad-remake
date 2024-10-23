@@ -61,7 +61,7 @@ def create_ds_hierarchy(
         dataset, subdataset = datasets[index : index + 2]
         dataset[2].install(
             path=subdataset[0],
-            source='file://' + subdataset[2].path,
+            source=Path(subdataset[2].path).as_uri(),
             result_renderer='disabled',
         )
         dataset[2].save(result_renderer='disabled')
