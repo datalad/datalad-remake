@@ -1,8 +1,8 @@
-# This example template runs fMRIprep in a singularity container on a single
+# This example template runs fMRIPrep in a singularity container on a single
 # subject of a BIDS dataset.
 #
 # The template takes the following inputs:
-# - container: the path to fMRIprep singularity container image
+# - container: the path to fMRIPrep singularity container image
 # - input_dir: the path to the input directory (BIDS dataset)
 # - output_dir: the path to the output directory
 # - participant_label: the label of the participant to be processed, e.g. `01`

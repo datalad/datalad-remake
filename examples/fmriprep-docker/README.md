@@ -1,6 +1,6 @@
-# Use case: running fMRIprep with the `fmriprep-docker` wrapper 
+# Use case: running fMRIPrep with the `fmriprep-docker` wrapper 
 
-This example demonstrates how to run fMRIprep on a single subject of a BIDS dataset using `fmriprep-docker` [wrapper](https://fmriprep.org/en/20.0.0/docker.html#running-fmriprep-with-the-fmriprep-docker-wrapper).
+This example demonstrates how to run fMRIPrep on a single subject of a BIDS dataset using `fmriprep-docker` [wrapper](https://fmriprep.org/en/20.0.0/docker.html#running-fmriprep-with-the-fmriprep-docker-wrapper).
 
 The example comprises the following files:
 - `fmriprep-docker` template
@@ -12,7 +12,7 @@ The example comprises the following files:
 
 This example requires `fmriprep-docker` wrapper [installed](https://fmriprep.org/en/20.0.0/installation.html#the-fmriprep-docker-wrapper).
 
-Moreover, in order to use fMRIprep you need to obtain a [FreeSurfer license](https://surfer.nmr.mgh.harvard.edu/fswiki/License).
+Moreover, in order to use fMRIPrep you need to obtain a [FreeSurfer license](https://surfer.nmr.mgh.harvard.edu/fswiki/License).
 
 It is assumed that the license file is located in `/tmp`. Make sure to copy it there or modify the `parameter.txt` file accordingly (see the [Add template](#add-template) section below).
 
@@ -100,4 +100,4 @@ You can also do that in `debug` mode:
 
 ### Final note
 
-In this example fMRIprep is invoked with the option `--sloppy` to reduce the runtime. For reproducible results, run fMRIprep without `--sloppy`.
+In this example fMRIPrep is invoked with the option `--sloppy` to reduce the runtime. For reproducible results, run fMRIPrep without `--sloppy`.

@@ -1,6 +1,6 @@
-# Use case: running fMRIprep in a singularity container
+# Use case: running fMRIPrep in a singularity container
 
-This example demonstrates how to run fMRIprep on a single subject of a BIDS dataset using a singularity container. Specifically, the singularity container used in this example is `bids-fmriprep--24.1.0` and comes from the [ReproNim containers collection](https://github.com/ReproNim/containers).
+This example demonstrates how to run fMRIPrep on a single subject of a BIDS dataset using a singularity container. Specifically, the singularity container used in this example is `bids-fmriprep--24.1.0` and comes from the [ReproNim containers collection](https://github.com/ReproNim/containers).
 
 The example comprises the following files:
 - `fmriprep-singularity` template
@@ -12,7 +12,7 @@ The example comprises the following files:
 
 This example requires Singularity.
 
-Please note, that there is no need to install fMRIprep. The singularity container will be automatically retrieved from the ReproNim containers collection. However, in order to use fMRIprep you need to obtain a [FreeSurfer license](https://surfer.nmr.mgh.harvard.edu/fswiki/License).
+Please note, that there is no need to install fMRIPrep. The singularity container will be automatically retrieved from the ReproNim containers collection. However, in order to use fMRIPrep you need to obtain a [FreeSurfer license](https://surfer.nmr.mgh.harvard.edu/fswiki/License).
 
 It is assumed that the license file is located in `/tmp`. Make sure to copy it there or modify the `parameter.txt` file accordingly (see the [Add template](#add-template) section below).
 
@@ -103,4 +103,4 @@ You can also do that in `debug` mode:
 
 ### Final note
 
-In this example fMRIprep is invoked with the option `--sloppy` to reduce the runtime. For reproducible results, run fMRIprep without `--sloppy`.
+In this example fMRIPrep is invoked with the option `--sloppy` to reduce the runtime. For reproducible results, run fMRIPrep without `--sloppy`.
