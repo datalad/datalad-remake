@@ -1,5 +1,7 @@
 import subprocess
+from io import TextIOBase
 from queue import Queue
+from typing import cast
 
 from annexremote import Master
 from datalad_next.tests import skip_if_on_windows
@@ -26,15 +28,15 @@ class MockedOutput:
 
     def write(self, *args, **_):
         self.output += ''.join(args)
-        lineswith = self.output.splitlines(keepends=True)
-        lineswithout = self.output.splitlines(keepends=False)
-        if not lineswith:
+        lines_with = self.output.splitlines(keepends=True)
+        lines_without = self.output.splitlines(keepends=False)
+        if not lines_with:
             pass
-        elif lineswithout[-1] == lineswith[-1]:
-            self.lines = lineswithout[:-1]
-            self.output = lineswith[-1]
+        elif lines_without[-1] == lines_with[-1]:
+            self.lines = lines_without[:-1]
+            self.output = lines_with[-1]
         else:
-            self.lines = lineswithout
+            self.lines = lines_without
             self.output = ''
 
     def flush(self):
@@ -107,10 +109,10 @@ def test_compute_remote_main(tmp_path, monkeypatch):
 
     output = MockedOutput()
 
-    master = Master(output=output)
+    master = Master(output=cast(TextIOBase, output))
     remote = RemakeRemote(master)
     master.LinkRemote(remote)
-    master.Listen(input=input_)
+    master.Listen(input=cast(TextIOBase, input_))
 
     # At this point the datalad-remake remote should have executed the
     # computation and written the result.
