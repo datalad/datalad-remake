@@ -20,12 +20,11 @@ jobs:
         uses: actions/checkout@v4
       - name: Install hatch (which pull mypy)
         run: python -m pip install hatch
+      - name: Set MYPYPATH
+        run: echo "MYPYPATH=$GITHUB_WORKSPACE/resources/type_stubs" >> $GITHUB_ENV
       - name: Type check project
         run: |
-          set MYPYPATH=$APPVEYOR_BUILD_FOLDER/resources/type-stubs
           # get any type stubs that mypy thinks it needs
-          # specify `--disable-error-code=import-untyped` until the
-          # datalad-packages have type stubs for all their modules.
           hatch run types:mypy --install-types --non-interactive --follow-imports skip --check-untyped-defs datalad_remake
           # run mypy on the full project.
           # run on the oldest supported Python version.

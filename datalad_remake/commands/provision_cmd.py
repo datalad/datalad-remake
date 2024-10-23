@@ -397,7 +397,7 @@ def install_subdataset(
             'set-url',
             '--',
             str(path_from_root.relative_to(parent_ds_path)),
-            'file://' + str(absolute_path),
+            absolute_path.as_uri(),
         ]
         call_git_lines(args)
     worktree.get(str(subdataset_path), get_data=False, result_renderer='disabled')

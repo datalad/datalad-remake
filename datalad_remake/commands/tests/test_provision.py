@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines
-from datalad_next.tests import skip_if_on_windows
 
 from ..make_cmd import provide_context
 from .create_datasets import create_ds_hierarchy
@@ -32,7 +31,6 @@ a_paths = [path.format(file='a') for path in file_path_templates]
 b_paths = [path.format(file='b') for path in file_path_templates]
 
 
-@skip_if_on_windows
 def test_worktree_basic(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     inputs = [
@@ -69,7 +67,6 @@ def test_worktree_basic(tmp_path):
     )
 
 
-@skip_if_on_windows
 def test_worktree_globbing(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     result = dataset.provision(
@@ -122,7 +119,6 @@ def get_file_list(
                 yield str((prefix / child).relative_to(root))
 
 
-@skip_if_on_windows
 def test_provision_context(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1')[0][2]
     with provide_context(dataset, branch=None, input_patterns=['**']) as worktree:
@@ -161,7 +157,6 @@ def test_unclean_dataset(tmp_path):
     )
 
 
-@skip_if_on_windows
 def test_branch_deletion_after_provision(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     with provide_context(
@@ -174,7 +169,6 @@ def test_branch_deletion_after_provision(tmp_path):
     assert worktree.name not in branches
 
 
-@skip_if_on_windows
 def test_not_present_local_datasets(tmp_path):
     root_ds = Dataset(tmp_path / 'ds1')
     root_ds.create(cfg_proc='text2git', result_renderer='disabled')

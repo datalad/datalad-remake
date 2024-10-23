@@ -4,7 +4,6 @@ from queue import Queue
 from typing import cast
 
 from annexremote import Master
-from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
 
@@ -63,7 +62,6 @@ class MockedInput:
         self.input.put(value)
 
 
-@skip_if_on_windows
 def test_compute_remote_main(tmp_path, monkeypatch):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 0)[0][2]
     monkeypatch.chdir(dataset.path)
