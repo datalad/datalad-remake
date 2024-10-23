@@ -69,7 +69,6 @@ Add a `datalad-remake` special remote:
 > git annex initremote datalad-remake type=external externaltype=datalad-remake encryption=none
 ```
 
-
 ### Add template
 
 Place the `fmriprep-singularity` template in the `.datalad/make/methods` of the root dataset:

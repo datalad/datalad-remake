@@ -1,38 +1,37 @@
-# This is a very simple template to run fmriprep-docker on a single subject
-# of a BIDS dataset.
-# It needs an environment with `fmriprep-docker` installed (e.g. a virtualenv
-# in which `pip install fmriprep-docker` has been executed).
+# This example template runs fMRIPrep with the `fmriprep-docker` wrapper on a 
+# single subject of a BIDS dataset.
 #
 # The template takes the following inputs:
-# - input_dir: the path to the BIDS dataset
-# - output_dir: the path to the output directory, typically a directory called
-#   `derivatives` in `{input_dir}`.
-# - participant_label: the label of the participant to be processed, e.g. `01`.
-# - license_file: the path to the FreeSurfer license file.
+# - input_dir: the path to the input directory (BIDS dataset)
+# - output_dir: the path to the output directory
+# - participant_label: the label of the participant to be processed, e.g. `01`
+# - license_file: the path to the FreeSurfer license file
 #
 # The template assumes that the BIDS dataset referenced in `input_dir` is
-# a subdataset of the dataset in which the computation is started, as outlined
-# in the fairly-big-follow-up document.
+# a subdataset of the dataset in which the computation is started.
 #
 # Input files, output files, and parameter for the computation are defined in
 # the lists: `input.txt`, `output.txt`, and `parameter.txt` to keep the command
 # line short.
 #
-# `datalad compute -I input.txt -O output.txt -P parameter.txt fmriprep_template`
+# `datalad make -I input.txt -O output.txt -P parameter.txt fmriprep-docker`
 
 parameters = ['input_dir', 'output_dir', 'participant_label', 'license_file']
 
 use_shell = 'false'
 
 # Note: `{root_directory}` resolves to the directory of the dataset in which the
-# computation was started with `datalad compute`.
+# computation was started with `datalad make`.
+
 command = [
     'fmriprep-docker',
     '{root_directory}/{input_dir}',
     '{root_directory}/{output_dir}',
     'participant',
     '--participant-label', '{participant_label}',
+    '--sloppy',
     '--fs-license-file', '{license_file}',
+    '--fs-no-reconall',
     '--skip-bids-validation',
     '--ignore', 'slicetiming',
 ]
