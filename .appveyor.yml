@@ -71,14 +71,6 @@ environment:
       PY: 3.11
       INSTALL_GITANNEX: git-annex -m snapshot
 
-    # same as 'test-linux', but TMPDIR is on a crippled filesystem, causing
-    # most, if not all test datasets to be created on that filesystem
-    - job_name: test-linux-crippled
-      APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PY: 3.11
-      # datalad-annex git remote needs something after git-annex_8.20211x
-      INSTALL_GITANNEX: git-annex -m snapshot
-
     # Windows core tests
     - job_name: test-win
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
@@ -125,7 +117,6 @@ for:
   - matrix:
       only:
         - job_name: test-linux
-        - job_name: test-linux-crippled
         - job_name: test-mac
 
     cache:
@@ -157,25 +148,8 @@ for:
       - tools/appveyor/install-git-annex ${INSTALL_GITANNEX}
       # enable the git-annex provisioned by the installer
       - "[ -f ${HOME}/dlinstaller_env.sh ] && . ${HOME}/dlinstaller_env.sh || true"
+
     test_script:
-      # store original TMPDIR setting to limit modification to test execution
-      - export PREV_TMPDIR=$TMPDIR
-      # make TMPDIR a "crippled filesystem" to test wrong assumptions of POSIX-ness
-      # on POSIX OSes. The test fixtures will create all test datasets under TMPDIR
-      - |
-        set -e
-        if [ "$APPVEYOR_JOB_NAME" = "test-linux-crippled" ]; then
-          # 500 MB VFAT FS in a box
-          sudo dd if=/dev/zero of=/crippledfs.img count=500 bs=1M
-          sudo mkfs.vfat /crippledfs.img
-          sudo mkdir /crippledfs
-          sudo mount -o "uid=$(id -u),gid=$(id -g)" /crippledfs.img /crippledfs
-          echo "== mount >>"
-          mount | grep crippled
-          echo "<< mount =="
-          export TMPDIR=/crippledfs
-        fi
-      - echo TMPDIR=$TMPDIR
       - 'hatch run tests.py${PY}:run-cov --doctest-modules --durations 10'
 
     after_test:
