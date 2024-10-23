@@ -22,10 +22,11 @@ jobs:
         run: python -m pip install hatch
       - name: Type check project
         run: |
+          set MYPYPATH=$APPVEYOR_BUILD_FOLDER/resources/type-stubs
           # get any type stubs that mypy thinks it needs
           # specify `--disable-error-code=import-untyped` until the
           # datalad-packages have type stubs for all their modules.
-          hatch run types:mypy --disable-error-code=import-untyped --install-types --non-interactive --follow-imports skip datalad_remake
+          hatch run types:mypy --install-types --non-interactive --follow-imports skip --check-untyped-defs datalad_remake
           # run mypy on the full project.
           # run on the oldest supported Python version.
-          hatch run types:mypy --python-version 3.11 --disable-error-code=import-untyped --pretty --show-error-context datalad_remake
+          hatch run types:mypy --python-version 3.11 --pretty --show-error-context --check-untyped-defs datalad_remake

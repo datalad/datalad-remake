@@ -30,14 +30,15 @@ jobs:
       - name: Type check changed files
         if: steps.changed-py-files.outputs.any_changed == 'true'
         run: |
+          set MYPYPATH=$APPVEYOR_BUILD_FOLDER/resources/type-stubs
           # get any type stubs that mypy thinks it needs
           # specify `--disable-error-code=import-untyped` until the
           # datalad-packages have type stubs for all their modules.
-          hatch run types:mypy --install-types --non-interactive --disable-error-code=import-untyped --follow-imports skip ${{ steps.changed-py-files.outputs.all_changed_files }}
+          hatch run types:mypy --install-types --non-interactive --follow-imports skip --check-untyped-defs ${{ steps.changed-py-files.outputs.all_changed_files }}
           # run mypy on the modified files only, and do not even follow imports.
           # this results is a fairly superficial test, but given the overall
           # state of annotations, we strive to become more correct incrementally
           # with focused error reports, rather than barfing a huge complaint
           # that is unrelated to the changeset someone has been working on.
           # run on the oldest supported Python version.
-          hatch run types:mypy --python-version 3.11 --disable-error-code=import-untyped --follow-imports skip --pretty --show-error-context ${{ steps.changed-py-files.outputs.all_changed_files }}
+          hatch run types:mypy --python-version 3.11 --follow-imports skip --pretty --show-error-context --check-untyped-defs ${{ steps.changed-py-files.outputs.all_changed_files }}
