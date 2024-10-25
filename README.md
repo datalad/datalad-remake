@@ -6,28 +6,49 @@
 [![Hatch project](https://img.shields.io/badge/%F0%9F%A5%9A-Hatch-4051b5.svg)](https://github.com/pypa/hatch)
 
 
-**This code is a POC**, that means currently:
-- code does not thoroughly validate inputs
-- names might be inconsistent
-- few tests
-- fewer docs
-- no support for locking
+**NOTE:** This extension is currently work-in-progress!
 
-This is a naive datalad compute extension that serves as a playground for
-the datalad remake-project. 
 
-It contains an annex remote that can compute content on demand. It uses template
-files that specify the operations. It encodes computation parameters in URLs
-that are associated with annex keys, which allows to compute dropped content
-instead of fetching it from some storage system.  It also contains the new
-datalad command `compute` that
-can trigger the computation of content, generate the parameterized URLs, and
-associate this URL with the respective annex key. This information can then
-be used by the annex remote to repeat the computation.
+## About
+
+This extension equips DataLad with the functionality to generate file content on
+demand, based on a specified set of instructions. This is particularly useful
+when the file content can be (re)obtained deterministically. If storing the
+file content is more expensive than (re)generating it, this functionality can
+lead to more effective resource utilization. Thus, this extension may be of
+interest to a wide, interdisciplinary audience, including researchers, data
+curators, and infrastructure administrators.
+
+
+## How it works
+
+This extension provides a new command called `datalad make`.
+
+By default, `datalad make` triggers the computation of content, generates a URL,
+and associates this URL with the respective file (represented by a git annex
+key). The associated URL encodes all the information necessary to (re)make the
+file content. 
+
+It is also possible to perform a *speculative computation*, in which case the
+URL is recorded, without initiating the computation. This URL can then be used
+to actually perform the computation.
+
+If the computation is performed, the URL is associated with a FILE-KEY,
+otherwise the URL is associated with a URL-KEY. For more information on git
+annex backends, go [here](https://git-annex.branchable.com/backends/).
+
+The URLs are handled by a `datalad-remake` annex special remote, implemented in
+this extension.
+
+
+## Requirements
+
+This extension requires Python >= `3.11`.
+
 
 ## Installation
 
-There is no pypi-package yet. To install the extension, clone the repository
+There is no PyPI package yet. To install the extension, clone the repository
 and install it via `pip` (preferably in a virtual environment):
 
 ```bash
@@ -38,9 +59,67 @@ and install it via `pip` (preferably in a virtual environment):
 ```
 
 
+## Synopsis
+
+```
+datalad make [-i INPUT] [-o OUTPUT] [-p PARAMETER] [-u] TEMPLATE
+```
+
+By design, to perform the computation `datalad make` creates a temporary git
+worktree. All inputs required for the computation are automatically provisioned
+to this temporary worktree, then the specified computation is performed, and
+finally, all requested outputs are transferred back to the original dataset.
+
+The command is invoked with the following arguments:
+
+**`-i INPUT, --input INPUT`** (optional)
+
+Specification of the input file(s) to be provisioned to a temporary git
+worktree. Paths need to be specified relative to the dataset in which `datalad
+make` is executed.
+
+**`-o OUTPUT, --output OUTPUT`**
+
+Specification of the output file(s) to transfer back to the target dataset after
+the computation. Paths need to be specified relative to the dataset in which
+`datalad make` is executed.
+
+**`-p PARAMETER, --parameter PARAMETER`** (optional)
+
+Parameters for the computation, specified in a key-value format (e.g. `-p
+key=value`).
+
+**`-u`** (optional)
+
+Run the command in a URL-only mode. If specified, a *speculative computation*
+will be performed, i.e. only the URL will be recorded, without initiating the
+computation.
+
+**`TEMPLATE`**
+
+Name of the method template used to perform the computation. The template should
+be stored in `$DATASET_ROOT/.datalad/make/methods`. The template itself is a
+simple text file, containing the following variables:
+- `command`: command to be used for the computation
+- `parameters` (optional):  list of strings, corresponding to the parameters for
+  the computation
+- `use_shell`: a boolean determining whether to use shell interpretation
+
+Please note, that placeholders (denoted with curly braces) are supported to allow
+for the parametrized execution of the command.
+
+Also, in some cases, it may be more convenient to store inputs, outputs, and
+parameters in external files. To support this, uppercase variants of the
+command options have been introduced, i.e. `-I`, `-O` and `-P`, respectively.
+
+```
+datalad make -I input.txt -O output.txt -P parameter.txt TEMPLATE
+```
+
+
 ## Example usage
 
-Create a dataset
+Create a dataset:
 
 
 ```bash
@@ -48,7 +127,7 @@ Create a dataset
 > cd remake-test-1
 ```
 
-Create the template directory and a template
+Create a template and place it in the `.datalad/make/methods` directory:
 
 ```bash
 > mkdir -p .datalad/make/methods
@@ -63,25 +142,19 @@ EOF
 > datalad save -m "add `one-to-many` remake method"
 ```
 
-Create a "datalad-remake" annex special remote:
+Create a `datalad-remake` annex special remote:
 ```bash
 > git annex initremote datalad-remake encryption=none type=external externaltype=datalad-remake
 ```
 
 Execute a computation and save the result:
 ```bash
-> datalad make -p first=bob -p second=alice -p output=name -o name-1.txt \
--o name-2.txt one-to-many
+> datalad make -p first=bob -p second=alice -p output=name \
+-o name-1.txt -o name-2.txt one-to-many
 ```
 The method `one-to-many` will create two files with the names `<output>-1.txt`
-and `<output>-2.txt`. That is why the two files `name-1.txt` and `name-2.txt`
-are listed as outputs in the command above.
-
-Note that only output files that are defined by the `-o/--output` option will
-be available in the dataset after `datalad make`. Similarly, only the files
-defined by `-i/--input` will be available as inputs to the computation (the
-computation is performed in a "scratch" directory, so the input files must be
-copied there and the output files must be copied back).
+and `<output>-2.txt`. Thus, the two files `name-1.txt` and `name-2.txt` need to
+be specified as outputs in the command above.
 
 ```bash
 > cat name-1.txt
@@ -91,7 +164,7 @@ content: alice
 ```
 
 Drop the content of `name-1.txt`, verify it is gone, recreate it via
-`datalad get`, which "fetches" is from the compute remote:
+`datalad get`, which "fetches" it from the `datalad-remake` remote:
 
 ```bash
 > datalad drop name-1.txt
@@ -100,31 +173,45 @@ Drop the content of `name-1.txt`, verify it is gone, recreate it via
 > cat name-1.txt
 ``` 
 
-The command `datalad make` does also support to just record the parameters
-that would lead to a certain computation, without actually performing the
-computation. We refer to this as *speculative computation*.
-
-To use this feature, the following configuration value has to be set:
+The `datalad make` command can also be used to perform a *speculative
+computation*. To use this feature, the following configuration value 
+has to be set:
 
 ```bash
 > git config annex.security.allow-unverified-downloads ACKTHPPT
 ```
 
-Afterward, a speculative computation can be recorded by providing the `-u` option
-(url-only) to `datalad make`.
+Afterwards, a speculative computation can be initiated by using the `-u`
+option:
 
 ```bash
 > datalad make -p first=john -p second=susan -p output=person \
 -o person-1.txt -o person-2.txt -u one-to-many
-> cat person-1.txt    # this will fail, because the computation has not yet been performed
 ```
 
-`ls -l person-1.txt` will show a link to a not-downloaded URL-KEY.
-`git annex whereis person-1.txt` will show the associated computation description URL.
-No computation has been performed yet, `datalad make` just creates an URL-KEY and
-associates a computation description URL with the URL-KEY.
+This will fail, because no computation has been performed, and the file content
+is unavailable:
 
-Use `datalad get` to perform the computation for the first time and receive the result::
+```bash
+> cat person-1.txt
+```
+
+However, `ls -l` will show a symlink to a URL-KEY:
+
+```bash
+> ls -l person-1.txt
+```
+
+Similarly, `git annex whereis` will show the associated URL, that encodes all
+the information necessary and sufficient to generate the file content:
+
+```bash
+> git annex whereis person-1.txt
+```
+
+Based on this URL, `datalad get` can be used to generate the file content for
+the first time based on the specified instructions:
+
 ```bash
 > datalad get person-1.txt
 > cat person-1.txt
@@ -136,7 +223,8 @@ Use `datalad get` to perform the computation for the first time and receive the 
 See [CONTRIBUTING.md](CONTRIBUTING.md) if you are interested in internals or
 contributing to the project.
 
-## Acknowledgements
+
+# Acknowledgements
 
 This development was supported by European Union’s Horizon research and
 innovation programme under grant agreement [eBRAIN-Health
