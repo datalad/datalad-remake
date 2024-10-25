@@ -29,6 +29,7 @@ from datalad_remake.commands.make_cmd import (
     provide_context,
 )
 from datalad_remake.utils.glob import resolve_patterns
+from datalad_remake.utils.verify import verify_file
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -41,6 +42,12 @@ lgr = logging.getLogger('datalad.remake.annexremotes.remake')
 class RemakeRemote(SpecialRemote):
     def __init__(self, annex: Master):
         super().__init__(annex)
+        self.configs = {
+            'allow_untrusted_execution':
+                'Allow execution of untrusted code with untrusted parameters. '
+                'set to "true" to enable. THIS IS DANGEROUS and might lead to '
+                'remote code execution.',
+        }
 
     def __del__(self):
         self.close()
@@ -85,7 +92,12 @@ class RemakeRemote(SpecialRemote):
         self.annex.debug(f'get_url_for_key: key: {key!r}, urls: {urls!r}')
         return urls[0]
 
-    def get_compute_info(self, key: str) -> tuple[dict[str, Any], Dataset]:
+    def get_compute_info(self,
+                         key: str,
+                         *,
+                         allow_untrusted_specs: bool = False
+                         ) -> tuple[dict[str, Any], Dataset]:
+
         def get_assigned_value(assignment: str) -> str:
             return assignment.split('=', 1)[1]
 
@@ -96,6 +108,8 @@ class RemakeRemote(SpecialRemote):
 
         dataset = self._find_dataset(root_version)
         spec_path = dataset.pathobj / specification_dir / spec_name
+        if not allow_untrusted_specs:
+            verify_file(dataset.pathobj, spec_path)
         with open(spec_path, 'rb') as f:
             spec = json.load(f)
 
@@ -108,7 +122,14 @@ class RemakeRemote(SpecialRemote):
     def transfer_retrieve(self, key: str, file_name: str) -> None:
         self.annex.debug(f'TRANSFER RETRIEVE key: {key!r}, file_name: {file_name!r}')
 
-        compute_info, dataset = self.get_compute_info(key)
+        allow_untrusted_execution = self.annex.getconfig(
+            'allow_untrusted_execution'
+        ) == 'true'
+
+        compute_info, dataset = self.get_compute_info(
+            key,
+            allow_untrusted_specs=allow_untrusted_execution
+        )
         self.annex.debug(f'TRANSFER RETRIEVE compute_info: {compute_info!r}')
 
         # Perform the computation, and collect the results
@@ -124,6 +145,7 @@ class RemakeRemote(SpecialRemote):
                 compute_info['method'],
                 compute_info['parameter'],
                 compute_info['output'],
+                allow_untrusted_code=allow_untrusted_execution,
             )
             lgr.debug('Starting collection')
             self.annex.debug('Starting collection')

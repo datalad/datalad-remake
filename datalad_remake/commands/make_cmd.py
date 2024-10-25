@@ -34,6 +34,7 @@ from datalad_next.runners import (
     call_git_oneline,
     call_git_success,
 )
+from hypothesis.reporting import default
 
 from datalad_remake import (
     specification_dir,
@@ -42,6 +43,7 @@ from datalad_remake import (
 )
 from datalad_remake.utils.compute import compute
 from datalad_remake.utils.glob import resolve_patterns
+from datalad_remake.utils.verify import verify_file
 
 if TYPE_CHECKING:
     from collections.abc import (
@@ -165,6 +167,21 @@ class Make(ValidatedInterface):
             'before used. This is useful if a large number of parameters '
             'should be provided.',
         ),
+        'allow_untrusted_code': Parameter(
+            args=(
+                '--allow-untrusted-code',
+            ),
+            action='store_true',
+            default=False,
+            doc='Skip commit signature verification before executing code. This '
+                'should only be used in a strictly controlled environment with '
+                'fully trusted datasets. Trusted dataset means: every commit '
+                'stems from a trusted entity.  '
+                'DO NOT USE THIS OPTION, unless you are sure to understand the '
+                'consequences. One of which is that arbitrary parties can '
+                'execute arbitrary code under your account on your '
+                'infrastructure.',
+        ),
     }
 
     @staticmethod
@@ -182,6 +199,7 @@ class Make(ValidatedInterface):
         output_list: Path | None = None,
         parameter: list[str] | None = None,
         parameter_list: Path | None = None,
+        allow_untrusted_code: bool = False,
     ) -> Generator:
         ds: Dataset = dataset.ds if dataset else Dataset('.')
 
@@ -189,7 +207,7 @@ class Make(ValidatedInterface):
         output_pattern = (output or []) + read_list(output_list)
         parameter = (parameter or []) + read_list(parameter_list)
 
-        parameter_dict = {p.split('=', 1)[0]: p.split('=', 1)[1] for p in parameter}
+        parameter_dict = dict([p.split('=', 1) for p in parameter])
 
         # We have to get the URL first, because saving the specification to
         # the dataset will change the version.
@@ -203,7 +221,13 @@ class Make(ValidatedInterface):
                 branch,
                 input_pattern,
             ) as worktree:
-                execute(worktree, template, parameter_dict, output_pattern)
+                execute(
+                    worktree,
+                    template,
+                    parameter_dict,
+                    output_pattern,
+                    allow_untrusted_code=allow_untrusted_code,
+                )
                 resolved_output = collect(worktree, ds, output_pattern)
         else:
             resolved_output = set(output_pattern)
@@ -370,6 +394,8 @@ def execute(
     template_name: str,
     parameter: dict[str, str],
     output_pattern: list[str],
+    *,
+    allow_untrusted_code: bool = False,
 ) -> None:
     lgr.debug(
         'execute: %s %s %s %s',
@@ -392,6 +418,9 @@ def execute(
 
     # Run the computation in the worktree-directory
     template_path = Path(template_dir) / template_name
+    if not allow_untrusted_code:
+        verify_file(worktree_ds.pathobj, template_path)
+
     worktree_ds.get(template_path, result_renderer='disabled')
     compute(worktree, worktree / template_path, parameter)
 
