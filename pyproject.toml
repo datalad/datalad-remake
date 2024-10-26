@@ -96,7 +96,6 @@ extra-dependencies = [
   "hypothesis",
   "mypy>=1.0.0",
   "pytest",
-  "pytest-gnupg-fixtures",
 ]
 
 [tool.hatch.envs.types.scripts]
