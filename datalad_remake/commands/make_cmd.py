@@ -34,7 +34,6 @@ from datalad_next.runners import (
     call_git_oneline,
     call_git_success,
 )
-from hypothesis.reporting import default
 
 from datalad_remake import (
     specification_dir,
@@ -168,19 +167,17 @@ class Make(ValidatedInterface):
             'should be provided.',
         ),
         'allow_untrusted_code': Parameter(
-            args=(
-                '--allow-untrusted-code',
-            ),
+            args=('--allow-untrusted-code',),
             action='store_true',
             default=False,
             doc='Skip commit signature verification before executing code. This '
-                'should only be used in a strictly controlled environment with '
-                'fully trusted datasets. Trusted dataset means: every commit '
-                'stems from a trusted entity.  '
-                'DO NOT USE THIS OPTION, unless you are sure to understand the '
-                'consequences. One of which is that arbitrary parties can '
-                'execute arbitrary code under your account on your '
-                'infrastructure.',
+            'should only be used in a strictly controlled environment with '
+            'fully trusted datasets. Trusted dataset means: every commit '
+            'stems from a trusted entity.  '
+            'DO NOT USE THIS OPTION, unless you are sure to understand the '
+            'consequences. One of which is that arbitrary parties can '
+            'execute arbitrary code under your account on your '
+            'infrastructure.',
         ),
     }
 

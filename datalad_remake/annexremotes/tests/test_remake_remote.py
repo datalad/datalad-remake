@@ -1,14 +1,20 @@
+import re
 import subprocess
 from io import TextIOBase
+from pathlib import Path
 from queue import Queue
 from typing import cast
 
+import pytest
 from annexremote import Master
 from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
 
-from ... import specification_dir
+from ... import (
+    specification_dir,
+    template_dir,
+)
 from ...commands.make_cmd import build_json
 from ..remake_remote import RemakeRemote
 
@@ -64,11 +70,24 @@ class MockedInput:
 
 
 @skip_if_on_windows
-def test_compute_remote_main(tmp_path, monkeypatch):
-    dataset = create_ds_hierarchy(tmp_path, 'ds1', 0)[0][2]
+@pytest.mark.parametrize('trusted', [True, False])
+def test_compute_remote_main(tmp_path, monkeypatch, trusted):
+    if trusted:
+        gpg_homedir = tmp_path / 'tmp_gpg_dir'
+
+        # make sure that the users keystore is not overwritten
+        monkeypatch.setenv('HOME', '/dev/null')
+        monkeypatch.setenv('GNUPGHOME', str(gpg_homedir))
+
+        # Generate a keypair
+        keyid = _create_keypair(gpg_homedir)
+    else:
+        keyid = None
+
+    dataset = create_ds_hierarchy(tmp_path, 'ds1', 0, keyid)[0][2]
     monkeypatch.chdir(dataset.path)
 
-    template_path = dataset.pathobj / '.datalad' / 'make' / 'methods'
+    template_path = dataset.pathobj / template_dir
     template_path.mkdir(parents=True)
     (template_path / 'echo').write_text(template)
     dataset.save()
@@ -84,10 +103,13 @@ def test_compute_remote_main(tmp_path, monkeypatch):
         )
     ).split(b': ')[1]
 
-    (dataset.pathobj / specification_dir).mkdir(parents=True, exist_ok=True)
-    (dataset.pathobj / specification_dir / '000001111122222').write_text(
+    specification_path = dataset.pathobj / specification_dir
+    spec_name = '000001111122222'
+    specification_path.mkdir(parents=True, exist_ok=True)
+    (specification_path / spec_name).write_text(
         build_json('echo', [], ['a.txt'], {'content': 'some_string'})
     )
+    dataset.save()
 
     input_ = MockedInput()
 
@@ -97,7 +119,7 @@ def test_compute_remote_main(tmp_path, monkeypatch):
     input_.send('PREPARE\n')
     input_.send(f'TRANSFER RETRIEVE {key.decode()} {tmp_path / "remade.txt"!s}\n')
     # The next line is the answer to `GETCONFIG allow_untrusted_execution`
-    input_.send('VALUE true\n')
+    input_.send(f'VALUE {"false" if trusted else "true"}\n')
     url = (
         'datalad-make:///?'
         f'root_version={dataset.repo.get_hexsha()}'
@@ -121,3 +143,53 @@ def test_compute_remote_main(tmp_path, monkeypatch):
     # At this point the datalad-remake remote should have executed the
     # computation and written the result.
     assert (tmp_path / 'remade.txt').read_text().strip() == 'content: some_string'
+
+
+def _create_keypair(gpg_dir: Path):
+    gpg_dir.mkdir(parents=True)
+    gpg_dir.chmod(0o700)
+    private_keys_dir = gpg_dir / 'private-keys-v1.d'
+    private_keys_dir.mkdir()
+    private_keys_dir.chmod(0o700)
+    script = b"""
+        Key-Type: RSA
+        Key-Length: 4096
+        Subkey-Type: RSA
+        Subkey-Length: 4096
+        Name-Real: Test User
+        Name-Email: test@example.com
+        Expire-Date: 0
+        %no-protection
+        #%transient-key
+        %commit
+    """
+    environment = {'HOME': '/dev/null'}
+    result = subprocess.run(
+        [  # noqa: S607
+            'gpg',
+            '--batch',
+            '--homedir',
+            str(gpg_dir),
+            '--gen-key',
+            '--keyid-format',
+            'long',
+        ],
+        input=script,
+        capture_output=True,
+        check=True,
+        env=environment,
+    )
+    result = subprocess.run(
+        [  # noqa: S607
+            'gpg',
+            '--homedir',
+            str(gpg_dir),
+            '--list-secret-keys',
+            '--keyid-format',
+            'long',
+        ],
+        capture_output=True,
+        check=True,
+        env=environment,
+    )
+    return re.findall('sec.*rsa4096/([A-Z0-9]+)', result.stdout.decode())[0]

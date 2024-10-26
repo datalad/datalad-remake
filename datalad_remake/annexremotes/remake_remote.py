@@ -43,10 +43,9 @@ class RemakeRemote(SpecialRemote):
     def __init__(self, annex: Master):
         super().__init__(annex)
         self.configs = {
-            'allow_untrusted_execution':
-                'Allow execution of untrusted code with untrusted parameters. '
-                'set to "true" to enable. THIS IS DANGEROUS and might lead to '
-                'remote code execution.',
+            'allow_untrusted_execution': 'Allow execution of untrusted code with untrusted parameters. '
+            'set to "true" to enable. THIS IS DANGEROUS and might lead to '
+            'remote code execution.',
         }
 
     def __del__(self):
@@ -92,12 +91,9 @@ class RemakeRemote(SpecialRemote):
         self.annex.debug(f'get_url_for_key: key: {key!r}, urls: {urls!r}')
         return urls[0]
 
-    def get_compute_info(self,
-                         key: str,
-                         *,
-                         allow_untrusted_specs: bool = False
-                         ) -> tuple[dict[str, Any], Dataset]:
-
+    def get_compute_info(
+        self, key: str, *, allow_untrusted_specs: bool = False
+    ) -> tuple[dict[str, Any], Dataset]:
         def get_assigned_value(assignment: str) -> str:
             return assignment.split('=', 1)[1]
 
@@ -122,13 +118,12 @@ class RemakeRemote(SpecialRemote):
     def transfer_retrieve(self, key: str, file_name: str) -> None:
         self.annex.debug(f'TRANSFER RETRIEVE key: {key!r}, file_name: {file_name!r}')
 
-        allow_untrusted_execution = self.annex.getconfig(
-            'allow_untrusted_execution'
-        ) == 'true'
+        allow_untrusted_execution = (
+            self.annex.getconfig('allow_untrusted_execution') == 'true'
+        )
 
         compute_info, dataset = self.get_compute_info(
-            key,
-            allow_untrusted_specs=allow_untrusted_execution
+            key, allow_untrusted_specs=allow_untrusted_execution
         )
         self.annex.debug(f'TRANSFER RETRIEVE compute_info: {compute_info!r}')
 
