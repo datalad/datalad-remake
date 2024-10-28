@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
 from datalad_remake.annexremotes.tests.test_remake_remote import create_keypair
+from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
 from datalad_remake.utils.verify import verify_file
 
 
@@ -29,9 +29,9 @@ def test_whitelist(tmp_path, monkeypatch):
 
     # Expect verification to fail if only `other_key` is white-listed because
     # the commits were signed with `signing_key`.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='Signature validation of a.txt failed'):
         verify_file(dataset.pathobj, Path('a.txt'), [other_key])
 
     # Expect verification to fail if no key is white-listed.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='Signature validation of a.txt failed'):
         verify_file(dataset.pathobj, Path('a.txt'), [])

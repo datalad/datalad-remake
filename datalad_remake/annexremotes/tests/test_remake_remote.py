@@ -7,7 +7,6 @@ from typing import cast
 
 import pytest
 from annexremote import Master
-from datalad_core.config import get_manager
 from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
@@ -201,5 +200,5 @@ def create_keypair(gpg_dir: Path, name: bytes = b'Test User'):
     )
     return re.findall(
         r'(?m)sec.*rsa4096/([A-Z0-9]+).*\n.*\n.*' + name.decode(),
-        result.stdout.decode()
+        result.stdout.decode(),
     )[0]

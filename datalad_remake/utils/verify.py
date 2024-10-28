@@ -10,17 +10,13 @@ from datalad_next.runners import (
     call_git_success,
 )
 
-
 lgr = logging.getLogger('datalad.remake.utils.verify')
 
 
-def verify_file(root_directory: Path,
-                file: Path,
-                trusted_key_ids: list[str]
-                ):
-
+def verify_file(root_directory: Path, file: Path, trusted_key_ids: list[str]):
     if not trusted_key_ids:
-        raise ValueError('No trusted keys provided')
+        msg = 'No trusted keys provided'
+        raise ValueError(msg)
 
     # Get the latest commit of `file`
     commit = call_git_oneline(
@@ -28,7 +24,6 @@ def verify_file(root_directory: Path,
     )
 
     with tempfile.TemporaryDirectory() as temp_gpg_dir:
-
         # Create a temporary PGP keyring that contains the trusted keys
         _copy_keys_to(trusted_key_ids, temp_gpg_dir)
 
@@ -43,16 +38,13 @@ def verify_file(root_directory: Path,
             raise ValueError(msg)
 
 
-def _copy_keys_to(trusted_key_ids: list[str],
-                  keyring_dir: str
-                  ) -> None:
-
+def _copy_keys_to(trusted_key_ids: list[str], keyring_dir: str) -> None:
     for key_id in trusted_key_ids:
-
         # Export the requested key into `result.stdout`
         result = subprocess.run(
-        ['gpg', '-a', '--export', key_id],
+            ['gpg', '-a', '--export', key_id],  # noqa: S607
             stdout=subprocess.PIPE,
+            check=False,
         )
 
         if result.returncode != 0:
@@ -61,9 +53,9 @@ def _copy_keys_to(trusted_key_ids: list[str],
 
         # Import key from `result.stdout` into a keyring in `keyring_dir`
         subprocess.run(
-            ['gpg', '--homedir', str(keyring_dir), '--import'],
+            ['gpg', '--homedir', str(keyring_dir), '--import'],  # noqa: S607
             input=result.stdout,
-            check=True
+            check=True,
         )
 
 

@@ -219,16 +219,12 @@ class Make(ValidatedInterface):
                 branch,
                 input_pattern,
             ) as worktree:
-                if allow_untrusted_code:
-                    trusted_key_ids = None
-                else:
-                    trusted_key_ids = get_trusted_keys()
                 execute(
                     worktree,
                     template,
                     parameter_dict,
                     output_pattern,
-                    trusted_key_ids,
+                    None if allow_untrusted_code else get_trusted_keys(),
                 )
                 resolved_output = collect(worktree, ds, output_pattern)
         else:

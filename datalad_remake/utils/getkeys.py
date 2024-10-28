@@ -1,4 +1,3 @@
-
 from datalad_core.config import (
     ConfigManager,
     get_manager,

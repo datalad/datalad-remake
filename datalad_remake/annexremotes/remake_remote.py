@@ -92,11 +92,11 @@ class RemakeRemote(SpecialRemote):
         self.annex.debug(f'get_url_for_key: key: {key!r}, urls: {urls!r}')
         return urls[0]
 
-    def get_compute_info(self,
-                         key: str,
-                         trusted_key_ids: list[str] | None,
-                         ) -> tuple[dict[str, Any], Dataset]:
-
+    def get_compute_info(
+        self,
+        key: str,
+        trusted_key_ids: list[str] | None,
+    ) -> tuple[dict[str, Any], Dataset]:
         def get_assigned_value(assignment: str) -> str:
             return assignment.split('=', 1)[1]
 
