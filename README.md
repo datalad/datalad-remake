@@ -29,7 +29,7 @@ and associates this URL with the respective file (represented by a git annex
 key). The associated URL encodes all the information necessary to (re)make the
 file content. 
 
-It is also possible to perform a *speculative computation*, in which case the
+It is also possible to perform a *prospective computation*, in which case the
 URL is recorded, without initiating the computation. This URL can then be used
 to actually perform the computation.
 
@@ -91,7 +91,7 @@ key=value`).
 
 **`-u`** (optional)
 
-Run the command in a URL-only mode. If specified, a *speculative computation*
+Run the command in a URL-only mode. If specified, a *prospective computation*
 will be performed, i.e. only the URL will be recorded, without initiating the
 computation.
 
@@ -173,7 +173,7 @@ Drop the content of `name-1.txt`, verify it is gone, recreate it via
 > cat name-1.txt
 ``` 
 
-The `datalad make` command can also be used to perform a *speculative
+The `datalad make` command can also be used to perform a *prospective
 computation*. To use this feature, the following configuration value 
 has to be set:
 
@@ -181,7 +181,7 @@ has to be set:
 > git config annex.security.allow-unverified-downloads ACKTHPPT
 ```
 
-Afterwards, a speculative computation can be initiated by using the `-u`
+Afterwards, a prospective computation can be initiated by using the `-u`
 option:
 
 ```bash
