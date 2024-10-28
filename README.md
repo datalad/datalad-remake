@@ -25,7 +25,7 @@ curators, and infrastructure administrators.
 This extension provides a new command called `datalad make`.
 
 By default, `datalad make` triggers the computation of content, generates a URL,
-and associates this URL with the respective file (represented by a git annex
+and associates this URL with the respective file (represented by a git-annex
 key). The associated URL encodes all the information necessary to (re)make the
 file content. 
 
@@ -34,10 +34,10 @@ URL is recorded, without initiating the computation. This URL can then be used
 to actually perform the computation.
 
 If the computation is performed, the URL is associated with a FILE-KEY,
-otherwise the URL is associated with a URL-KEY. For more information on git
-annex backends, go [here](https://git-annex.branchable.com/backends/).
+otherwise the URL is associated with a URL-KEY. For more information on 
+git-annex backends, go [here](https://git-annex.branchable.com/backends/).
 
-The URLs are handled by a `datalad-remake` annex special remote, implemented in
+The URLs are handled by a `datalad-remake` git-annex special remote, implemented in
 this extension.
 
 
@@ -65,7 +65,7 @@ and install it via `pip` (preferably in a virtual environment):
 datalad make [-i INPUT] [-o OUTPUT] [-p PARAMETER] [-u] TEMPLATE
 ```
 
-By design, to perform the computation `datalad make` creates a temporary git
+By design, to perform the computation `datalad make` creates a temporary Git
 worktree. All inputs required for the computation are automatically provisioned
 to this temporary worktree, then the specified computation is performed, and
 finally, all requested outputs are transferred back to the original dataset.
@@ -74,7 +74,7 @@ The command is invoked with the following arguments:
 
 **`-i INPUT, --input INPUT`** (optional)
 
-Specification of the input file(s) to be provisioned to a temporary git
+Specification of the input file(s) to be provisioned to a temporary Git
 worktree. Paths need to be specified relative to the dataset in which `datalad
 make` is executed.
 
@@ -142,7 +142,7 @@ EOF
 > datalad save -m "add `one-to-many` remake method"
 ```
 
-Create a `datalad-remake` annex special remote:
+Create a `datalad-remake` git-annex special remote:
 ```bash
 > git annex initremote datalad-remake encryption=none type=external externaltype=datalad-remake
 ```
