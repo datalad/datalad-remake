@@ -2,6 +2,7 @@
 annexremote
 coverage
 datalad
+datalad-core @ git+https://github.com/datalad/datalad-core
 datalad-next
 datasalad
 hatch
