@@ -94,7 +94,6 @@ def _enable_signing(dataset: Dataset, key: str | None):
         dataset.config.set('commit.gpgsign', 'true', scope='local')
         dataset.config.set('user.signingkey', key, scope='local')
 
-
 def create_simple_computation_dataset(
     tmp_path: Path,
     dataset_name: str,

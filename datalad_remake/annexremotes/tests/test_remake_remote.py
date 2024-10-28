@@ -7,6 +7,7 @@ from typing import cast
 
 import pytest
 from annexremote import Master
+from datalad_core.config import get_manager
 from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
@@ -71,16 +72,19 @@ class MockedInput:
 
 @skip_if_on_windows
 @pytest.mark.parametrize('trusted', [True, False])
-def test_compute_remote_main(tmp_path, monkeypatch, trusted):
+def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
     if trusted:
         gpg_homedir = tmp_path / 'tmp_gpg_dir'
 
-        # make sure that the users keystore is not overwritten
-        monkeypatch.setenv('HOME', '/dev/null')
+        # Try to ensure that the users keystore is not overwritten, even if
+        # there is an error in the test or the system under test.
         monkeypatch.setenv('GNUPGHOME', str(gpg_homedir))
 
         # Generate a keypair
-        keyid = _create_keypair(gpg_homedir)
+        keyid = create_keypair(gpg_homedir)
+
+        datalad_cfg.add('datalad.trusted-keys', keyid, where='global')
+
     else:
         keyid = None
 
@@ -145,26 +149,29 @@ def test_compute_remote_main(tmp_path, monkeypatch, trusted):
     assert (tmp_path / 'remade.txt').read_text().strip() == 'content: some_string'
 
 
-def _create_keypair(gpg_dir: Path):
-    gpg_dir.mkdir(parents=True)
+def create_keypair(gpg_dir: Path, name: bytes = b'Test User'):
+    gpg_dir.mkdir(parents=True, exist_ok=True)
     gpg_dir.chmod(0o700)
     private_keys_dir = gpg_dir / 'private-keys-v1.d'
-    private_keys_dir.mkdir()
+    private_keys_dir.mkdir(exist_ok=True)
     private_keys_dir.chmod(0o700)
-    script = b"""
+    template = b"""
         Key-Type: RSA
         Key-Length: 4096
         Subkey-Type: RSA
         Subkey-Length: 4096
-        Name-Real: Test User
+        Name-Real: $NAME
         Name-Email: test@example.com
         Expire-Date: 0
         %no-protection
         #%transient-key
         %commit
     """
+    script = template.replace(b'$NAME', name)
+    # Unset $HOME to prevent accidental changes to the user's keyring
     environment = {'HOME': '/dev/null'}
-    result = subprocess.run(
+
+    subprocess.run(
         [  # noqa: S607
             'gpg',
             '--batch',
@@ -192,4 +199,7 @@ def _create_keypair(gpg_dir: Path):
         check=True,
         env=environment,
     )
-    return re.findall('sec.*rsa4096/([A-Z0-9]+)', result.stdout.decode())[0]
+    return re.findall(
+        r'(?m)sec.*rsa4096/([A-Z0-9]+).*\n.*\n.*' + name.decode(),
+        result.stdout.decode()
+    )[0]

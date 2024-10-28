@@ -43,7 +43,7 @@ classifiers = [
 dependencies = [
   "annexremote",
   "datalad",
-  "datalad_core@git+https://github.com/datalad/datalad-core",
+#  "datalad_core@git+https://github.com/datalad/datalad-core",
   "datalad_next",
   "datasalad",
 ]

@@ -41,6 +41,7 @@ from datalad_remake import (
     url_scheme,
 )
 from datalad_remake.utils.compute import compute
+from datalad_remake.utils.getkeys import get_trusted_keys
 from datalad_remake.utils.glob import resolve_patterns
 from datalad_remake.utils.verify import verify_file
 
@@ -218,12 +219,16 @@ class Make(ValidatedInterface):
                 branch,
                 input_pattern,
             ) as worktree:
+                if allow_untrusted_code:
+                    trusted_key_ids = None
+                else:
+                    trusted_key_ids = get_trusted_keys()
                 execute(
                     worktree,
                     template,
                     parameter_dict,
                     output_pattern,
-                    allow_untrusted_code=allow_untrusted_code,
+                    trusted_key_ids,
                 )
                 resolved_output = collect(worktree, ds, output_pattern)
         else:
@@ -391,8 +396,7 @@ def execute(
     template_name: str,
     parameter: dict[str, str],
     output_pattern: list[str],
-    *,
-    allow_untrusted_code: bool = False,
+    trusted_key_ids: list[str] | None,
 ) -> None:
     lgr.debug(
         'execute: %s %s %s %s',
@@ -415,8 +419,8 @@ def execute(
 
     # Run the computation in the worktree-directory
     template_path = Path(template_dir) / template_name
-    if not allow_untrusted_code:
-        verify_file(worktree_ds.pathobj, template_path)
+    if trusted_key_ids is not None:
+        verify_file(worktree_ds.pathobj, template_path, trusted_key_ids)
 
     worktree_ds.get(template_path, result_renderer='disabled')
     compute(worktree, worktree / template_path, parameter)
