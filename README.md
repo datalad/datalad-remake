@@ -89,7 +89,7 @@ the computation. Paths need to be specified relative to the dataset in which
 Parameters for the computation, specified in a key-value format (e.g. `-p
 key=value`).
 
-**`-u`** (optional)
+**`-u, --url-only`** (optional)
 
 Run the command in a URL-only mode. If specified, a *prospective computation*
 will be performed, i.e. only the URL will be recorded, without initiating the
@@ -181,8 +181,8 @@ has to be set:
 > git config annex.security.allow-unverified-downloads ACKTHPPT
 ```
 
-Afterwards, a prospective computation can be initiated by using the `-u`
-option:
+Afterwards, a prospective computation can be initiated by using the 
+`-u / --url-only` option:
 
 ```bash
 > datalad make -p first=john -p second=susan -p output=person \
