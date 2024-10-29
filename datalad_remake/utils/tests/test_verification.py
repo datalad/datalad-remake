@@ -33,5 +33,5 @@ def test_whitelist(tmp_path, monkeypatch):
         verify_file(dataset.pathobj, Path('a.txt'), [other_key])
 
     # Expect verification to fail if no key is white-listed.
-    with pytest.raises(ValueError, match='Signature validation of a.txt failed'):
+    with pytest.raises(ValueError, match='No trusted keys provided'):
         verify_file(dataset.pathobj, Path('a.txt'), [])
