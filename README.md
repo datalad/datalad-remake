@@ -24,27 +24,6 @@ of interest to a wide, interdisciplinary audience, including researchers,
 data curators, and infrastructure administrators.
 
 
-## How it works
-
-This extension provides a new command called `datalad make`.
-
-By default, `datalad make` triggers the computation of content, generates a URL,
-and associates this URL with the respective file (represented by a git-annex
-key). The associated URL encodes all the information necessary to (re)make the
-file content. 
-
-It is also possible to perform a *prospective computation*, in which case the
-URL is recorded, without initiating the computation. This URL can then be used
-to actually perform the computation.
-
-If the computation is performed, the URL is associated with a FILE-KEY,
-otherwise the URL is associated with a URL-KEY. For more information on 
-git-annex backends, go [here](https://git-annex.branchable.com/backends/).
-
-The URLs are handled by a `datalad-remake` git-annex special remote, implemented in
-this extension.
-
-
 ## Requirements
 
 This extension requires Python >= `3.11`.
@@ -95,8 +74,8 @@ key=value`).
 
 **`-u, --url-only`** (optional)
 
-Run the command in a URL-only mode. If specified, a *prospective computation*
-will be performed, i.e. only the URL will be recorded, without initiating the
+If specified, a *prospective computation* will be performed, i.e. only the
+instructions to compute a file will be recorded, without initiating the
 computation.
 
 **`TEMPLATE`**
@@ -193,28 +172,28 @@ Afterwards, a prospective computation can be initiated by using the
 -o person-1.txt -o person-2.txt -u one-to-many
 ```
 
-This will fail, because no computation has been performed, and the file content
-is unavailable:
+The following command will fail, because no computation has been performed,
+and the file content is unavailable:
 
 ```bash
 > cat person-1.txt
 ```
 
-However, `ls -l` will show a symlink to a URL-KEY:
+We can further inspect this with `git annex info`:
 
 ```bash
-> ls -l person-1.txt
+> git annex info person-1.txt
 ```
 
-Similarly, `git annex whereis` will show the associated URL, that encodes all
-the information necessary and sufficient to generate the file content:
+Similarly, `git annex whereis` will show the URL, that can be handled by the
+git-annex special remote:
 
 ```bash
 > git annex whereis person-1.txt
 ```
 
-Based on this URL, `datalad get` can be used to generate the file content for
-the first time based on the specified instructions:
+Finally, `datalad get` can be used to produce the file content (for the first
+time!) based on the specified instructions:
 
 ```bash
 > datalad get person-1.txt
