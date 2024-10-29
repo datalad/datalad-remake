@@ -9,9 +9,10 @@ from datalad_remake.utils.verify import verify_file
 
 def test_whitelist(tmp_path, monkeypatch):
     gpg_dir = tmp_path / 'gpg'
+    tmp_home = tmp_path / 'tmp_home'
 
     # make sure that the users keystore is not overwritten
-    monkeypatch.setenv('HOME', '/dev/null')
+    monkeypatch.setenv('HOME', str(tmp_home))
 
     # Create two key-pairs, one is used for signing, the other is used to
     # validate the whitelist functionality.
