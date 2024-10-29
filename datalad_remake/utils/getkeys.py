@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datalad_core.config import (
     ConfigManager,
     get_manager,
