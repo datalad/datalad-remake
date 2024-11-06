@@ -80,14 +80,14 @@ def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
         monkeypatch.setenv('GNUPGHOME', str(gpg_homedir))
 
         # Generate a keypair
-        keyid = create_keypair(gpg_homedir)
+        signing_key, _ = import_keypairs(gpg_homedir)
 
-        datalad_cfg.add('datalad.trusted-keys', keyid, where='global')
+        datalad_cfg.add('datalad.trusted-keys', signing_key, where='global')
 
     else:
-        keyid = None
+        signing_key = None
 
-    dataset = create_ds_hierarchy(tmp_path, 'ds1', 0, keyid)[0][2]
+    dataset = create_ds_hierarchy(tmp_path, 'ds1', 0, signing_key)[0][2]
     monkeypatch.chdir(dataset.path)
 
     template_path = dataset.pathobj / template_dir
@@ -148,43 +148,34 @@ def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
     assert (tmp_path / 'remade.txt').read_text().strip() == 'content: some_string'
 
 
-def create_keypair(gpg_dir: Path, name: bytes = b'Test User'):
+def import_keypairs(gpg_dir: Path) -> list[str]:
     gpg_dir.mkdir(parents=True, exist_ok=True)
     gpg_dir.chmod(0o700)
     private_keys_dir = gpg_dir / 'private-keys-v1.d'
     private_keys_dir.mkdir(exist_ok=True)
     private_keys_dir.chmod(0o700)
-    template = b"""
-        Key-Type: RSA
-        Key-Length: 4096
-        Subkey-Type: RSA
-        Subkey-Length: 4096
-        Name-Real: $NAME
-        Name-Email: test@example.com
-        Expire-Date: 0
-        %no-protection
-        #%transient-key
-        %commit
-    """
-    script = template.replace(b'$NAME', name)
+
+    key_dir = Path(__file__).parent / 'keys'
+
     # Unset $HOME to prevent accidental changes to the user's keyring
     environment = {'HOME': '/dev/null'}
 
-    subprocess.run(
-        [  # noqa: S607
-            'gpg',
-            '--batch',
-            '--homedir',
-            str(gpg_dir),
-            '--gen-key',
-            '--keyid-format',
-            'long',
-        ],
-        input=script,
-        capture_output=True,
-        check=True,
-        env=environment,
-    )
+    for stem in ('test_key', 'other_key'):
+        for key_file in (stem, stem + '.pub'):
+            subprocess.run(
+                [  # noqa: S607
+                    'gpg',
+                    '--batch',
+                    '--homedir',
+                    str(gpg_dir),
+                    '--import',
+                    str(key_dir / key_file),
+                ],
+                capture_output=True,
+                check=True,
+                env=environment,
+            )
+
     result = subprocess.run(
         [  # noqa: S607
             'gpg',
@@ -199,6 +190,6 @@ def create_keypair(gpg_dir: Path, name: bytes = b'Test User'):
         env=environment,
     )
     return re.findall(
-        r'(?m)sec.*rsa4096/([A-Z0-9]+).*\n.*\n.*' + name.decode(),
+        r'(?m)sec.*rsa4096/([A-Z0-9]+).*\n',
         result.stdout.decode(),
-    )[0]
+    )

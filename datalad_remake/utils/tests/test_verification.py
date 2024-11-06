@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from datalad_remake.annexremotes.tests.test_remake_remote import create_keypair
+from datalad_remake.annexremotes.tests.test_remake_remote import import_keypairs
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
 from datalad_remake.utils.verify import verify_file
 
@@ -16,8 +16,7 @@ def test_whitelist(tmp_path, monkeypatch):
 
     # Create two key-pairs, one is used for signing, the other is used to
     # validate the whitelist functionality.
-    signing_key = create_keypair(gpg_dir=gpg_dir, name=b'Signing User')
-    other_key = create_keypair(gpg_dir=gpg_dir, name=b'Other User')
+    signing_key, other_key = import_keypairs(gpg_dir=gpg_dir)
 
     # Activate the new keys to allow `create_ds_hierarchy` to sign the commits
     monkeypatch.setenv('GNUPGHOME', str(gpg_dir))
