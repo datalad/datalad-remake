@@ -74,9 +74,13 @@ class MockedInput:
 def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
     if trusted:
         gpg_homedir = tmp_path / 'tmp_gpg_dir'
+        tmp_home = tmp_path / 'tmp_home'
+
+        # make sure that the users keystore is not overwritten
+        monkeypatch.setenv('HOME', str(tmp_home))
 
         # Generate a keypair
-        signing_key, _ = import_keypairs(gpg_homedir)
+        signing_key, _ = import_keypairs(gpg_dir=gpg_homedir)
 
         # Activate the new keys
         monkeypatch.setenv('GNUPGHOME', str(gpg_homedir))
