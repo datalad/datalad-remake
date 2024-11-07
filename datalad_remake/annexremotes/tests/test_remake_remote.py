@@ -75,12 +75,11 @@ def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
     if trusted:
         gpg_homedir = tmp_path / 'tmp_gpg_dir'
 
-        # Try to ensure that the users keystore is not overwritten, even if
-        # there is an error in the test or the system under test.
-        monkeypatch.setenv('GNUPGHOME', str(gpg_homedir))
-
         # Generate a keypair
         signing_key, _ = import_keypairs(gpg_homedir)
+
+        # Activate the new keys
+        monkeypatch.setenv('GNUPGHOME', str(gpg_homedir))
 
         datalad_cfg.add('datalad.trusted-keys', signing_key, where='global')
 
@@ -160,21 +159,20 @@ def import_keypairs(gpg_dir: Path) -> list[str]:
     # Unset $HOME to prevent accidental changes to the user's keyring
     environment = {'HOME': '/dev/null'}
 
-    for stem in ('test_key', 'other_key'):
-        for key_file in (stem, stem + '.pub'):
-            subprocess.run(
-                [  # noqa: S607
-                    'gpg',
-                    '--batch',
-                    '--homedir',
-                    str(gpg_dir),
-                    '--import',
-                    str(key_dir / key_file),
-                ],
-                capture_output=True,
-                check=True,
-                env=environment,
-            )
+    for key_file in ('test_key', 'other_key'):
+        subprocess.run(
+            [  # noqa: S607
+                'gpg',
+                '--batch',
+                '--homedir',
+                str(gpg_dir),
+                '--import',
+                str(key_dir / key_file),
+            ],
+            capture_output=True,
+            check=True,
+            env=environment,
+        )
 
     result = subprocess.run(
         [  # noqa: S607
