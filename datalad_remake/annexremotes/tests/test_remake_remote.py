@@ -170,9 +170,11 @@ def create_keypair(gpg_dir: Path, name: bytes = b'Test User'):
         %commit
     """
     script = template.replace(b'$NAME', name)
-    # Unset $HOME to prevent accidental changes to the user's keyring
+
+    # unset $HOME to prevent accidental changes to the user's keyring
     environment = {'HOME': '/dev/null'}
 
+    # use gpg to generate a keypair
     subprocess.run(
         [  # noqa: S607
             'gpg',
