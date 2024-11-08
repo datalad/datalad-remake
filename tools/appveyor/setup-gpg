@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# Set up gpg to use a short socket directory name on Linux VMs
+#
+set -e -u
+
+if (which apt-get > /dev/null ); then
+    sudo mkdir -p /run/user/$(id -u)
+    sudo chmod 700 /run/user/$(id -u)
+    sudo chown $(id -u) /run/user/$(id -u)
+    gpgconf -v --create-socketdir
+fi

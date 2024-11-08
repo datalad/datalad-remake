@@ -90,6 +90,7 @@ def test_end_to_end(tmp_path, monkeypatch, output_pattern):
         ],
         output=output_pattern,
         result_renderer='disabled',
+        allow_untrusted_code=True,
     )
 
     collected_output = [

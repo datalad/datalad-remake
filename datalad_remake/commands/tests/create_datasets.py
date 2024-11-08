@@ -19,7 +19,8 @@ def update_config_for_remake(dataset: Dataset):
     )
 
 
-def add_remake_remote(dataset: Dataset):
+def add_remake_remote(dataset: Dataset, signing_key: str | None = None):
+    aue = 'false' if signing_key else 'true'
     call_git_success(
         [
             '-C',
@@ -30,19 +31,24 @@ def add_remake_remote(dataset: Dataset):
             'type=external',
             'externaltype=datalad-remake',
             'encryption=none',
+            f'allow_untrusted_execution={aue}',
         ],
         capture_output=True,
     )
 
 
 def create_ds_hierarchy(
-    tmp_path: Path, name: str, subdataset_levels: int = 2
+    tmp_path: Path,
+    name: str,
+    subdataset_levels: int = 2,
+    signing_key: str | None = None,
 ) -> list[tuple[str, Path, Dataset]]:
     # Create root dataset
     root_dataset = Dataset(tmp_path / name)
     root_dataset.create(force=True, result_renderer='disabled')
     (root_dataset.pathobj / 'a.txt').write_text('a\n')
     (root_dataset.pathobj / 'b.txt').write_text('b\n')
+    _enable_signing(root_dataset, signing_key)
     root_dataset.save(result_renderer='disabled')
     datasets = [(name, tmp_path / name, root_dataset)]
 
@@ -54,6 +60,7 @@ def create_ds_hierarchy(
         (subdataset.pathobj / f'a{level}.txt').write_text(f'a{level}\n')
         (subdataset.pathobj / f'b{level}.txt').write_text(f'b{level}\n')
         subdataset.save(result_renderer='disabled')
+        _enable_signing(subdataset, signing_key)
         datasets.append((f'{name}_subds{level}', subdataset_path, subdataset))
 
     # Link the datasets
@@ -70,13 +77,22 @@ def create_ds_hierarchy(
     update_config_for_remake(root_dataset)
 
     # Add datalad-remake remotes to the root dataset and all subdatasets
-    add_remake_remote(root_dataset)
+    add_remake_remote(root_dataset, signing_key)
     subdataset_path = Path()
     for index in range(subdataset_levels):
         subdataset_path /= f'{name}_subds{index}'
-        add_remake_remote(Dataset(root_dataset.pathobj / subdataset_path))
+        add_remake_remote(
+            Dataset(root_dataset.pathobj / subdataset_path),
+            signing_key,
+        )
 
     return datasets
+
+
+def _enable_signing(dataset: Dataset, key: str | None):
+    if key is not None:
+        dataset.config.set('commit.gpgsign', 'true', scope='local')
+        dataset.config.set('user.signingkey', key, scope='local')
 
 
 def create_simple_computation_dataset(

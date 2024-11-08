@@ -70,6 +70,7 @@ environment:
       APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
       PY: 3.11
       INSTALL_GITANNEX: git-annex -m snapshot
+      KEYWORDS: not no_such_test
 
     # Windows core tests
     - job_name: test-win
@@ -80,6 +81,7 @@ environment:
       COVERAGE_ROOT: C:\DLTMP
       HATCH_DATA_DIR: C:\hatch-data-dir
       PIP_CACHE: C:\Users\appveyor\AppData\Local\pip\Cache
+      KEYWORDS: not test_whitelist
 
     # MacOS core tests
     - job_name: test-mac
@@ -89,7 +91,9 @@ environment:
       COVERAGE_ROOT: /Users/appveyor/DLTMP
       HATCH_DATA_DIR: /Users/appveyor/hatch-data-dir
       PIP_CACHE: /Users/appveyor/.cache/pip
-
+      KEYWORDS: >
+        not test_compute_remote_main[True]
+        and not test_whitelist
 
 # only run the CI if there are code or tooling changes
 only_commits:
@@ -140,6 +144,8 @@ for:
       # verify that a PY variable is declared that identifies the desired Python version
       # for this run
       - "[ \"x$PY\" != x ]"
+      # create a dedicated socket directory to prevent too long socket names
+      - tools/appveyor/setup-gpg
       # Missing system software
       - tools/appveyor/install-syspkgs $INSTALL_SYSPKGS
       # activate Python env solely to get `python` to become available consistently
@@ -150,7 +156,7 @@ for:
       - "[ -f ${HOME}/dlinstaller_env.sh ] && . ${HOME}/dlinstaller_env.sh || true"
 
     test_script:
-      - 'hatch run tests.py${PY}:run-cov --doctest-modules --durations 10'
+      - 'hatch run tests.py${PY}:run-cov --doctest-modules --durations 10 -k "$KEYWORDS"'
 
     after_test:
       - 'hatch run tests.py${PY}:cov-combine'
@@ -208,7 +214,7 @@ for:
       - cmd: IF DEFINED INSTALL_GITANNEX datalad-installer --sudo ok %INSTALL_GITANNEX%
 
     test_script:
-      - cmd: 'hatch run tests.py%PY%:run-cov --doctest-modules --durations 10'
+      - cmd: 'hatch run tests.py%PY%:run-cov --doctest-modules -k "%KEYWORDS%" --durations 10'
 
     after_test:
       - cmd: 'hatch run tests.py%PY%:cov-combine'

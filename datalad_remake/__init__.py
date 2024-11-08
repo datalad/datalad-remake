@@ -9,6 +9,7 @@ __all__ = [
     'command_suite',
     'specification_dir',
     'template_dir',
+    'trusted_keys_config_key',
 ]
 
 
@@ -47,3 +48,4 @@ command_suite = (
 url_scheme = 'datalad-remake'
 template_dir = '.datalad/make/methods'
 specification_dir = '.datalad/make/specifications'
+trusted_keys_config_key = 'datalad.trusted-keys'
