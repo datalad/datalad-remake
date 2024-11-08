@@ -156,7 +156,7 @@ for:
       - gpg-agent --daemon
 
     test_script:
-      - 'hatch run tests.py${PY}:run-cov --doctest-modules --durations 10 -k "$KEYWORDS"'
+      - 'hatch run tests.py${PY}:run-cov -s -v --doctest-modules --durations 10 -k "$KEYWORDS"'
 
     after_test:
       - 'hatch run tests.py${PY}:cov-combine'
