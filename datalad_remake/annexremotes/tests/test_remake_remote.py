@@ -174,6 +174,20 @@ def create_keypair(gpg_dir: Path, name: bytes = b'Test User'):
     # unset $HOME to prevent accidental changes to the user's keyring
     environment = {'HOME': '/dev/null'}
 
+    # start a gpg-agent
+    result = subprocess.run(
+        [
+            'gpg-agent',
+            '--homedir',
+            str(gpg_dir),
+            '--daemon',
+        ],
+        env=environment,
+    )
+    # ignore "gpg-agent already running"-error
+    if result.returncode not in (0, 2):
+        raise RuntimeError('Failed to start gpg-agent')
+
     # use gpg to generate a keypair
     subprocess.run(
         [  # noqa: S607
