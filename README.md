@@ -41,62 +41,10 @@ and install it via `pip` (preferably in a virtual environment):
 > pip install .
 ```
 
+To check your installation, run:
 
-## Synopsis
-
-```
-datalad make [-i INPUT] [-o OUTPUT] [-p PARAMETER] [-u] TEMPLATE
-```
-
-By design, to perform the computation `datalad make` creates a temporary Git
-worktree. All inputs required for the computation are automatically provisioned
-to this temporary worktree, then the specified computation is performed, and
-finally, all requested outputs are transferred back to the original dataset.
-
-The command is invoked with the following arguments:
-
-**`-i INPUT, --input INPUT`** (optional)
-
-Specification of the input file(s) to be provisioned to a temporary Git
-worktree. Paths need to be specified relative to the dataset in which `datalad
-make` is executed.
-
-**`-o OUTPUT, --output OUTPUT`**
-
-Specification of the output file(s) to transfer back to the target dataset after
-the computation. Paths need to be specified relative to the dataset in which
-`datalad make` is executed.
-
-**`-p PARAMETER, --parameter PARAMETER`** (optional)
-
-Parameters for the computation, specified in a key-value format (e.g. `-p
-key=value`).
-
-**`-u, --url-only`** (optional)
-
-If specified, a *prospective computation* will be performed, i.e. only the
-instructions to compute a file will be recorded, without initiating the
-computation.
-
-**`TEMPLATE`**
-
-Name of the method template used to perform the computation. The template should
-be stored in `$DATASET_ROOT/.datalad/make/methods`. The template itself is a
-simple text file, containing the following variables:
-- `command`: command to be used for the computation
-- `parameters` (optional):  list of strings, corresponding to the parameters for
-  the computation
-- `use_shell`: a boolean determining whether to use shell interpretation
-
-Please note, that placeholders (denoted with curly braces) are supported to allow
-for the parametrized execution of the command.
-
-Also, in some cases, it may be more convenient to store inputs, outputs, and
-parameters in external files. To support this, uppercase variants of the
-command options have been introduced, i.e. `-I`, `-O` and `-P`, respectively.
-
-```
-datalad make -I input.txt -O output.txt -P parameter.txt TEMPLATE
+```bash
+> datalad make --help
 ```
 
 
