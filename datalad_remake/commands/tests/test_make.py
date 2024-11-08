@@ -52,7 +52,7 @@ def _run_simple_computation(root_dataset: Dataset):
         parameter=['name=Robert', 'file=a.txt'],
         output=['a.txt'],
         result_renderer='disabled',
-        allow_untrusted_code=True,
+        allow_untrusted_execution=True,
     )
 
     # check that the output is correct

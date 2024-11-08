@@ -167,8 +167,8 @@ class Make(ValidatedInterface):
             'before used. This is useful if a large number of parameters '
             'should be provided.',
         ),
-        'allow_untrusted_code': Parameter(
-            args=('--allow-untrusted-code',),
+        'allow_untrusted_execution': Parameter(
+            args=('--allow-untrusted-execution',),
             action='store_true',
             default=False,
             doc='Skip commit signature verification before executing code. This '
@@ -197,7 +197,7 @@ class Make(ValidatedInterface):
         output_list: Path | None = None,
         parameter: list[str] | None = None,
         parameter_list: Path | None = None,
-        allow_untrusted_code: bool = False,
+        allow_untrusted_execution: bool = False,
     ) -> Generator:
         ds: Dataset = dataset.ds if dataset else Dataset('.')
 
@@ -224,7 +224,7 @@ class Make(ValidatedInterface):
                     template,
                     parameter_dict,
                     output_pattern,
-                    None if allow_untrusted_code else get_trusted_keys(),
+                    None if allow_untrusted_execution else get_trusted_keys(),
                 )
                 resolved_output = collect(worktree, ds, output_pattern)
         else:
