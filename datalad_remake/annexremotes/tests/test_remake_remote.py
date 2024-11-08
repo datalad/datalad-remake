@@ -74,20 +74,23 @@ class MockedInput:
 def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
     if trusted:
         gpg_homedir = tmp_path / 'tmp_gpg_dir'
+        tmp_home = tmp_path / 'tmp_home'
 
-        # Try to ensure that the users keystore is not overwritten, even if
-        # there is an error in the test or the system under test.
-        monkeypatch.setenv('GNUPGHOME', str(gpg_homedir))
+        # make sure that the users keystore is not overwritten
+        monkeypatch.setenv('HOME', str(tmp_home))
 
         # Generate a keypair
-        keyid = create_keypair(gpg_homedir)
+        signing_key = create_keypair(gpg_dir=gpg_homedir)
 
-        datalad_cfg.add('datalad.trusted-keys', keyid, where='global')
+        # Activate the new keys
+        monkeypatch.setenv('GNUPGHOME', str(gpg_homedir))
+
+        datalad_cfg.add('datalad.trusted-keys', signing_key, where='global')
 
     else:
-        keyid = None
+        signing_key = None
 
-    dataset = create_ds_hierarchy(tmp_path, 'ds1', 0, keyid)[0][2]
+    dataset = create_ds_hierarchy(tmp_path, 'ds1', 0, signing_key)[0][2]
     monkeypatch.chdir(dataset.path)
 
     template_path = dataset.pathobj / template_dir
