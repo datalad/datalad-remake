@@ -66,7 +66,7 @@ Configure the dataset in which you want to collect the results of the (re)comput
 Add a `datalad-remake` special remote:
 
 ```bash
-> git annex initremote datalad-remake type=external externaltype=datalad-remake encryption=none
+> git annex initremote datalad-remake type=external externaltype=datalad-remake encryption=none allow-untrusted-execution=true
 ```
 
 ### Add template
@@ -92,7 +92,7 @@ To test the example, run:
 
 ```bash
 > cd $HOME/my-project
-> datalad make -I input.txt -O output.txt -P parameter.txt fmriprep-singularity
+> datalad make -I input.txt -O output.txt -P parameter.txt --allow-untrusted-execution fmriprep-singularity
 ```
 
 You can also do that in `debug` mode:
