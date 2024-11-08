@@ -152,6 +152,8 @@ for:
       - tools/appveyor/install-git-annex ${INSTALL_GITANNEX}
       # enable the git-annex provisioned by the installer
       - "[ -f ${HOME}/dlinstaller_env.sh ] && . ${HOME}/dlinstaller_env.sh || true"
+      # start gpg-agent once to enable gpg imports in tests
+      - gpg-agent --daemon
 
     test_script:
       - 'hatch run tests.py${PY}:run-cov --doctest-modules --durations 10 -k "$KEYWORDS"'

@@ -5,4 +5,5 @@ High-level API commands
 .. autosummary::
    :toctree: generated
 
-   compute
+   make
+   provision
