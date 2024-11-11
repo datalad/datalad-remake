@@ -115,7 +115,7 @@ Afterward, a speculative computation can be recorded by providing the `-u` optio
 
 ```bash
 > datalad make -p first=john -p second=susan -p output=person \
--o person-1.txt -o person-2.txt -u --allow_untrusted_code one-to-many
+-o person-1.txt -o person-2.txt -u --allow_untrusted_execution one-to-many
 > cat person-1.txt    # this will fail, because the computation has not yet been performed
 ```
 
