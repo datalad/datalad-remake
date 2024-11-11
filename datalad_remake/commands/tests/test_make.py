@@ -31,7 +31,7 @@ def test_speculative_computation(tmp_path, datalad_cfg):
         template='test_method',
         parameter=['name=Robert', 'file=spec.txt'],
         output=['spec.txt'],
-        url_only=True,
+        prospective_execution=True,
         result_renderer='disabled',
     )
 

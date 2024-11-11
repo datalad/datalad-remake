@@ -6,6 +6,8 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import datalad_remake
+
 project = 'datalad-remake'
 copyright = '2024, DataLad team'
 author = 'DataLad team'
@@ -16,6 +18,9 @@ release = 'v0.0.1-rc'
 
 extensions = [
     'sphinx.ext.autosummary',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autodoc.typehints',
+    'sphinx.ext.viewcode',
 ]
 
 templates_path = ['_templates']
