@@ -84,11 +84,17 @@ class Make(ValidatedInterface):
             'reading configuration items, this command does not interact with '
             'the dataset.',
         ),
-        'url_only': Parameter(
-            args=('-u', '--url-only'),
+        'prospective_execution': Parameter(
+            args=('--prospective-execution',),
             action='store_true',
-            doc="Don't perform the computation, register an URL-key "
-            'instead. A `git annex get <file>` will trigger the computation',
+            doc="Don't perform the computation now, only register compute "
+            'instructions, `datalad get <file>` or `git annex get <file>` '
+            'will trigger the computation.  \n'
+            'Note: if this option is provided, input- and output-patterns will '
+            'be stored verbatim. Input globbing will be performed '
+            'when the computation is triggered. But the name of the output '
+            'files that are created will be the verbatim output pattern '
+            'strings.',
         ),
         'template': Parameter(
             args=('template',),
@@ -110,8 +116,8 @@ class Make(ValidatedInterface):
             ),
             action='append',
             doc='An input file pattern (repeat for multiple inputs, '
-            'file pattern support python globbing, globbing is expanded '
-            'in the source dataset)',
+            'file pattern support python globbing, globbing is performed in '
+            'the source dataset).',
         ),
         'input_list': Parameter(
             args=(
@@ -132,8 +138,8 @@ class Make(ValidatedInterface):
             ),
             action='append',
             doc='An output file pattern (repeat for multiple outputs)'
-            'file pattern support python globbing, globbing is expanded '
-            'in the worktree)',
+            'file pattern support python globbing, globbing is performed in '
+            'the worktree).',
         ),
         'output_list': Parameter(
             args=(
@@ -189,7 +195,7 @@ class Make(ValidatedInterface):
         dataset: DatasetParameter | None = None,
         *,
         template: str = '',
-        url_only: bool = False,
+        prospective_execution: bool = False,
         branch: str | None = None,
         input: list[str] | None = None,  # noqa: A002
         input_list: Path | None = None,
@@ -213,7 +219,7 @@ class Make(ValidatedInterface):
             ds, branch, template, parameter_dict, input_pattern, output_pattern
         )
 
-        if not url_only:
+        if not prospective_execution:
             with provide_context(
                 ds,
                 branch,
@@ -231,7 +237,7 @@ class Make(ValidatedInterface):
             resolved_output = set(output_pattern)
 
         for out in resolved_output:
-            url = add_url(ds, out, url_base, url_only=url_only)
+            url = add_url(ds, out, url_base, url_only=prospective_execution)
             yield get_status_dict(
                 action='make',
                 path=str(ds.pathobj / out),
@@ -262,11 +268,11 @@ def get_url(
     input_pattern: list[str],
     output_pattern: list[str],
 ) -> tuple[str, str]:
-    # If something goes wrong after the make specification was saved,
+    # If something goes wrong after the compute specification was saved,
     # the dataset state should be reset to `branch`
     reset_branch = branch or dataset.repo.get_hexsha()
 
-    # Write the specification to a file in the dataset
+    # Write the compute specification to a file in the dataset
     digest = write_spec(
         dataset, template_name, input_pattern, output_pattern, parameters
     )
