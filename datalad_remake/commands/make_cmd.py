@@ -41,7 +41,9 @@ from datalad_remake import (
     url_scheme,
 )
 from datalad_remake.utils.compute import compute
+from datalad_remake.utils.getkeys import get_trusted_keys
 from datalad_remake.utils.glob import resolve_patterns
+from datalad_remake.utils.verify import verify_file
 
 if TYPE_CHECKING:
     from collections.abc import (
@@ -82,11 +84,17 @@ class Make(ValidatedInterface):
             'reading configuration items, this command does not interact with '
             'the dataset.',
         ),
-        'url_only': Parameter(
-            args=('-u', '--url-only'),
+        'prospective_execution': Parameter(
+            args=('--prospective-execution',),
             action='store_true',
-            doc="Don't perform the computation, register an URL-key "
-            'instead. A `git annex get <file>` will trigger the computation',
+            doc="Don't perform the computation now, only register compute "
+            'instructions, `datalad get <file>` or `git annex get <file>` '
+            'will trigger the computation.  \n'
+            'Note: if this option is provided, input- and output-patterns will '
+            'be stored verbatim. Input globbing will be performed '
+            'when the computation is triggered. But the name of the output '
+            'files that are created will be the verbatim output pattern '
+            'strings.',
         ),
         'template': Parameter(
             args=('template',),
@@ -108,8 +116,8 @@ class Make(ValidatedInterface):
             ),
             action='append',
             doc='An input file pattern (repeat for multiple inputs, '
-            'file pattern support python globbing, globbing is expanded '
-            'in the source dataset)',
+            'file pattern support python globbing, globbing is performed in '
+            'the source dataset).',
         ),
         'input_list': Parameter(
             args=(
@@ -130,8 +138,8 @@ class Make(ValidatedInterface):
             ),
             action='append',
             doc='An output file pattern (repeat for multiple outputs)'
-            'file pattern support python globbing, globbing is expanded '
-            'in the worktree)',
+            'file pattern support python globbing, globbing is performed in '
+            'the worktree).',
         ),
         'output_list': Parameter(
             args=(
@@ -165,6 +173,19 @@ class Make(ValidatedInterface):
             'before used. This is useful if a large number of parameters '
             'should be provided.',
         ),
+        'allow_untrusted_execution': Parameter(
+            args=('--allow-untrusted-execution',),
+            action='store_true',
+            default=False,
+            doc='Skip commit signature verification before executing code. This '
+            'should only be used in a strictly controlled environment with '
+            'fully trusted datasets. Trusted dataset means: every commit '
+            'stems from a trusted entity.  '
+            'DO NOT USE THIS OPTION, unless you are sure to understand the '
+            'consequences. One of which is that arbitrary parties can '
+            'execute arbitrary code under your account on your '
+            'infrastructure.',
+        ),
     }
 
     @staticmethod
@@ -174,7 +195,7 @@ class Make(ValidatedInterface):
         dataset: DatasetParameter | None = None,
         *,
         template: str = '',
-        url_only: bool = False,
+        prospective_execution: bool = False,
         branch: str | None = None,
         input: list[str] | None = None,  # noqa: A002
         input_list: Path | None = None,
@@ -182,6 +203,7 @@ class Make(ValidatedInterface):
         output_list: Path | None = None,
         parameter: list[str] | None = None,
         parameter_list: Path | None = None,
+        allow_untrusted_execution: bool = False,
     ) -> Generator:
         ds: Dataset = dataset.ds if dataset else Dataset('.')
 
@@ -189,7 +211,7 @@ class Make(ValidatedInterface):
         output_pattern = (output or []) + read_list(output_list)
         parameter = (parameter or []) + read_list(parameter_list)
 
-        parameter_dict = {p.split('=', 1)[0]: p.split('=', 1)[1] for p in parameter}
+        parameter_dict = dict([p.split('=', 1) for p in parameter])
 
         # We have to get the URL first, because saving the specification to
         # the dataset will change the version.
@@ -197,19 +219,25 @@ class Make(ValidatedInterface):
             ds, branch, template, parameter_dict, input_pattern, output_pattern
         )
 
-        if not url_only:
+        if not prospective_execution:
             with provide_context(
                 ds,
                 branch,
                 input_pattern,
             ) as worktree:
-                execute(worktree, template, parameter_dict, output_pattern)
+                execute(
+                    worktree,
+                    template,
+                    parameter_dict,
+                    output_pattern,
+                    None if allow_untrusted_execution else get_trusted_keys(),
+                )
                 resolved_output = collect(worktree, ds, output_pattern)
         else:
             resolved_output = set(output_pattern)
 
         for out in resolved_output:
-            url = add_url(ds, out, url_base, url_only=url_only)
+            url = add_url(ds, out, url_base, url_only=prospective_execution)
             yield get_status_dict(
                 action='make',
                 path=str(ds.pathobj / out),
@@ -240,11 +268,11 @@ def get_url(
     input_pattern: list[str],
     output_pattern: list[str],
 ) -> tuple[str, str]:
-    # If something goes wrong after the make specification was saved,
+    # If something goes wrong after the compute specification was saved,
     # the dataset state should be reset to `branch`
     reset_branch = branch or dataset.repo.get_hexsha()
 
-    # Write the specification to a file in the dataset
+    # Write the compute specification to a file in the dataset
     digest = write_spec(
         dataset, template_name, input_pattern, output_pattern, parameters
     )
@@ -370,6 +398,7 @@ def execute(
     template_name: str,
     parameter: dict[str, str],
     output_pattern: list[str],
+    trusted_key_ids: list[str] | None,
 ) -> None:
     lgr.debug(
         'execute: %s %s %s %s',
@@ -392,6 +421,9 @@ def execute(
 
     # Run the computation in the worktree-directory
     template_path = Path(template_dir) / template_name
+    if trusted_key_ids is not None:
+        verify_file(worktree_ds.pathobj, template_path, trusted_key_ids)
+
     worktree_ds.get(template_path, result_renderer='disabled')
     compute(worktree, worktree / template_path, parameter)
 

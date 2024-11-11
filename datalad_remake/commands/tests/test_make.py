@@ -31,7 +31,7 @@ def test_speculative_computation(tmp_path, datalad_cfg):
         template='test_method',
         parameter=['name=Robert', 'file=spec.txt'],
         output=['spec.txt'],
-        url_only=True,
+        prospective_execution=True,
         result_renderer='disabled',
     )
 
@@ -52,6 +52,7 @@ def _run_simple_computation(root_dataset: Dataset):
         parameter=['name=Robert', 'file=a.txt'],
         output=['a.txt'],
         result_renderer='disabled',
+        allow_untrusted_execution=True,
     )
 
     # check that the output is correct

@@ -75,13 +75,13 @@ EOF
 
 Create a `datalad-remake` git-annex special remote:
 ```bash
-> git annex initremote datalad-remake encryption=none type=external externaltype=datalad-remake
+> git annex initremote datalad-remake encryption=none type=external externaltype=datalad-remake allow_untrusted_execution=true
 ```
 
 Execute a computation and save the result:
 ```bash
-> datalad make -p first=bob -p second=alice -p output=name \
--o name-1.txt -o name-2.txt one-to-many
+> datalad make -p first=bob -p second=alice -p output=name -o name-1.txt \
+-o name-2.txt --allow-untrusted-execution one-to-many
 ```
 The method `one-to-many` will create two files with the names `<output>-1.txt`
 and `<output>-2.txt`. Thus, the two files `name-1.txt` and `name-2.txt` need to
@@ -117,7 +117,8 @@ Afterwards, a prospective computation can be initiated by using the
 
 ```bash
 > datalad make -p first=john -p second=susan -p output=person \
--o person-1.txt -o person-2.txt -u one-to-many
+-o person-1.txt -o person-2.txt -u --allow_untrusted_execution one-to-many
+> cat person-1.txt    # this will fail, because the computation has not yet been performed
 ```
 
 The following command will fail, because no computation has been performed,

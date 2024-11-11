@@ -11,8 +11,7 @@ Also see the :ref:`modindex`.
    .. autosummary::
    :toctree: generated
 
-   ...
-
+   commands
 
 Indices and tables
 ==================
