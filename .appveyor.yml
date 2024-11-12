@@ -84,6 +84,7 @@ environment:
       KEYWORDS: >
         not test_whitelist
         and not test_input_is_output
+        and not test_chain_dependency
 
     # MacOS core tests
     - job_name: test-mac

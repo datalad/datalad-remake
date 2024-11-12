@@ -100,6 +100,7 @@ def create_simple_computation_dataset(
     dataset_name: str,
     subdataset_levels: int,
     test_method: str,
+    test_method_name: str = 'test_method',
 ) -> Dataset:
     datasets = create_ds_hierarchy(tmp_path, dataset_name, subdataset_levels)
     root_dataset = datasets[0][2]
@@ -107,7 +108,7 @@ def create_simple_computation_dataset(
     # add method template
     template_path = root_dataset.pathobj / template_dir
     template_path.mkdir(parents=True)
-    (template_path / 'test_method').write_text(test_method)
+    (template_path / test_method_name).write_text(test_method)
     root_dataset.save(result_renderer='disabled')
 
     return root_dataset
