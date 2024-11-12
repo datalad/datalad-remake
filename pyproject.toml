@@ -10,7 +10,7 @@ name = "datalad-remake"
 dynamic = ["version"]
 description = ''
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 license = "MIT"
 keywords = [
   "datalad",
@@ -35,6 +35,8 @@ classifiers = [
   "Topic :: Software Development :: Version Control :: Git",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: Implementation :: CPython",
@@ -54,6 +56,7 @@ dependencies = [
   "datalad_core @ git+https://github.com/datalad/datalad-core",
   "datalad_next",
   "datasalad",
+  "toml",
 ]
 
 [project.urls]
@@ -86,6 +89,7 @@ extra-dependencies = [
   # run `hatch test --cover` and/or see
   # https://github.com/pypa/hatch/issues/1565#issuecomment-2163773123
   "pytest-cov",
+  "toml",
 ]
 
 [tool.hatch.envs.hatch-test.env-vars]
@@ -96,7 +100,7 @@ description = "run tests across Python versions"
 template = "hatch-test"
 
 [[tool.hatch.envs.tests.matrix]]
-python = ["3.11", "3.12"]
+python = ["3.9", "3.10", "3.11", "3.12"]
 
 [tool.hatch.envs.tests.scripts]
 run = 'python -m pytest {args}'

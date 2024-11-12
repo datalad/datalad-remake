@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import contextlib
-from contextlib import chdir
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines
 from datalad_next.tests import skip_if_on_windows
+
+from datalad_remake.utils.chdir import chdir
 
 from ..make_cmd import provide_context
 from .create_datasets import create_ds_hierarchy
@@ -169,7 +169,7 @@ def test_branch_deletion_after_provision(tmp_path):
     ) as worktree:
         assert worktree.exists()
     assert not worktree.exists()
-    with contextlib.chdir(dataset.path):
+    with chdir(dataset.path):
         branches = [line.strip() for line in call_git_lines(['branch'])]
     assert worktree.name not in branches
 

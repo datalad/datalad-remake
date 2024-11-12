@@ -56,10 +56,9 @@ output_pattern_glob = [
 
 
 test_file_content = list(
-    zip(
+    zip(  # noqa: B905, remove this comment when the minimum python version is 3.10
         output_pattern_static,
         ['content: first\n', 'content: second\n', 'content: third\n'] * 4,
-        strict=False,
     )
 )
 

@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import logging
 import os
-from contextlib import chdir
-from glob import glob
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import (
@@ -38,6 +36,8 @@ from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines, call_git_success
 
 from datalad_remake.commands.make_cmd import read_list
+from datalad_remake.utils.chdir import chdir
+from datalad_remake.utils.glob import glob
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
