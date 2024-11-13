@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import contextlib
 import logging
 import subprocess
-import tomllib
 from typing import (
     TYPE_CHECKING,
     Any,
 )
+
+from datalad_remake.utils.chdir import chdir
+from datalad_remake.utils.toml import toml_load
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -65,15 +66,14 @@ def compute(
     template_path: Path,
     compute_arguments: dict[str, str],
 ) -> None:
-    with template_path.open('rb') as f:
-        template = tomllib.load(f)
+    template = toml_load(template_path)
 
     substitutions = get_substitutions(template, compute_arguments)
     substitutions['root_directory'] = str(root_directory)
 
     substituted_command = substitute_arguments(template, substitutions, 'command')
 
-    with contextlib.chdir(root_directory):
+    with chdir(root_directory):
         if template.get('use_shell', 'false') == 'true':
             cmd = ' '.join(substituted_command)
             lgr.debug(f'compute: RUNNING: with shell=True: {cmd}')

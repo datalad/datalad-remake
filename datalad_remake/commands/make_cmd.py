@@ -40,6 +40,7 @@ from datalad_remake import (
     template_dir,
     url_scheme,
 )
+from datalad_remake.utils.chdir import chdir
 from datalad_remake.utils.compute import compute
 from datalad_remake.utils.getkeys import get_trusted_keys
 from datalad_remake.utils.glob import resolve_patterns
@@ -301,7 +302,7 @@ def write_spec(
     spec_dir = dataset.pathobj / specification_dir
     spec_dir.mkdir(parents=True, exist_ok=True)
     spec_file = spec_dir / digest
-    with contextlib.chdir(dataset.pathobj):
+    with chdir(dataset.pathobj):
         call_git_success(['annex', 'unlock', str(spec_file)], capture_output=True)
     spec_file.write_text(spec)
     dataset.save(
@@ -453,7 +454,7 @@ def unlock_files(dataset: Dataset, files: Iterable[str]) -> None:
     # TODO: for some reason `dataset unlock` does not operate in the
     #  context of `dataset.pathobj`, so we need to change the working
     #  directory manually here.
-    with contextlib.chdir(dataset.pathobj):
+    with chdir(dataset.pathobj):
         for f in files:
             file = dataset.pathobj / f
             if not file.exists() and file.is_symlink():

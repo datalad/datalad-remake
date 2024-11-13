@@ -66,9 +66,15 @@ environment:
     # is a need for debugging
 
     # Ubuntu core tests
-    - job_name: test-linux
+    - job_name: test-linux-3.9
       APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PY: 3.11
+      PY: 3.9
+      INSTALL_GITANNEX: git-annex -m snapshot
+      KEYWORDS: not no_such_test
+
+    - job_name: test-linux-3.12
+      APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
+      PY: 3.12
       INSTALL_GITANNEX: git-annex -m snapshot
       KEYWORDS: not no_such_test
 
@@ -123,7 +129,8 @@ for:
   #
   - matrix:
       only:
-        - job_name: test-linux
+        - job_name: test-linux-3.9
+        - job_name: test-linux-3.12
         - job_name: test-mac
 
     cache:

@@ -10,6 +10,7 @@ hatch-vcs
 hypothesis
 pytest
 pytest-cov
+toml
 
 # requirements for a document building
 sphinx
