@@ -1,7 +1,7 @@
 # This example template runs fMRIPrep in a singularity container on a single
 # subject of a BIDS dataset.
 #
-# The template takes the following inputs:
+# The template takes the following parameters:
 # - container: the path to fMRIPrep singularity container image
 # - input_dir: the path to the input directory (BIDS dataset)
 # - output_dir: the path to the output directory
