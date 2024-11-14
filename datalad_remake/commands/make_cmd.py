@@ -294,7 +294,7 @@ def write_spec(
 ) -> str:
     # create the specification and hash it
     spec = build_json(method, input_pattern, output_pattern, parameters)
-    hasher = hashlib.sha256()
+    hasher = hashlib.md5()  # noqa S324
     hasher.update(spec.encode())
     digest = hasher.hexdigest()
 
