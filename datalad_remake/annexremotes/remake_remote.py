@@ -83,7 +83,7 @@ class RemakeRemote(SpecialRemote):
         return 100
 
     def get_url_encoded_info(self, url: str) -> list[str]:
-        parts = urlparse(url).query.split('&', 5)
+        parts = urlparse(url).query.split('&', 3)
         self.annex.debug(f'get_url_encoded_info: url: {url!r}, parts: {parts!r}')
         return parts
 
@@ -100,7 +100,7 @@ class RemakeRemote(SpecialRemote):
         def get_assigned_value(assignment: str) -> str:
             return assignment.split('=', 1)[1]
 
-        root_version, spec_name, this = (
+        label, root_version, spec_name, this = (
             unquote(get_assigned_value(expr))
             for expr in self.get_url_encoded_info(self.get_url_for_key(key))
         )

@@ -1,6 +1,11 @@
+from unittest.mock import MagicMock
+from urllib.parse import urlparse
+
 from datalad_next.datasets import Dataset
 from datalad_next.tests import skip_if_on_windows
 
+import datalad_remake.commands.make_cmd
+from datalad_remake.commands.make_cmd import get_url
 from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
@@ -49,6 +54,7 @@ def test_speculative_computation(tmp_path, datalad_cfg):
 def _run_simple_computation(root_dataset: Dataset):
     root_dataset.make(
         template='test_method',
+        label='simple',
         parameter=['name=Robert', 'file=a.txt'],
         output=['a.txt'],
         result_renderer='disabled',
@@ -57,3 +63,22 @@ def _run_simple_computation(root_dataset: Dataset):
 
     # check that the output is correct
     assert (root_dataset.pathobj / 'a.txt').read_text() == 'Hello Robert\n'
+
+
+def test_label_url(monkeypatch):
+    root_dataset = MagicMock()
+    root_dataset.repo.get_hexsha = lambda: b'1234'
+    monkeypatch.setattr(
+        datalad_remake.commands.make_cmd, 'write_spec', lambda *_: '4567'
+    )
+    url, _ = get_url(
+        dataset=root_dataset,
+        branch=None,
+        template_name=test_method,
+        parameters={'name': 'Robert', 'file': 'a.txt'},
+        input_pattern=['a.txt'],
+        output_pattern=['b.txt'],
+        label='label1',
+    )
+    parts = urlparse(url).query.split('&')
+    assert 'label=label1' in parts

@@ -126,12 +126,15 @@ def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
     input_.send(f'TRANSFER RETRIEVE {key.decode()} {tmp_path / "remade.txt"!s}\n')
     # The next line is the answer to `GETCONFIG allow_untrusted_execution`
     input_.send(f'VALUE {"false" if trusted else "true"}\n')
-    url = (
-        'datalad-make:///?'
-        f'root_version={dataset.repo.get_hexsha()}'
-        '&specification=000001111122222'
-        '&this=a.txt'
+    url = 'datalad-make:///?' + '&'.join(
+        [
+            'label=test1',
+            f'root_version={dataset.repo.get_hexsha()}',
+            'specification=000001111122222',
+            'this=a.txt',
+        ]
     )
+
     # The next line is the answer to
     # `GETURLS MD5E-s2--60b725f10c9c85c70d97880dfe8191b3.txt datalad-remake:`
     input_.send(f'VALUE {url}\n')
