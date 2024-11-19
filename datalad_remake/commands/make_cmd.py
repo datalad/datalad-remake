@@ -343,7 +343,13 @@ def build_json(
     method: str, inputs: list[str], outputs: list[str], parameters: dict[str, str]
 ) -> str:
     return json.dumps(
-        {'method': method, 'input': inputs, 'output': outputs, 'parameter': parameters}
+        {
+            'method': method,
+            'input': sorted(inputs),
+            'output': sorted(outputs),
+            'parameter': parameters
+        },
+        sort_keys=True,
     )
 
 
