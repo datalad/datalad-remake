@@ -140,6 +140,7 @@ def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
     input_.send(f'VALUE {url}\n')
     input_.send('VALUE\n')
     input_.send('VALUE .git\n')
+    input_.send('VALUE .git\n')
     input_.send('')
 
     output = MockedOutput()

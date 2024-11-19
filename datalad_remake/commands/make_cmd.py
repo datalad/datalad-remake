@@ -347,7 +347,7 @@ def build_json(
             'method': method,
             'input': sorted(inputs),
             'output': sorted(outputs),
-            'parameter': parameters
+            'parameter': parameters,
         },
         sort_keys=True,
     )
