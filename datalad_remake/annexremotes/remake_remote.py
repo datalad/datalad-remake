@@ -27,6 +27,7 @@ from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_success
 
 from datalad_remake import (
+    priority_config_key,
     specification_dir,
     url_scheme,
 )
@@ -268,7 +269,7 @@ class RemakeRemote(SpecialRemote):
             list[str]: list of priorities, highest priority first. If no
             priorities are configured, an empty list is returned.
         """
-        setting = self.config_manager.get('datalad.make.priorities')
+        setting = self.config_manager.get(priority_config_key)
         if setting.value:
             return setting.value.split(',')
         return []
