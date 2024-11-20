@@ -397,7 +397,7 @@ def get_file_dataset(file: Path) -> tuple[Path, Path]:
     top_level = Path(
         call_git_oneline(['rev-parse', '--show-toplevel'], cwd=file.parent)
     )
-    return (Path(top_level), file.absolute().relative_to(top_level))
+    return Path(top_level), file.absolute().relative_to(top_level)
 
 
 def provide(
