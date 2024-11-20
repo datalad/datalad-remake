@@ -1,14 +1,16 @@
 import pytest
+from annexremote import Master
 from datalad_next.tests import skip_if_on_windows
 
-from datalad_remake import priority_config_key
-from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
-
-from ... import (
+from datalad_remake import (
+    priority_config_key,
     specification_dir,
     template_dir,
 )
-from ...commands.make_cmd import build_json
+from datalad_remake.annexremotes.remake_remote import RemakeRemote
+from datalad_remake.commands.make_cmd import build_json
+from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
+
 from .utils import run_remake_remote
 
 # The following templates create differing content if formatted with different
@@ -84,3 +86,31 @@ def test_compute_remote_priority(tmp_path, datalad_cfg, monkeypatch, priority):
     assert (
         tmp_path / 'remade.txt'
     ).read_text().strip() == f'from {priority[0]}: {priority[0]}_parameter'
+
+
+def test_config_precedence(existing_dataset, tmp_path, monkeypatch):
+    existing_dataset.config.add('datalad.make.priority', '1', scope='branch')
+
+    monkeypatch.setattr(
+        RemakeRemote, '_get_dataset_dir', lambda _: existing_dataset.pathobj
+    )
+    remake_remote = RemakeRemote(Master())
+
+    # The lowest priority info should be read from the `.datalad/config`-file
+    # of the dataset.
+    assert remake_remote._get_priorities() == ['1']  # noqa SLF001
+
+    global_config_file = tmp_path / 'config'
+    monkeypatch.setenv('GIT_CONFIG_GLOBAL', str(global_config_file))
+
+    # Global git config should overwrite the dataset config.
+    global_config_file.write_text('[datalad "make"]\n    priority = 2\n')
+    global_config_source = remake_remote.config_manager.sources['git-global']
+    global_config_source.load()
+    assert remake_remote._get_priorities() == ['2']  # noqa SLF001
+
+    # Local git config should overwrite global git config and dataset config.
+    existing_dataset.config.add('datalad.make.priority', '3', scope='local')
+    git_source = remake_remote.config_manager.sources['git']
+    git_source.load()
+    assert remake_remote._get_priorities() == ['3']  # noqa SLF001
