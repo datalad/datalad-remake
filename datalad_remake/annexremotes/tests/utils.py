@@ -2,8 +2,16 @@ from __future__ import annotations
 
 import re
 import subprocess
+from io import TextIOBase
 from queue import Queue
-from typing import TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    cast,
+)
+
+from annexremote import Master
+
+from datalad_remake.annexremotes.remake_remote import RemakeRemote
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -108,3 +116,29 @@ def create_keypair(gpg_dir: Path, name: bytes = b'Test User'):
         r'(?m)sec.*rsa4096/([A-Z0-9]+).*\n.*\n.*' + name.decode(),
         result.stdout.decode(),
     )[0]
+
+
+def run_remake_remote(dest_path, urls):
+    input_ = MockedInput()
+
+    annex_key = 'some-fake-annex-key'
+    # We send all messages into the queue upfront because we do the test in a
+    # single thread and do not get back control once `master.listen` is called
+    # below.
+    input_.send('PREPARE\n')
+    input_.send(f'TRANSFER RETRIEVE {annex_key} {dest_path / "remade.txt"!s}\n')
+    # The next line is the answer to `GETCONFIG allow_untrusted_execution`
+    input_.send('VALUE true\n')
+    # The next two lines assemble the answer to
+    # `GETURLS <annex-key> datalad-remake:`
+    for url in urls:
+        input_.send(f'VALUE {url}\n')
+    input_.send('VALUE\n')
+    input_.send('VALUE .git\n')
+    input_.send('VALUE .git\n')
+    input_.send('')
+
+    master = Master(output=cast(TextIOBase, MockedOutput()))
+    remote = RemakeRemote(master)
+    master.LinkRemote(remote)
+    master.Listen(input=cast(TextIOBase, input_))

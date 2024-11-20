@@ -1,9 +1,4 @@
-import subprocess
-from io import TextIOBase
-from typing import cast
-
 import pytest
-from annexremote import Master
 from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake import priority_config_key
@@ -14,11 +9,7 @@ from ... import (
     template_dir,
 )
 from ...commands.make_cmd import build_json
-from ..remake_remote import RemakeRemote
-from .utils import (
-    MockedInput,
-    MockedOutput,
-)
+from .utils import run_remake_remote
 
 # The following templates create differing content if formatted with different
 # values for `label`. This is intended here, it
@@ -57,17 +48,6 @@ def test_compute_remote_priority(tmp_path, datalad_cfg, monkeypatch, priority):
         (template_path / label).write_text(template.format(label=label))
     dataset.save()
 
-    key = next(
-        filter(
-            lambda line: line.startswith(b'key: '),
-            subprocess.run(
-                ['git', 'annex', 'info', 'a.txt'],  # noqa: S607
-                stdout=subprocess.PIPE,
-                check=True,
-            ).stdout.splitlines(),
-        )
-    ).split(b': ')[1]
-
     specification_path = dataset.pathobj / specification_dir
     for label in ('alpha', 'beta'):
         specification_path.mkdir(parents=True, exist_ok=True)
@@ -97,30 +77,7 @@ def test_compute_remote_priority(tmp_path, datalad_cfg, monkeypatch, priority):
         for label in ['alpha', 'beta']
     ]
 
-    input_ = MockedInput()
-
-    # We send all messages into the queue upfront because we do the test in a
-    # single thread and do not get back control once `master.listen` is called
-    # below.
-    input_.send('PREPARE\n')
-    input_.send(f'TRANSFER RETRIEVE {key.decode()} {tmp_path / "remade.txt"!s}\n')
-    # The next line is the answer to `GETCONFIG allow_untrusted_execution`
-    input_.send('VALUE true\n')
-    # The next two lines are the answer to
-    # `GETURLS MD5E-s2--60b725f10c9c85c70d97880dfe8191b3.txt datalad-remake:`
-    input_.send(f'VALUE {urls[0]}\n')
-    input_.send(f'VALUE {urls[1]}\n')
-    input_.send('VALUE\n')
-    input_.send('VALUE .git\n')
-    input_.send('VALUE .git\n')
-    input_.send('')
-
-    output = MockedOutput()
-
-    master = Master(output=cast(TextIOBase, output))
-    remote = RemakeRemote(master)
-    master.LinkRemote(remote)
-    master.Listen(input=cast(TextIOBase, input_))
+    run_remake_remote(tmp_path, urls)
 
     # At this point the datalad-remake remote should have executed the
     # prioritized template and written the result.

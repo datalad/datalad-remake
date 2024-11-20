@@ -1,9 +1,4 @@
-import subprocess
-from io import TextIOBase
-from typing import cast
-
 import pytest
-from annexremote import Master
 from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
@@ -13,11 +8,9 @@ from ... import (
     template_dir,
 )
 from ...commands.make_cmd import build_json
-from ..remake_remote import RemakeRemote
 from .utils import (
-    MockedInput,
-    MockedOutput,
     create_keypair,
+    run_remake_remote,
 )
 
 template = """
@@ -58,17 +51,6 @@ def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
     (template_path / 'echo').write_text(template)
     dataset.save()
 
-    key = next(
-        filter(
-            lambda line: line.startswith(b'key: '),
-            subprocess.run(
-                ['git', 'annex', 'info', 'a.txt'],  # noqa: S607
-                stdout=subprocess.PIPE,
-                check=True,
-            ).stdout.splitlines(),
-        )
-    ).split(b': ')[1]
-
     specification_path = dataset.pathobj / specification_dir
     spec_name = '000001111122222'
     specification_path.mkdir(parents=True, exist_ok=True)
@@ -77,15 +59,6 @@ def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
     )
     dataset.save()
 
-    input_ = MockedInput()
-
-    # We send all messages into the queue upfront because we do the test in a
-    # single thread and do not get back control once `master.listen` is called
-    # below.
-    input_.send('PREPARE\n')
-    input_.send(f'TRANSFER RETRIEVE {key.decode()} {tmp_path / "remade.txt"!s}\n')
-    # The next line is the answer to `GETCONFIG allow_untrusted_execution`
-    input_.send(f'VALUE {"false" if trusted else "true"}\n')
     url = 'datalad-make:///?' + '&'.join(
         [
             'label=test1',
@@ -95,20 +68,7 @@ def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
         ]
     )
 
-    # The next line is the answer to
-    # `GETURLS MD5E-s2--60b725f10c9c85c70d97880dfe8191b3.txt datalad-remake:`
-    input_.send(f'VALUE {url}\n')
-    input_.send('VALUE\n')
-    input_.send('VALUE .git\n')
-    input_.send('VALUE .git\n')
-    input_.send('')
-
-    output = MockedOutput()
-
-    master = Master(output=cast(TextIOBase, output))
-    remote = RemakeRemote(master)
-    master.LinkRemote(remote)
-    master.Listen(input=cast(TextIOBase, input_))
+    run_remake_remote(tmp_path, [url])
 
     # At this point the datalad-remake remote should have executed the
     # computation and written the result.
