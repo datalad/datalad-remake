@@ -7,9 +7,11 @@ from datalad_remake._version import __version__
 __all__ = [
     '__version__',
     'command_suite',
+    'priority_config_key',
     'specification_dir',
     'template_dir',
     'trusted_keys_config_key',
+    'url_scheme',
 ]
 
 
@@ -49,3 +51,4 @@ url_scheme = 'datalad-remake'
 template_dir = '.datalad/make/methods'
 specification_dir = '.datalad/make/specifications'
 trusted_keys_config_key = 'datalad.trusted-keys'
+priority_config_key = 'datalad.make.priority'
