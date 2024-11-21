@@ -15,11 +15,20 @@ from urllib.parse import (
 )
 
 from datalad.customremotes import RemoteError
+from datalad_core.config import (
+    ConfigManager,
+    DataladBranchConfig,
+    GitEnvironment,
+    GlobalGitConfig,
+    ImplementationDefaults,
+    LocalGitConfig,
+)
 from datalad_next.annexremotes import SpecialRemote, super_main
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_success
 
 from datalad_remake import (
+    priority_config_key,
     specification_dir,
     url_scheme,
 )
@@ -37,6 +46,7 @@ if TYPE_CHECKING:
 
     from annexremote import Master
 
+
 lgr = logging.getLogger('datalad.remake.annexremotes.remake')
 
 
@@ -44,10 +54,26 @@ class RemakeRemote(SpecialRemote):
     def __init__(self, annex: Master):
         super().__init__(annex)
         self.configs = {
-            'allow_untrusted_execution': 'Allow execution of untrusted code with untrusted parameters. '
-            'set to "true" to enable. THIS IS DANGEROUS and might lead to '
-            'remote code execution.',
+            'allow_untrusted_execution': 'Allow execution of untrusted code '
+            'with untrusted parameters. set to "true" to enable. THIS IS '
+            'DANGEROUS and might lead to remote code execution.',
         }
+        self._config_manager: ConfigManager | None = None
+
+    @property
+    def config_manager(self):
+        if self._config_manager is None:
+            dataset_dir = self._get_dataset_dir()
+            self._config_manager = ConfigManager(
+                defaults=ImplementationDefaults(),
+                sources={
+                    'git-command': GitEnvironment(),
+                    'git': LocalGitConfig(dataset_dir),
+                    'git-global': GlobalGitConfig(),
+                    'datalad-branch': DataladBranchConfig(dataset_dir),
+                },
+            )
+        return self._config_manager
 
     def __del__(self):
         self.close()
@@ -83,14 +109,14 @@ class RemakeRemote(SpecialRemote):
         return 100
 
     def get_url_encoded_info(self, url: str) -> list[str]:
-        parts = urlparse(url).query.split('&', 5)
+        parts = urlparse(url).query.split('&', 3)
         self.annex.debug(f'get_url_encoded_info: url: {url!r}, parts: {parts!r}')
         return parts
 
-    def get_url_for_key(self, key: str) -> str:
+    def get_urls_for_key(self, key: str) -> list[str]:
         urls = self.annex.geturls(key, f'{url_scheme}:')
-        self.annex.debug(f'get_url_for_key: key: {key!r}, urls: {urls!r}')
-        return urls[0]
+        self.annex.debug(f'get_urls_for_key: key: {key!r}, urls: {urls!r}')
+        return urls
 
     def get_compute_info(
         self,
@@ -100,10 +126,24 @@ class RemakeRemote(SpecialRemote):
         def get_assigned_value(assignment: str) -> str:
             return assignment.split('=', 1)[1]
 
-        root_version, spec_name, this = (
-            unquote(get_assigned_value(expr))
-            for expr in self.get_url_encoded_info(self.get_url_for_key(key))
-        )
+        # get all compute instruction URLs for the key and select the
+        # prioritized one.
+        compute_instructions = {}
+        for url in self.get_urls_for_key(key):
+            label, root_version, spec_name, this = (
+                unquote(get_assigned_value(expr))
+                for expr in self.get_url_encoded_info(url)
+            )
+            compute_instructions[label] = root_version, spec_name, this
+
+        # Select the compute instruction with the highest priority
+        for label in self._get_priorities():
+            if label in compute_instructions:
+                root_version, spec_name, this = compute_instructions[label]
+                break
+        else:
+            # If no priority is configured, select the first instruction
+            root_version, spec_name, this = next(iter(compute_instructions.values()))
 
         dataset = self._find_dataset(root_version)
         spec_path = dataset.pathobj / specification_dir / spec_name
@@ -163,7 +203,7 @@ class RemakeRemote(SpecialRemote):
     def _find_dataset(self, commit: str) -> Dataset:
         """Find the first enclosing dataset with the given commit"""
         # TODO: get version override from configuration
-        start_dir = Path(self.annex.getgitdir()).parent.absolute()
+        start_dir = self._get_dataset_dir()
         current_dir = start_dir
         while current_dir != Path('/'):
             result = subprocess.run(
@@ -218,6 +258,27 @@ class RemakeRemote(SpecialRemote):
         # Collect `this` file. It has to be copied to the destination given
         # by git-annex. Git-annex will check its integrity.
         shutil.copyfile(worktree / this, this_destination)
+
+    def _get_priorities(self) -> list[str]:
+        """Get configured priorities
+
+        The priorities are search in the following locations in the order
+        given below:
+        1. local git-config entries
+        2. global git-config entries
+        3. `.datalad/config`-file in the dataset on which the remote operates.
+
+        :return:
+            list[str]: list of priorities, highest priority first. If no
+            priorities are configured, an empty list is returned.
+        """
+        setting = self.config_manager.get(priority_config_key)
+        if setting.value:
+            return setting.value.split(',')
+        return []
+
+    def _get_dataset_dir(self) -> Path:
+        return Path(self.annex.getgitdir()).parent.absolute()
 
 
 def main():

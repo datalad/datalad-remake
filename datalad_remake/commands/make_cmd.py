@@ -68,6 +68,7 @@ class Make(ValidatedInterface):
         {
             'dataset': EnsureDataset(installed=True),
             'template': EnsureStr(min_len=1),
+            'label': EnsureStr(),
             'input': EnsureListOf(EnsureStr(min_len=1)),
             'input_list': EnsurePath(),
             'output': EnsureListOf(EnsureStr(min_len=1), min_len=1),
@@ -102,6 +103,20 @@ class Make(ValidatedInterface):
             doc='Name of the computing template (template should be present '
             'in $DATASET/.datalad/remake/methods)',
         ),
+        'label': Parameter(
+            args=(
+                '-l',
+                '--label',
+            ),
+            doc='Label of the computation. This is a user defined name that '
+            'is used to identify and prioritize computations, if more than one '
+            'computation is registered for a file. If no label is provided, the'
+            'template name will be used. (Prioritization is done by '
+            'reading `datalad.make.priority` configuration items. If those do '
+            'not exist, the file `<$dataset root>.datalad/make/priority` is '
+            'read, if that does not exist either, a random computation is '
+            'chosen.)',
+        ),
         'branch': Parameter(
             args=(
                 '-b',
@@ -117,8 +132,10 @@ class Make(ValidatedInterface):
             ),
             action='append',
             doc='An input file pattern (repeat for multiple inputs, '
-            'file pattern support python globbing, globbing is performed in '
-            'the source dataset).',
+            'file pattern support python globbing, globbing is performed by '
+            'installing all possibly matching subdatasets and performing '
+            'globbing in those, recursively. That means expressions like `**` '
+            'might pull in a huge number of datasets).',
         ),
         'input_list': Parameter(
             args=(
@@ -139,8 +156,8 @@ class Make(ValidatedInterface):
             ),
             action='append',
             doc='An output file pattern (repeat for multiple outputs)'
-            'file pattern support python globbing, globbing is performed in '
-            'the worktree).',
+            'file pattern support python globbing, output globbing is performed '
+            'in the worktree after the computation).',
         ),
         'output_list': Parameter(
             args=(
@@ -160,7 +177,7 @@ class Make(ValidatedInterface):
             ),
             action='append',
             doc='Input parameter in the form <name>=<value> (repeat for '
-            'multiple parameters)',
+            'multiple parameters).',
         ),
         'parameter_list': Parameter(
             args=(
@@ -196,6 +213,7 @@ class Make(ValidatedInterface):
         dataset: DatasetParameter | None = None,
         *,
         template: str = '',
+        label: str = '',
         prospective_execution: bool = False,
         branch: str | None = None,
         input: list[str] | None = None,  # noqa: A002
@@ -217,7 +235,13 @@ class Make(ValidatedInterface):
         # We have to get the URL first, because saving the specification to
         # the dataset will change the version.
         url_base, reset_commit = get_url(
-            ds, branch, template, parameter_dict, input_pattern, output_pattern
+            ds,
+            branch,
+            template,
+            parameter_dict,
+            input_pattern,
+            output_pattern,
+            label or template,
         )
 
         if not prospective_execution:
@@ -268,6 +292,7 @@ def get_url(
     parameters: dict[str, str],
     input_pattern: list[str],
     output_pattern: list[str],
+    label: str,
 ) -> tuple[str, str]:
     # If something goes wrong after the compute specification was saved,
     # the dataset state should be reset to `branch`
@@ -280,7 +305,8 @@ def get_url(
 
     return (
         f'{url_scheme}:///'
-        f'?root_version={quote(dataset.repo.get_hexsha())}'
+        f'?label={quote(label)}'
+        f'&root_version={quote(dataset.repo.get_hexsha())}'
         f'&specification={quote(digest)}'
     ), reset_branch
 
@@ -317,7 +343,13 @@ def build_json(
     method: str, inputs: list[str], outputs: list[str], parameters: dict[str, str]
 ) -> str:
     return json.dumps(
-        {'method': method, 'input': inputs, 'output': outputs, 'parameter': parameters}
+        {
+            'method': method,
+            'input': sorted(inputs),
+            'output': sorted(outputs),
+            'parameter': parameters,
+        },
+        sort_keys=True,
     )
 
 
@@ -365,7 +397,7 @@ def get_file_dataset(file: Path) -> tuple[Path, Path]:
     top_level = Path(
         call_git_oneline(['rev-parse', '--show-toplevel'], cwd=file.parent)
     )
-    return (Path(top_level), file.absolute().relative_to(top_level))
+    return Path(top_level), file.absolute().relative_to(top_level)
 
 
 def provide(
