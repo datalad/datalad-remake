@@ -1,4 +1,6 @@
 import pytest
+from datalad_core.config import ConfigItem
+from datalad_core.tests.fixtures import cfgman  # noqa: F401
 from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
@@ -24,7 +26,7 @@ command = ["echo content: {content} > 'a.txt'"]
 
 @skip_if_on_windows
 @pytest.mark.parametrize('trusted', [True, False])
-def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
+def test_compute_remote_main(tmp_path, cfgman, monkeypatch, trusted):  # noqa: F811
     if trusted:
         gpg_homedir = tmp_path / 'tmp_gpg_dir'
         tmp_home = tmp_path / 'tmp_home'
@@ -37,8 +39,6 @@ def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
 
         # Activate the new keys
         monkeypatch.setenv('GNUPGHOME', str(gpg_homedir))
-
-        datalad_cfg.add('datalad.trusted-keys', signing_key, where='global')
 
     else:
         signing_key = None
@@ -68,7 +68,12 @@ def test_compute_remote_main(tmp_path, datalad_cfg, monkeypatch, trusted):
         ]
     )
 
-    run_remake_remote(tmp_path, [url])
+    with cfgman.overrides(
+        {
+            'datalad.trusted-keys': ConfigItem(signing_key),
+        }
+    ):
+        run_remake_remote(tmp_path, [url])
 
     # At this point the datalad-remake remote should have executed the
     # computation and written the result.

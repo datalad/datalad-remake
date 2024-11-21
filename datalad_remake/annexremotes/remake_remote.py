@@ -18,6 +18,7 @@ from datalad.customremotes import RemoteError
 from datalad_core.config import (
     ConfigManager,
     DataladBranchConfig,
+    GitEnvironment,
     GlobalGitConfig,
     ImplementationDefaults,
     LocalGitConfig,
@@ -45,6 +46,7 @@ if TYPE_CHECKING:
 
     from annexremote import Master
 
+
 lgr = logging.getLogger('datalad.remake.annexremotes.remake')
 
 
@@ -65,6 +67,7 @@ class RemakeRemote(SpecialRemote):
             self._config_manager = ConfigManager(
                 defaults=ImplementationDefaults(),
                 sources={
+                    'git-command': GitEnvironment(),
                     'git': LocalGitConfig(dataset_dir),
                     'git-global': GlobalGitConfig(),
                     'datalad-branch': DataladBranchConfig(dataset_dir),

@@ -1,5 +1,7 @@
 import pytest
 from annexremote import Master
+from datalad_core.config import ConfigItem
+from datalad_core.tests.fixtures import cfgman  # noqa: F401
 from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake import (
@@ -28,13 +30,7 @@ command = ["echo from {label}: {{content}} > 'a.txt'"]
 
 @skip_if_on_windows
 @pytest.mark.parametrize('priority', [['alpha', 'beta'], ['beta', 'alpha']])
-def test_compute_remote_priority(tmp_path, datalad_cfg, monkeypatch, priority):
-    datalad_cfg.add(
-        var=priority_config_key,
-        value=','.join(priority),
-        scope='global',
-    )
-
+def test_compute_remote_priority(tmp_path, cfgman, monkeypatch, priority):  # noqa: F811
     dataset = create_ds_hierarchy(
         tmp_path=tmp_path,
         name='ds1',
@@ -79,7 +75,9 @@ def test_compute_remote_priority(tmp_path, datalad_cfg, monkeypatch, priority):
         for label in ['alpha', 'beta']
     ]
 
-    run_remake_remote(tmp_path, urls)
+    # Run the special remote with the given priority configuration.
+    with cfgman.overrides({priority_config_key: ConfigItem(','.join(priority))}):
+        run_remake_remote(tmp_path, urls)
 
     # At this point the datalad-remake remote should have executed the
     # prioritized template and written the result.
@@ -88,7 +86,7 @@ def test_compute_remote_priority(tmp_path, datalad_cfg, monkeypatch, priority):
     ).read_text().strip() == f'from {priority[0]}: {priority[0]}_parameter'
 
 
-def test_config_precedence(existing_dataset, tmp_path, monkeypatch):
+def test_config_precedence(existing_dataset, tmp_path, cfgman, monkeypatch):  # noqa: F811
     existing_dataset.config.add('datalad.make.priority', '1', scope='branch')
 
     monkeypatch.setattr(
@@ -114,3 +112,11 @@ def test_config_precedence(existing_dataset, tmp_path, monkeypatch):
     git_source = remake_remote.config_manager.sources['git']
     git_source.load()
     assert remake_remote._get_priorities() == ['3']  # noqa SLF001
+
+    # Git command configurations, i.e. environment variables, should overwrite
+    # local git config.
+    existing_dataset.config.add('datalad.make.priority', '3', scope='local')
+    git_source = remake_remote.config_manager.sources['git']
+    git_source.load()
+    with cfgman.overrides({priority_config_key: ConfigItem('4')}):
+        assert remake_remote._get_priorities() == ['4']  # noqa SLF001
