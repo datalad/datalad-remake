@@ -8,6 +8,7 @@ from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
 from ... import (
     specification_dir,
     template_dir,
+    trusted_keys_config_key,
 )
 from ...commands.make_cmd import build_json
 from .utils import (
@@ -70,7 +71,7 @@ def test_compute_remote_main(tmp_path, cfgman, monkeypatch, trusted):  # noqa: F
 
     with cfgman.overrides(
         {
-            'datalad.trusted-keys': ConfigItem(signing_key),
+            trusted_keys_config_key: ConfigItem(signing_key),
         }
     ):
         run_remake_remote(tmp_path, [url])
