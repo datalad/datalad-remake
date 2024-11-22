@@ -23,8 +23,7 @@ from .utils import run_remake_remote
 # priority code.
 template = """
 parameters = ['content']
-use_shell = 'true'
-command = ["echo from {label}: {{content}} > 'a.txt'"]
+command = ["bash", "-c", "echo from {label}: {{content}} > 'a.txt'"]
 """
 
 

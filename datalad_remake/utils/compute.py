@@ -74,10 +74,5 @@ def compute(
     substituted_command = substitute_arguments(template, substitutions, 'command')
 
     with chdir(root_directory):
-        if template.get('use_shell', 'false') == 'true':
-            cmd = ' '.join(substituted_command)
-            lgr.debug(f'compute: RUNNING: with shell=True: {cmd}')
-            subprocess.run(cmd, shell=True, check=True)  # noqa: S602
-        else:
-            lgr.debug(f'compute: RUNNING: {substituted_command}')
-            subprocess.run(substituted_command, check=True)
+        lgr.debug(f'compute: RUNNING: {substituted_command}')
+        subprocess.run(substituted_command, check=True)
