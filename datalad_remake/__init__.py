@@ -50,5 +50,5 @@ command_suite = (
 url_scheme = 'datalad-remake'
 template_dir = '.datalad/make/methods'
 specification_dir = '.datalad/make/specifications'
-trusted_keys_config_key = 'datalad.trusted-keys'
+trusted_keys_config_key = 'datalad.make.trusted-keys'
 priority_config_key = 'datalad.make.priority'

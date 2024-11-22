@@ -149,6 +149,71 @@ time!) based on the specified instructions:
 > cat person-1.txt
 ```
 
+Additional examples can be found in the [examples](https://github.com/datalad/datalad-remake/examples) directory.
+
+
+## Trusted execution
+
+By default, the `datalad-remake` will only perform "trusted"
+computations. That holds for the direct execution via `datalad make` as well as
+for the indirect execution via the git-annex special remote as a result of
+`datalad get`. A computation is trusted, if the method and the parameters
+that define the computation are trusted.
+
+A method is considered "trusted" if the last commit to the method template
+is signed by a trusted key.
+
+Parameters, i.e. input, output, and method-parameter values, are initially
+provided in the `datalad make` command line. If the `datalad make` command
+executes successfully, they will be associated with the output files of the
+`datalad make` command. These associations are done via a commit to the dataset
+and a call to `git annex addurl`. Parameters are considered "trusted" if:
+
+1. they are provided by the user via the `datalad make` command line, or
+2. they were associated with a file in a commit that is signed by a trusted key.
+
+### Trusted keys
+
+Signature validation is performed by `git verify-commit`, which uses GPG to
+perform the cryptographic processes. To successfully verify a signature, the
+signer's public key must be added to the active GPG-keyring. To indicate to
+`datalad make` that the signer should be trusted, the key-id of the signer's
+public key must be added to
+the git configuration variable `datalad.make.trusted-keys`. This can be done
+via the command:
+
+```bash
+> git config --add datalad.make.trusted-keys <key-id>
+```
+
+If more than one key should be defined as trusted, the configuration variable
+`datalad.make.trusted-keys` can be set to a comma-separated list of key-ids,
+e.g.:
+
+```bash
+> git config datalad.make.trusted-keys <key-id-1>,<key-id-2>,...,<key-id-n>
+```
+
+The key-id can be obtained via `gpg --list-keys --keyid-format long`. The key
+id is the part after the `/` in the `pub` line. For example, in the following
+output:
+
+```bash
+> gpg --list-keys --keyid-format long
+/tmp/test_simple_verification0/gpg/pubring.kbx
+--------------------------------------------------------------------------
+sec   rsa4096/F1B64364FF34DDCB 2024-10-28 [SCEAR]
+      F6AC1EE006B3E2D0805DA103F1B64364FF34DDCB
+uid                 [ultimate] Test User <test@example.com>
+
+```
+the key id is `F1B64364FF34DDCB`. To inform `datalad make` and the git-annex
+special remote that this key is trusted, the following command could be used:
+    
+```bash
+> git config --add datalad.make.trusted-keys F1B64364FF34DDCB
+```
+For instructions how to sign commits, see the [Git documentation](https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work).
 
 # Contributing
 
