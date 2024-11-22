@@ -29,7 +29,7 @@ def test_duplicated_computation(tmp_path):
 
 
 @skip_if_on_windows
-def test_speculative_computation(tmp_path, datalad_cfg):
+def test_speculative_computation(tmp_path):
     root_dataset = create_simple_computation_dataset(tmp_path, 'ds1', 0, test_method)
 
     root_dataset.make(
@@ -38,12 +38,6 @@ def test_speculative_computation(tmp_path, datalad_cfg):
         output=['spec.txt'],
         prospective_execution=True,
         result_renderer='disabled',
-    )
-
-    # set annex security related variables to allow datalad-remake-URLs
-    # in speculative make commands
-    datalad_cfg.set(
-        'annex.security.allow-unverified-downloads', 'ACKTHPPT', scope='global'
     )
 
     # Perform the speculative computation

@@ -14,7 +14,7 @@ def update_config_for_remake(dataset: Dataset):
         action='set',
         scope='local',
         recursive=True,
-        spec=[('annex.security.allow-unverified-downloads', 'ACKTHPPT')],
+        spec=[('remote.remake.annex-security-allow-unverified-downloads', 'ACKTHPPT')],
         result_renderer='disabled',
     )
 
@@ -35,6 +35,7 @@ def add_remake_remote(dataset: Dataset, signing_key: str | None = None):
         ],
         capture_output=True,
     )
+    update_config_for_remake(dataset)
 
 
 def create_ds_hierarchy(
@@ -74,7 +75,6 @@ def create_ds_hierarchy(
         dataset[2].save(result_renderer='disabled')
 
     root_dataset.get(recursive=True, result_renderer='disabled')
-    update_config_for_remake(root_dataset)
 
     # Add datalad-remake remotes to the root dataset and all subdatasets
     add_remake_remote(root_dataset, signing_key)
