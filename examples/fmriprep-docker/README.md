@@ -80,7 +80,8 @@ Place the `fmriprep-docker` template in the `.datalad/make/methods` of the root 
 Place the `input.txt`, `output.txt` and `parameter.txt` files in the root dataset. These files do not have to be tracked in git history, so no `datalad save` is required at this point.
 
 ```bash
-> cp $EXAMPLE/*.txt ./
+> mkdir -p code/make/fmriprep-docker
+> cp $EXAMPLE/*.txt ./code/make/fmriprep-docker/
 ```
 
 ### Execute (re)computation
@@ -89,13 +90,21 @@ To test the example, run:
 
 ```bash
 > cd $HOME/my-project
-> datalad make -I input.txt -O output.txt -P parameter.txt --allow-untrusted-execution fmriprep-docker
+> datalad make \
+-I code/make/fmriprep-docker/input.txt \
+-O code/make/fmriprep-docker/output.txt \
+-P code/make/fmriprep-docker/parameter.txt \
+--allow-untrusted-execution fmriprep-docker
 ```
 
 You can also do that in `debug` mode:
 
 ```bash
-> datalad -l debug make -I input.txt -O output.txt -P parameter.txt fmriprep-docker
+> datalad -l debug make \
+-I code/make/fmriprep-docker/input.txt \
+-O code/make/fmriprep-docker/output.txt \
+-P code/make/fmriprep-docker/parameter.txt \
+--allow-untrusted-execution fmriprep-docker
 ```
 
 ### Final note

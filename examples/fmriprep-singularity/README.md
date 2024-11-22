@@ -83,7 +83,8 @@ Place the `fmriprep-singularity` template in the `.datalad/make/methods` of the 
 Place the `input.txt`, `output.txt` and `parameter.txt` files in the root dataset. These files do not have to be tracked in git history, so no `datalad save` is required at this point.
 
 ```bash
-> cp $EXAMPLE/*.txt ./
+> mkdir -p code/make/fmriprep-singularity
+> cp $EXAMPLE/*.txt ./code/make/fmriprep-singularity/
 ```
 
 ### Execute (re)computation
@@ -92,13 +93,21 @@ To test the example, run:
 
 ```bash
 > cd $HOME/my-project
-> datalad make -I input.txt -O output.txt -P parameter.txt --allow-untrusted-execution fmriprep-singularity
+> datalad make \
+-I code/make/fmriprep-singularity/input.txt \
+-O code/make/fmriprep-singularity/output.txt \
+-P code/make/fmriprep-singularity/parameter.txt \
+--allow-untrusted-execution fmriprep-singularity
 ```
 
 You can also do that in `debug` mode:
 
 ```bash
-> datalad -l debug make -I input.txt -O output.txt -P parameter.txt fmriprep-singularity
+> datalad -l debug make \
+-I code/make/fmriprep-singularity/input.txt \
+-O code/make/fmriprep-singularity/output.txt \
+-P code/make/fmriprep-singularity/parameter.txt \
+--allow-untrusted-execution fmriprep-singularity
 ```
 
 ### Final note
