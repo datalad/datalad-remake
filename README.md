@@ -149,7 +149,7 @@ time!) based on the specified instructions:
 > cat person-1.txt
 ```
 
-Additional examples can be found in the [examples](https://github.com/datalad/datalad-remake/examples) directory.
+Additional examples can be found in the [examples](https://github.com/datalad/datalad-remake/tree/main/examples) directory.
 
 
 ## Trusted execution
