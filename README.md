@@ -63,7 +63,7 @@ Create a template and place it in the `.datalad/make/methods` directory:
 ```bash
 > mkdir -p .datalad/make/methods
 > cat > .datalad/make/methods/one-to-many <<EOF
-parameter = ['first', 'second', 'output']
+parameters = ['first', 'second', 'output']
 
 use_shell = 'true'
 command = [
@@ -104,28 +104,42 @@ Drop the content of `name-1.txt`, verify it is gone, recreate it via
 > cat name-1.txt
 ``` 
 
+### Prospective computation
 The `datalad make` command can also be used to perform a *prospective
 computation*. To use this feature, the following configuration value 
-has to be set:
+has to be set ():
 
 ```bash
-> git config annex.security.allow-unverified-downloads ACKTHPPT
+> git config remote.datalad-remake.annex-security-allow-unverified-downloads ACKTHPPT
 ```
+
+<details>
+    <summary>Why does the configuration variable have to be set?</summary>
+
+This setting allows git-annex to download files from the special remote `datalad-remake`
+although git-annex cannot check a hash to verify that the content is correct.
+Because the computation was never performed, there is no hash available for content
+verification of an output file yet.
+
+For more information see the description of
+`remote.<name>.annex-security-allow-unverified-downloads` and of
+`annex.security.allow-unverified-downloads` at
+https://git-annex.branchable.com/git-annex/.
+</details>
 
 Afterwards, a prospective computation can be initiated by using the 
 `--prospective-execution` option:
 
 ```bash
 > datalad make -p first=john -p second=susan -p output=person \
--o person-1.txt -o person-2.txt --prospective-execution --allow_untrusted_execution one-to-many
-> cat person-1.txt    # this will fail, because the computation has not yet been performed
+-o person-1.txt -o person-2.txt --prospective-execution --allow-untrusted-execution one-to-many
 ```
 
 The following command will fail, because no computation has been performed,
 and the file content is unavailable:
 
 ```bash
-> cat person-1.txt
+> cat person-1.txt    # this will fail, because the computation has not yet been performed
 ```
 
 We can further inspect this with `git annex info`:
@@ -147,6 +161,7 @@ time!) based on the specified instructions:
 ```bash
 > datalad get person-1.txt
 > cat person-1.txt
+content: john
 ```
 
 Additional examples can be found in the [examples](https://github.com/datalad/datalad-remake/tree/main/examples) directory.
