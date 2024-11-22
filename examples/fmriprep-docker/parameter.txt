@@ -1,4 +1,4 @@
-input_dir=data/ds000102
-output_dir=derivatives/ds000102
-participant_label=01
+input_dir=data/ds001734
+output_dir=derivatives/ds001734
+participant_label=001
 license_file=/tmp/license.txt

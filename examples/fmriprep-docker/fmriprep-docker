@@ -4,7 +4,7 @@
 # The template takes the following parameters:
 # - input_dir: the path to the input directory (BIDS dataset)
 # - output_dir: the path to the output directory
-# - participant_label: the label of the participant to be processed, e.g. `01`
+# - participant_label: the label of the participant to be processed, e.g. `001`
 # - license_file: the path to the FreeSurfer license file
 #
 # The template assumes that the BIDS dataset referenced in `input_dir` is
@@ -30,6 +30,5 @@ command = [
     '--sloppy',
     '--fs-license-file', '{license_file}',
     '--fs-no-reconall',
-    '--skip-bids-validation',
-    '--ignore', 'slicetiming',
+    '--output-spaces', 'MNI152NLin2009cAsym'
 ]

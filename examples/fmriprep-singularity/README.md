@@ -37,11 +37,11 @@ Create a dataset, together with its subdatasets:
 > datalad create -c text2git my-project
 > cd my-project
 > datalad clone -d . https://github.com/ReproNim/containers code/containers
-> datalad clone -d . https://github.com/OpenNeuroDatasets/ds000102 data/ds000102
-> datalad create -d . derivatives/ds000102
+> datalad clone -d . https://github.com/OpenNeuroDatasets/ds001734 data/ds001734
+> datalad create -d . derivatives/ds001734
 ```
 
-The dataset used in this example is organized in a modular way. In particular, input data (`data/ds000102`) and output data (`derivatives/ds000102`) are tracked in separate subdatasets, as is the software container (`code/containers`).
+The dataset used in this example is organized in a modular way. In particular, input data (`data/ds001734`) and output data (`derivatives/ds001734`) are tracked in separate subdatasets, as is the software container (`code/containers`).
 
 The resulting dataset structure is as follows:
 
@@ -50,17 +50,17 @@ my-project
 ├── code
 │   └── containers
 ├── data
-│   └── ds000102
+│   └── ds001734
 └── derivatives
-    └── ds000102
+    └── ds001734
 ```
 
 ### Configure special remote
 
-Configure the dataset in which you want to collect the results of the (re)computation, in this case `derivatives/ds000102` subdataset.
+Configure the dataset in which you want to collect the results of the (re)computation, in this case `derivatives/ds001734` subdataset.
 
 ```bash
-> cd $HOME/my-project/derivatives/ds000102
+> cd $HOME/my-project/derivatives/ds001734
 ```
 
 Add a `datalad-remake` special remote:

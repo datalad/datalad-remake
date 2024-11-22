@@ -1,6 +1,6 @@
 # Paths are relative to the dataset in which `datalad make` was executed
-data/ds000102/dataset_description.json
-data/ds000102/participants.tsv
-data/ds000102/T1w.json
-data/ds000102/task-flanker_bold.json
-data/ds000102/sub-01/**
+data/ds001734/dataset_description.json
+data/ds001734/participants.tsv
+data/ds001734/T1w.json
+data/ds001734/task-MGT_bold.json
+data/ds001734/sub-001/**
