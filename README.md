@@ -26,7 +26,7 @@ data curators, and infrastructure administrators.
 
 ## Requirements
 
-This extension requires Python >= `3.11`.
+This extension requires Python >= `3.9`.
 
 
 ## Installation
@@ -113,11 +113,11 @@ has to be set:
 ```
 
 Afterwards, a prospective computation can be initiated by using the 
-`-u / --url-only` option:
+`--prospective-execution` option:
 
 ```bash
 > datalad make -p first=john -p second=susan -p output=person \
--o person-1.txt -o person-2.txt -u --allow_untrusted_execution one-to-many
+-o person-1.txt -o person-2.txt --prospective-execution --allow_untrusted_execution one-to-many
 > cat person-1.txt    # this will fail, because the computation has not yet been performed
 ```
 
