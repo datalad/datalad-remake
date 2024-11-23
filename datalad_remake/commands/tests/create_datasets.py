@@ -31,7 +31,7 @@ def add_remake_remote(dataset: Dataset, signing_key: str | None = None):
             'type=external',
             'externaltype=datalad-remake',
             'encryption=none',
-            f'allow_untrusted_execution={aue}',
+            f'allow-untrusted-execution={aue}',
         ],
         capture_output=True,
     )

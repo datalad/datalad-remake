@@ -76,7 +76,7 @@ EOF
 
 Create a `datalad-remake` git-annex special remote:
 ```bash
-> git annex initremote datalad-remake encryption=none type=external externaltype=datalad-remake allow_untrusted_execution=true
+> git annex initremote datalad-remake encryption=none type=external externaltype=datalad-remake allow-untrusted-execution=true
 ```
 
 Execute a computation and save the result:

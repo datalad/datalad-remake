@@ -127,7 +127,7 @@ def run_remake_remote(dest_path, urls):
     # below.
     input_.send('PREPARE\n')
     input_.send(f'TRANSFER RETRIEVE {annex_key} {dest_path / "remade.txt"!s}\n')
-    # The next line is the answer to `GETCONFIG allow_untrusted_execution`
+    # The next line is the answer to `GETCONFIG allow-untrusted-execution`
     input_.send('VALUE true\n')
     # The next two lines assemble the answer to
     # `GETURLS <annex-key> datalad-remake:`
