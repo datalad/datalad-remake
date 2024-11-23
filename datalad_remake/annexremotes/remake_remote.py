@@ -54,7 +54,7 @@ class RemakeRemote(SpecialRemote):
     def __init__(self, annex: Master):
         super().__init__(annex)
         self.configs = {
-            'allow_untrusted_execution': 'Allow execution of untrusted code '
+            'allow-untrusted-execution': 'Allow execution of untrusted code '
             'with untrusted parameters. set to "true" to enable. THIS IS '
             'DANGEROUS and might lead to remote code execution.',
         }
@@ -161,7 +161,7 @@ class RemakeRemote(SpecialRemote):
     def transfer_retrieve(self, key: str, file_name: str) -> None:
         self.annex.debug(f'TRANSFER RETRIEVE key: {key!r}, file_name: {file_name!r}')
 
-        if self.annex.getconfig('allow_untrusted_execution') == 'true':
+        if self.annex.getconfig('allow-untrusted-execution') == 'true':
             trusted_key_ids = None
         else:
             trusted_key_ids = get_trusted_keys()
