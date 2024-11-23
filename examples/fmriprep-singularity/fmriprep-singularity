@@ -19,8 +19,6 @@
 
 parameters = ['container', 'input_dir', 'output_dir', 'participant_label', 'license_file']
 
-use_shell = 'false'
-
 # Note: `{root_directory}` resolves to the directory of the dataset in which the
 # computation was started with `datalad make`.
 

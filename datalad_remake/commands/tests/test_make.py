@@ -12,8 +12,7 @@ from datalad_remake.commands.tests.create_datasets import (
 
 test_method = """
 parameters = ['name', 'file']
-use_shell = 'true'
-command = ["echo Hello {name} > {file}"]
+command = ["bash", "-c", "echo Hello {name} > {file}"]
 """
 
 output_pattern = ['a.txt']

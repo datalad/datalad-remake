@@ -7,22 +7,17 @@ from datalad_remake.commands.tests.create_datasets import (
 
 template = """
 parameters = ['line']
-
-use_shell = 'true'
-
-command = ["echo {line} >> 'a.txt'"]
+command = ["bash", "-c", "echo {line} >> 'a.txt'"]
 """
 
 template_c1 = """
 parameters = ['line']
-use_shell = 'true'
-command = ["cat a.txt > c1.txt;  echo {line} >> c1.txt"]
+command = ["bash", "-c", "cat a.txt > c1.txt;  echo {line} >> c1.txt"]
 """
 
 template_c2 = """
 parameters = ['line']
-use_shell = 'true'
-command = ["cat c1.txt > c2.txt; echo {line} >> c2.txt"]
+command = ["bash", "-c", "cat c1.txt > c2.txt; echo {line} >> c2.txt"]
 """
 
 

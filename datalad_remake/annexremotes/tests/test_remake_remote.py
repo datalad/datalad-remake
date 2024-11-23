@@ -18,10 +18,7 @@ from .utils import (
 
 template = """
 parameters = ['content']
-
-use_shell = 'true'
-
-command = ["echo content: {content} > 'a.txt'"]
+command = ["bash", "-c", "echo content: {content} > 'a.txt'"]
 """
 
 

@@ -65,8 +65,9 @@ Create a template and place it in the `.datalad/make/methods` directory:
 > cat > .datalad/make/methods/one-to-many <<EOF
 parameters = ['first', 'second', 'output']
 
-use_shell = 'true'
 command = [
+    "bash",
+    "-c",
     "echo content: {first} > '{output}-1.txt'; echo content: {second} > '{output}-2.txt'",
 ]
 EOF

@@ -10,26 +10,28 @@ from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
 
-test_method = """
-parameters = ['first', 'second', 'third']
-use_shell = 'true'
-command = [
-    "echo content: {first} > 'a.txt';",
-    "mkdir -p 'd2_subds0/d2_subds1/d2_subds2';",
-    "echo content: {second} > 'b.txt';",
-    "echo content: {third} > 'new.txt';",
-    "echo content: {first} > 'd2_subds0/a0.txt';",
-    "echo content: {second} > 'd2_subds0/b0.txt';",
-    "echo content: {third} > 'd2_subds0/new.txt';",
-    "echo content: {first} > 'd2_subds0/d2_subds1/a1.txt';",
-    "echo content: {second} > 'd2_subds0/d2_subds1/b1.txt';",
-    "echo content: {third} > 'd2_subds0/d2_subds1/new.txt';",
-    "echo content: {first} > 'd2_subds0/d2_subds1/d2_subds2/a2.txt';",
-    "echo content: {second} > 'd2_subds0/d2_subds1/d2_subds2/b2.txt';",
-    "echo content: {third} > 'd2_subds0/d2_subds1/d2_subds2/new.txt';",
-]
-"""
+script = (
+    "echo content: {first} > 'a.txt';"
+    "mkdir -p 'd2_subds0/d2_subds1/d2_subds2';"
+    "echo content: {second} > 'b.txt';"
+    "echo content: {third} > 'new.txt';"
+    "echo content: {first} > 'd2_subds0/a0.txt';"
+    "echo content: {second} > 'd2_subds0/b0.txt';"
+    "echo content: {third} > 'd2_subds0/new.txt';"
+    "echo content: {first} > 'd2_subds0/d2_subds1/a1.txt';"
+    "echo content: {second} > 'd2_subds0/d2_subds1/b1.txt';"
+    "echo content: {third} > 'd2_subds0/d2_subds1/new.txt';"
+    "echo content: {first} > 'd2_subds0/d2_subds1/d2_subds2/a2.txt';"
+    "echo content: {second} > 'd2_subds0/d2_subds1/d2_subds2/b2.txt';"
+    "echo content: {third} > 'd2_subds0/d2_subds1/d2_subds2/new.txt'"
+)
 
+test_method = '\n'.join(
+    [
+        "parameters = ['first', 'second', 'third']",
+        'command = ["bash", "-c", "' + script + '"]',
+    ]
+)
 
 output_pattern_static = [
     'a.txt',
