@@ -66,7 +66,8 @@ Configure the dataset in which you want to collect the results of the (re)comput
 Add a `datalad-remake` special remote:
 
 ```bash
-> git annex initremote datalad-remake type=external externaltype=datalad-remake encryption=none allow-untrusted-execution=true
+> git annex initremote datalad-remake type=external externaltype=datalad-remake \
+encryption=none allow-untrusted-execution=true autoenable=true
 ```
 
 ### Add template
