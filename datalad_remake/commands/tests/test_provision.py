@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from datalad.api import clone
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines
 from datalad_next.tests import skip_if_on_windows
@@ -200,6 +201,24 @@ def test_not_present_local_datasets(tmp_path):
     )
     url_2 = _get_submodule_url(provisioned_dataset_2, 'ds000102')
     assert url_2 == 'https://github.com/OpenNeuroDatasets/ds000102'
+
+
+def test_clone_provision(tmp_path):
+    root_ds = Dataset(tmp_path / 'ds')
+    root_ds.create(result_renderer='disabled')
+    sub_ds = root_ds.create('sub_ds')
+    (sub_ds.pathobj / 'a.txt').write_text('a\n')
+    root_ds.save(recursive=True, result_renderer='disabled')
+    cloned_ds = clone(
+        source=root_ds.path,
+        path=str(tmp_path / 'ds_clone'),
+        result_renderer='disabled',
+    )
+    cloned_ds.provision(
+        input=['sub_ds/a.txt'],
+        worktree_dir=tmp_path / 'ds_clone_worktree',
+        result_renderer='disabled',
+    )
 
 
 def _get_submodule_url(dataset: Dataset, submodule_path: str) -> str:
