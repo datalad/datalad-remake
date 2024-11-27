@@ -416,10 +416,13 @@ def get_locally_available_subdatasets(
     1. installed in the dataset, or
     2. it is not installed in the dataset, but its submodule-URL is a relative
        path.
+    3. it is not installed in the dataset, but its submodule-URL is an absolute
+       path.
 
     In case 1.) the install-URL is the file-URL of the subdataset in `dataset`.
     In case 2.) the install-URL is the origin of the dataset joined by the
     relative submodule-URL
+    In case 3.) the install-URL is the submodule-URL.
     """
     results = dataset.subdatasets(recursive=True, result_renderer='disabled')
     installed_subdatasets = [
