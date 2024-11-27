@@ -8,11 +8,14 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from pathlib import Path
+from re import Match
 from tempfile import TemporaryDirectory
 from typing import (
     TYPE_CHECKING,
     ClassVar,
+    cast,
 )
 
 from datalad_next.commands import (
@@ -274,14 +277,14 @@ def resolve_patterns(
                 Path(),
                 pattern_parts,
                 get_uninstalled_subdatasets(worktree),
-                get_installed_subdatasets(dataset),
+                get_locally_available_subdatasets(dataset),
             )
         )
     return matches
 
 
 def get_uninstalled_subdatasets(dataset: Dataset) -> set[Path]:
-    """Get a list of the paths of all visible, non-installed subdatasets"""
+    """Get relative paths of all visible, non-installed subdatasets"""
     return {
         Path(result['path']).relative_to(dataset.pathobj)
         for result in dataset.subdatasets(recursive=True, result_renderer='disabled')
@@ -405,9 +408,26 @@ def install_subdataset(
     uninstalled_subdatasets.update(get_uninstalled_subdatasets(worktree))
 
 
-def get_installed_subdatasets(dataset: Dataset) -> Iterable[tuple[Path, Path, Path]]:
+def get_locally_available_subdatasets(
+    dataset: Dataset,
+) -> Iterable[tuple[Path, Path, Path]]:
+    """Get all locally available subdatasets in the dataset `dataset
+
+    A subdataset is locally available if it is:
+
+    1. installed in the dataset, or
+    2. it is not installed in the dataset, but its submodule-URL is a relative
+       path.
+    3. it is not installed in the dataset, but its submodule-URL is an absolute
+       path.
+
+    In case 1.) the install-URL is the file-URL of the subdataset in `dataset`.
+    In case 2.) the install-URL is the origin of the dataset joined by the
+    relative submodule-URL
+    In case 3.) the install-URL is the submodule-URL.
+    """
     results = dataset.subdatasets(recursive=True, result_renderer='disabled')
-    return [
+    installed_subdatasets = [
         (
             Path(result['path']),
             Path(result['parentds']).relative_to(dataset.pathobj),
@@ -416,3 +436,73 @@ def get_installed_subdatasets(dataset: Dataset) -> Iterable[tuple[Path, Path, Pa
         for result in results
         if result['state'] == 'present'
     ]
+    local_subdatasets = [
+        (
+            Path(resolve_relative_module_url(dataset, result)),
+            Path(result['parentds']).relative_to(dataset.pathobj),
+            Path(result['path']).relative_to(dataset.pathobj),
+        )
+        for result in results
+        if result['state'] == 'absent'
+        and result['gitmodule_url'].startswith(('./', '../'))
+    ]
+    return installed_subdatasets + local_subdatasets
+
+
+def resolve_relative_module_url(
+    dataset: Dataset, submodule_info: dict[str, str]
+) -> str:
+    """Resolve the relative path in a submodule URL"""
+
+    if submodule_info['gitmodule_url'].startswith(('./', '../')):
+        # If the submodule URL is a relative path, it has to be resolved against
+        # the origin its parent dataset.
+        return get_parent_dataset_origin(dataset, submodule_info)
+    return submodule_info['gitmodule_url'].replace('file://', '')
+
+
+def get_parent_dataset_origin(dataset: Dataset, submodule_info: dict) -> str:
+    """Get an absolute remote_url of the parent dataset"""
+
+    remote_url = get_remote_url(dataset)
+
+    # If the remote_url is an absolute or relative path, resolve it against
+    # the parent dataset's path.
+    if remote_url.startswith('/'):
+        # This is an absolute file-URL, append the submodule-URL
+        return str(
+            (Path(remote_url) / submodule_info['gitmodule_url']).resolve().absolute()
+        )
+
+    if remote_url.startswith(('./', '../')):
+        # This is a relative file-URL, create an absolute path based on the
+        # dataset path, the relative URL and the submodule-URL.
+        return str(
+            (dataset.pathobj / remote_url / submodule_info['gitmodule_url'])
+            .resolve()
+            .absolute()
+        )
+
+    # This is a fully qualified URL, return it.
+    return submodule_info['gitmodule_url']
+
+
+def get_remote_url(dataset: Dataset) -> str:
+    # Collect all remote URLs
+    remotes = {
+        cast(Match[str], re.match(r'^remote\.(.*)\.url', k))[1]: dataset.config.get(
+            cast(Match[str], re.match(r'^remote\.(.*)\.url', k))[0]
+        )
+        for k in dataset.config.keys()  # noqa SIM118
+        if re.match(r'^remote\.(.*)\.url', k)
+    }
+
+    # Look for file URLs, return the first (that might not be correct in any
+    # case, because we need a remote that has the current sha).
+    for remote, url in remotes.items():
+        if url.startswith(('/', './', '../')):
+            lgr.debug('get_remote_url: using remote %s with URL %s', remote, url)
+            return url
+
+    # If there are no remotes, return the path of the dataset
+    return dataset.path
