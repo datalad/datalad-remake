@@ -10,10 +10,12 @@ import logging
 import os
 import re
 from pathlib import Path
+from re import Match
 from tempfile import TemporaryDirectory
 from typing import (
     TYPE_CHECKING,
     ClassVar,
+    cast,
 )
 
 from datalad_next.commands import (
@@ -488,10 +490,10 @@ def get_parent_dataset_origin(dataset: Dataset, submodule_info: dict) -> str:
 def get_remote_url(dataset: Dataset) -> str:
     # Collect all remote URLs
     remotes = {
-        re.match(r'^remote\.(.*)\.url', k)[1]: dataset.config.get(
-            re.match(r'^remote\.(.*)\.url', k)[0]
+        cast(Match[str], re.match(r'^remote\.(.*)\.url', k))[1]: dataset.config.get(
+            cast(Match[str], re.match(r'^remote\.(.*)\.url', k))[0]
         )
-        for k in dataset.config
+        for k in dataset.config.keys()  # noqa SIM118
         if re.match(r'^remote\.(.*)\.url', k)
     }
 
