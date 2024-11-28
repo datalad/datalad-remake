@@ -28,8 +28,6 @@ all_paths = [
     template.format(file=f) for template in file_path_templates for f in ['a', 'b']
 ]
 
-a_paths = [path.format(file='a') for path in file_path_templates]
-
 b_paths = [path.format(file='b') for path in file_path_templates]
 
 
