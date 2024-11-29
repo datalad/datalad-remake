@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import logging
 import re
 import subprocess
+import sys
 from io import TextIOBase
 from queue import Queue
 from typing import (
@@ -18,7 +18,12 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-lgr = logging.getLogger('datalad.tests')
+# For debugging purposes we want to see all messages that are exchanged between
+# the remote and the host. Some code in datalad_next test configurations
+# makes it quite difficult to use the standard logging calls. Therefore, we
+# define this super simple custom logger here.
+def log(*args):
+    print(*args, file=sys.stderr, flush=True)  # noqa T201
 
 
 class MockedOutput:
@@ -38,7 +43,7 @@ class MockedOutput:
         else:
             self.lines = lines_without
             self.output = ''
-            lgr.info('HOST <--- REMOTE: %s', self.lines[-1])
+            log(f'HOST <--- REMOTE: {self.lines[-1]!r}')
 
     def flush(self):
         pass
@@ -59,7 +64,7 @@ class MockedInput:
 
     def readline(self):
         line = self.input.get()
-        lgr.info('HOST ---> REMOTE: %s', line)
+        log(f'HOST ---> REMOTE: {line!r}')
         return line
 
     def send(self, value):
