@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import sys
 from io import TextIOBase
 from queue import Queue
 from typing import (
@@ -15,6 +16,14 @@ from datalad_remake.annexremotes.remake_remote import RemakeRemote
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+# For debugging purposes we want to see all messages that are exchanged between
+# the remote and the host. Some code in datalad_next test configurations
+# makes it quite difficult to use the standard logging calls. Therefore, we
+# define this super simple custom logger here.
+def log(*args):
+    print(*args, file=sys.stderr, flush=True)  # noqa T201
 
 
 class MockedOutput:
@@ -34,6 +43,7 @@ class MockedOutput:
         else:
             self.lines = lines_without
             self.output = ''
+            log(f'HOST <--- REMOTE: {self.lines[-1]!r}')
 
     def flush(self):
         pass
@@ -53,7 +63,9 @@ class MockedInput:
         self.input: Queue = Queue()
 
     def readline(self):
-        return self.input.get()
+        line = self.input.get()
+        log(f'HOST ---> REMOTE: {line!r}')
+        return line
 
     def send(self, value):
         self.input.put(value)
@@ -118,7 +130,7 @@ def create_keypair(gpg_dir: Path, name: bytes = b'Test User'):
     )[0]
 
 
-def run_remake_remote(dest_path, urls):
+def run_remake_remote(dest_path, urls, trusted):
     input_ = MockedInput()
 
     annex_key = 'some-fake-annex-key'
@@ -128,7 +140,7 @@ def run_remake_remote(dest_path, urls):
     input_.send('PREPARE\n')
     input_.send(f'TRANSFER RETRIEVE {annex_key} {dest_path / "remade.txt"!s}\n')
     # The next line is the answer to `GETCONFIG allow-untrusted-execution`
-    input_.send('VALUE true\n')
+    input_.send(f'VALUE {"false" if trusted else "true"}\n')
     # The next two lines assemble the answer to
     # `GETURLS <annex-key> datalad-remake:`
     for url in urls:
