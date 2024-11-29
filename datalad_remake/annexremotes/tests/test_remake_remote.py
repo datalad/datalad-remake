@@ -71,7 +71,7 @@ def test_compute_remote_main(tmp_path, cfgman, monkeypatch, trusted):  # noqa: F
             trusted_keys_config_key: ConfigItem(signing_key),
         }
     ):
-        run_remake_remote(tmp_path, [url])
+        run_remake_remote(tmp_path, [url], trusted)
 
     # At this point the datalad-remake remote should have executed the
     # computation and written the result.

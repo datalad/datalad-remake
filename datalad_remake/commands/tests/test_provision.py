@@ -214,10 +214,12 @@ def test_clone_provision(tmp_path, monkeypatch):
     monkeypatch.undo()
 
     # Check with absolute path
-    _clone_and_provide(root_ds.path, tmp_path,'ds_clone_2', ['sub_ds/a.txt'])
+    _clone_and_provide(root_ds.path, tmp_path, 'ds_clone_2', ['sub_ds/a.txt'])
 
 
-def _clone_and_provide(source_path: str, tmp_path, dest_name: str, input_files: list[str]):
+def _clone_and_provide(
+    source_path: str, tmp_path, dest_name: str, input_files: list[str]
+):
     cloned_ds = Clone()(
         source=source_path,
         path=str(tmp_path / dest_name),
@@ -225,7 +227,7 @@ def _clone_and_provide(source_path: str, tmp_path, dest_name: str, input_files: 
     )
     cloned_ds.provision(
         input=input_files,
-        worktree_dir=str(tmp_path /  (dest_name + '_worktree')),
+        worktree_dir=str(tmp_path / (dest_name + '_worktree')),
         result_renderer='disabled',
     )
 

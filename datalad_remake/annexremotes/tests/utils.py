@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 import subprocess
 from io import TextIOBase
@@ -15,6 +16,9 @@ from datalad_remake.annexremotes.remake_remote import RemakeRemote
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+lgr = logging.getLogger('datalad.tests')
 
 
 class MockedOutput:
@@ -34,6 +38,7 @@ class MockedOutput:
         else:
             self.lines = lines_without
             self.output = ''
+            lgr.info('HOST <--- REMOTE: %s', self.lines[-1])
 
     def flush(self):
         pass
@@ -53,7 +58,9 @@ class MockedInput:
         self.input: Queue = Queue()
 
     def readline(self):
-        return self.input.get()
+        line = self.input.get()
+        lgr.info('HOST ---> REMOTE: %s', line)
+        return line
 
     def send(self, value):
         self.input.put(value)
@@ -118,7 +125,7 @@ def create_keypair(gpg_dir: Path, name: bytes = b'Test User'):
     )[0]
 
 
-def run_remake_remote(dest_path, urls):
+def run_remake_remote(dest_path, urls, trusted):
     input_ = MockedInput()
 
     annex_key = 'some-fake-annex-key'
@@ -128,7 +135,7 @@ def run_remake_remote(dest_path, urls):
     input_.send('PREPARE\n')
     input_.send(f'TRANSFER RETRIEVE {annex_key} {dest_path / "remade.txt"!s}\n')
     # The next line is the answer to `GETCONFIG allow-untrusted-execution`
-    input_.send('VALUE true\n')
+    input_.send(f'VALUE {"false" if trusted else "true"}\n')
     # The next two lines assemble the answer to
     # `GETURLS <annex-key> datalad-remake:`
     for url in urls:

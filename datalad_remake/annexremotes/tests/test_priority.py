@@ -76,7 +76,7 @@ def test_compute_remote_priority(tmp_path, cfgman, monkeypatch, priority):  # no
 
     # Run the special remote with the given priority configuration.
     with cfgman.overrides({priority_config_key: ConfigItem(','.join(priority))}):
-        run_remake_remote(tmp_path, urls)
+        run_remake_remote(tmp_path, urls, False)
 
     # At this point the datalad-remake remote should have executed the
     # prioritized template and written the result.
