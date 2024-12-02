@@ -112,10 +112,11 @@ class Make(ValidatedInterface):
             'is used to identify and prioritize computations, if more than one '
             'computation is registered for a file. If no label is provided, the'
             'template name will be used. (Prioritization is done by '
-            'reading `datalad.make.priority` configuration items. If those do '
-            'not exist, the file `<$dataset root>.datalad/make/priority` is '
-            'read, if that does not exist either, a random computation is '
-            'chosen.)',
+            'reading the git configuration `datalad.make.priority` (which '
+            'should contain a comma-separated list of labels). If this '
+            'configuration key does not exist, the priority list is read from '
+            'the file `<$dataset root>/.datalad/make/priority`. If that does '
+            'not exist either, a random computation is chosen.)',
         ),
         'branch': Parameter(
             args=(
