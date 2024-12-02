@@ -110,12 +110,12 @@ class Make(ValidatedInterface):
             ),
             doc='Label of the computation. This is a user defined name that '
             'is used to identify and prioritize computations, if more than one '
-            'computation is registered for a file. If no label is provided, the'
-            'template name will be used. (Prioritization is done by '
+            'computation is registered for a file. If no label is provided, '
+            'the template name will be used. (Prioritization is done by '
             'reading the git configuration `datalad.make.priority` (which '
             'should contain a comma-separated list of labels). If this '
             'configuration key does not exist, the priority list is read from '
-            'the file `<$dataset root>/.datalad/make/priority`. If that does '
+            'the file `$DATASET/.datalad/make/priority`. If that does not exist '
             'not exist either, a random computation is chosen.)',
         ),
         'branch': Parameter(
