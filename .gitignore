@@ -4,3 +4,5 @@ dist/
 docs/generated
 docs/_build
 *.swp
+__pycache__/
+*.py[cod]

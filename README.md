@@ -71,7 +71,7 @@ command = [
     "echo content: {first} > '{output}-1.txt'; echo content: {second} > '{output}-2.txt'",
 ]
 EOF
-> datalad save -m "add `one-to-many` remake method"
+> datalad save -m "add 'one-to-many' remake method"
 ```
 
 Create a `datalad-remake` git-annex special remote:
