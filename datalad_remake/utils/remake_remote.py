@@ -33,8 +33,9 @@ def add_remake_remote(
         dataset.repo.init_remote(auto_remote_name, options)
     else:
         logger.info(
-            'Found already existing `datalad-remake` remote in %s. '
+            'Found already existing `%s` remote in %s. '
             'Leaving it unmodified, please check its configuration.',
+            auto_remote_name,
             dataset_root,
         )
 
