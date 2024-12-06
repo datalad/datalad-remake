@@ -74,11 +74,6 @@ EOF
 > datalad save -m "add 'one-to-many' remake method"
 ```
 
-Create a `datalad-remake` git-annex special remote:
-```bash
-> git annex initremote datalad-remake encryption=none type=external externaltype=datalad-remake allow-untrusted-execution=true
-```
-
 Execute a computation and save the result:
 ```bash
 > datalad make -p first=bob -p second=alice -p output=name -o name-1.txt \
@@ -95,8 +90,25 @@ content: bob
 content: alice
 ```
 
-Drop the content of `name-1.txt`, verify it is gone, recreate it via
-`datalad get`, which "fetches" it from the `datalad-remake` remote:
+### Recomputation
+
+DataLad REMAKE can recompute dropped content. To demonstrate this, we will
+drop a file and then recreate it via `datalad get`. Before we can do that in
+this example we have to make a small adjustement. This is due to the fact that
+we use "untrusted" execution in this example. It makes the example easier
+because no signing keys are required. However, the git annex special remote that
+was created by the `datalad make` command does not allow untrusted execution by
+default (for security reasons we never automatically create a datalad-remake
+remote that supports untrusted execution). To instruct the special remote to
+allow untrusted execution, we have to reconfigure it. This can be done via the
+following command:
+
+```bash
+> git annex enableremote datalad-remake-auto allow-untrusted-execution=true
+``` 
+
+Now we drop the content of `name-1.txt`, verify it is gone, and recreate it via
+`datalad get`, which "fetches" it from the `datalad-remake` remote.
 
 ```bash
 > datalad drop name-1.txt
@@ -107,28 +119,9 @@ Drop the content of `name-1.txt`, verify it is gone, recreate it via
 
 ### Prospective computation
 The `datalad make` command can also be used to perform a *prospective
-computation*. To use this feature, the following configuration value 
-has to be set ():
+computation*. 
 
-```bash
-> git config remote.datalad-remake.annex-security-allow-unverified-downloads ACKTHPPT
-```
-
-<details>
-    <summary>Why does the configuration variable have to be set?</summary>
-
-This setting allows git-annex to download files from the special remote `datalad-remake`
-although git-annex cannot check a hash to verify that the content is correct.
-Because the computation was never performed, there is no hash available for content
-verification of an output file yet.
-
-For more information see the description of
-`remote.<name>.annex-security-allow-unverified-downloads` and of
-`annex.security.allow-unverified-downloads` at
-https://git-annex.branchable.com/git-annex/.
-</details>
-
-Afterwards, a prospective computation can be initiated by using the 
+The prospective computation can be initiated by using the 
 `--prospective-execution` option:
 
 ```bash
@@ -164,6 +157,25 @@ time!) based on the specified instructions:
 > cat person-1.txt
 content: john
 ```
+
+Please note, to use this feature, the following configuration variable
+`remote.datalad-remake-auto.annex-security-allow-unverified-downloads` is set
+to `ACKTHPPT` for each automatically created git-annex special remote
+
+<details>
+    <summary>Why does the configuration variable have to be set?</summary>
+
+This setting allows git-annex to download files from the special remote `datalad-remake`
+although git-annex cannot check a hash to verify that the content is correct.
+Because the computation was never performed, there is no hash available for content
+verification of an output file yet.
+
+For more information see the description of
+`remote.<name>.annex-security-allow-unverified-downloads` and of
+`annex.security.allow-unverified-downloads` at
+https://git-annex.branchable.com/git-annex/.
+</details>
+
 
 Additional examples can be found in the [examples](https://github.com/datalad/datalad-remake/tree/main/examples) directory.
 
