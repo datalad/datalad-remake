@@ -6,6 +6,7 @@ from datalad_remake._version import __version__
 
 __all__ = [
     '__version__',
+    'auto_remote_name',
     'command_suite',
     'priority_config_key',
     'specification_dir',
@@ -52,3 +53,4 @@ template_dir = '.datalad/make/methods'
 specification_dir = '.datalad/make/specifications'
 trusted_keys_config_key = 'datalad.make.trusted-keys'
 priority_config_key = 'datalad.make.priority'
+auto_remote_name = 'datalad-remake-auto'

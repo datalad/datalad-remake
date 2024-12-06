@@ -232,7 +232,7 @@ def resolve_patterns(
 
     This method will resolve relative path-patterns in the dataset. It will
     install all subdatasets that are matched by the patterns. Pattern are
-    described as outline in `glob.glob`. The method support recursive globbing
+    described as outlined in `glob.glob`. The method support recursive globbing
     of zero or more directories with the pattern: `**`.
 
     Parameters
@@ -328,7 +328,8 @@ def glob_pattern(
     # Match all elements at the current position with the first part of the
     # pattern.
     for rec_match in glob(
-        '*' if pattern[0] == '**' else pattern[0], root_dir=root.pathobj / position
+        '*' if pattern[0] == '**' else pattern[0],
+        root_dir=root.pathobj / position,
     ):
         match = position / rec_match
 

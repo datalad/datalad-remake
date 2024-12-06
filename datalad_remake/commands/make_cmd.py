@@ -44,6 +44,7 @@ from datalad_remake.utils.chdir import chdir
 from datalad_remake.utils.compute import compute
 from datalad_remake.utils.getkeys import get_trusted_keys
 from datalad_remake.utils.glob import resolve_patterns
+from datalad_remake.utils.remake_remote import add_remake_remote
 from datalad_remake.utils.verify import verify_file
 
 if TYPE_CHECKING:
@@ -259,6 +260,8 @@ class Make(ValidatedInterface):
         else:
             resolved_output = set(output_pattern)
 
+        initialize_remotes(ds, resolved_output)
+
         for out in resolved_output:
             url = add_url(ds, out, url_base, url_only=prospective_execution)
             yield get_status_dict(
@@ -466,6 +469,10 @@ def collect(
 ) -> set[str]:
     output = resolve_patterns(root_dir=worktree, patterns=output_pattern)
 
+    # Ensure that all subdatasets that are touched by paths in `output` are
+    # installed.
+    install_containing_subdatasets(dataset, output)
+
     # Unlock output files in the dataset-directory and copy the result
     unlock_files(dataset, output)
     for o in output:
@@ -477,6 +484,57 @@ def collect(
     # Save the dataset
     dataset.save(recursive=True, result_renderer='disabled')
     return output
+
+
+def install_containing_subdatasets(dataset: Dataset, files: Iterable[str]) -> None:
+    """Install all subdatasets that contain a file from `files`."""
+
+    # Set the set of subdatasets to the set of subdatasets that are installed.
+    # Compare each prefix of a file path with the path of a subdataset from the
+    # root of `dataset`. If it matches, the subdataset is installed and the set
+    # of subdatasets is updated accordingly.
+
+    # Get the relative paths of all known subdatasets
+    subdataset_infos = {
+        Path(result['path']).relative_to(Path(result['parentds'])): result['state']
+        == 'present'
+        for result in dataset.subdatasets(recursive=True)
+    }
+
+    # Get the prefixes of all required paths sorted by length
+    required_paths = sorted(
+        {
+            prefix
+            for file in files
+            for prefix in Path(file).parents
+            if prefix != Path('.')
+        },
+        key=lambda p: p.parts.__len__(),
+    )
+
+    for path in required_paths:
+        if path in subdataset_infos and not subdataset_infos[path]:
+            dataset.install(path=str(path), result_renderer='disabled')
+            # Update subdataset_info to get newly installed subdatasets.
+            subdataset_infos = {
+                Path(result['path']).relative_to(Path(result['parentds'])): result[
+                    'state'
+                ]
+                == 'present'
+                for result in dataset.subdatasets(recursive=True)
+            }
+
+
+def initialize_remotes(dataset: Dataset, files: Iterable[str]) -> None:
+    """Add a remake remote to all datasets that are touched by the files"""
+
+    # Get the subdatasets that contain generated files
+    touched_dataset_dirs = {
+        get_file_dataset(dataset.pathobj / file)[0] for file in files
+    }
+
+    for dataset_dir in touched_dataset_dirs:
+        add_remake_remote(str(dataset_dir), allow_untrusted_execution=False)
 
 
 def unlock_files(dataset: Dataset, files: Iterable[str]) -> None:
