@@ -105,7 +105,6 @@ class Make(ValidatedInterface):
         ),
         'label': Parameter(
             args=(
-                '-l',
                 '--label',
             ),
             doc='Label of the computation. This is a user defined name that '
