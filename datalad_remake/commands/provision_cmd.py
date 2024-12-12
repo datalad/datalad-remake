@@ -210,20 +210,6 @@ def provide(
         + ([source_branch] if source_branch else [])
     )
     call_git_lines(args, cwd=dataset.pathobj)
-
-    is_dirty = False
-    for element in get_dirty_elements(dataset):
-        is_dirty = True
-        yield get_status_dict(
-            action='provision',
-            path=element['path'],
-            status='error',
-            state=element['state'],
-            message=f'cannot provision {element["state"]} input: {element["path"]!r} from dataset {dataset}',
-        )
-    if is_dirty:
-        return
-
     worktree_dataset = Dataset(worktree_dir)
 
     # Get all input files in the worktree

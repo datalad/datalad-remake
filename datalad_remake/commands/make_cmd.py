@@ -104,10 +104,7 @@ class Make(ValidatedInterface):
             'in $DATASET/.datalad/remake/methods)',
         ),
         'label': Parameter(
-            args=(
-                '-l',
-                '--label',
-            ),
+            args=('--label',),
             doc='Label of the computation. This is a user defined name that '
             'is used to identify and prioritize computations, if more than one '
             'computation is registered for a file. If no label is provided, '
