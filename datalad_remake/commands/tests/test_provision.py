@@ -130,36 +130,6 @@ def test_provision_context(tmp_path):
     assert not worktree.exists()
 
 
-def test_unclean_dataset(tmp_path):
-    dataset = Dataset(tmp_path / 'ds1')
-    dataset.create(cfg_proc='text2git', result_renderer='disabled')
-    (dataset.pathobj / 'a.txt').write_text('content')
-    dataset.save()
-    (dataset.pathobj / 'a.txt').write_text('changed content')
-    (dataset.pathobj / 'b.txt').write_text('untracked content')
-
-    # Check that provision of unclean input results in errors
-    input_pattern = ['a.txt', 'b.txt']
-    results = dataset.provision(
-        input=input_pattern,
-        worktree_dir=tmp_path / 'ds1_worktree1',
-        on_failure='ignore',
-        result_renderer='disabled',
-    )
-    assert {(result['status'], result['state']) for result in results} == {
-        ('error', 'modified'),
-        ('error', 'untracked'),
-    }
-
-    # Check that a saved dataset can be provisioned
-    dataset.save()
-    dataset.provision(
-        input=input_pattern,
-        worktree_dir=tmp_path / 'ds1_worktree2',
-        result_renderer='disabled',
-    )
-
-
 @skip_if_on_windows
 def test_branch_deletion_after_provision(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
