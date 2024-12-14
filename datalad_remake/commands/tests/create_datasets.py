@@ -3,39 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from datalad_next.datasets import Dataset
-from datalad_next.runners import call_git_success
 
 from datalad_remake import template_dir
-
-
-def update_config_for_remake(dataset: Dataset):
-    # set annex security related variables to allow remake-URLs
-    dataset.configuration(
-        action='set',
-        scope='local',
-        recursive=True,
-        spec=[('remote.remake.annex-security-allow-unverified-downloads', 'ACKTHPPT')],
-        result_renderer='disabled',
-    )
-
-
-def add_remake_remote(dataset: Dataset, signing_key: str | None = None):
-    aue = 'false' if signing_key else 'true'
-    call_git_success(
-        [
-            '-C',
-            dataset.path,
-            'annex',
-            'initremote',
-            'remake',
-            'type=external',
-            'externaltype=datalad-remake',
-            'encryption=none',
-            f'allow-untrusted-execution={aue}',
-        ],
-        capture_output=True,
-    )
-    update_config_for_remake(dataset)
+from datalad_remake.utils.remake_remote import add_remake_remote
 
 
 def create_ds_hierarchy(
@@ -77,13 +47,13 @@ def create_ds_hierarchy(
     root_dataset.get(recursive=True, result_renderer='disabled')
 
     # Add datalad-remake remotes to the root dataset and all subdatasets
-    add_remake_remote(root_dataset, signing_key)
+    add_remake_remote(root_dataset.path, allow_untrusted_execution=signing_key is None)
     subdataset_path = Path()
     for index in range(subdataset_levels):
         subdataset_path /= f'{name}_subds{index}'
         add_remake_remote(
-            Dataset(root_dataset.pathobj / subdataset_path),
-            signing_key,
+            str(root_dataset.pathobj / subdataset_path),
+            allow_untrusted_execution=signing_key is None,
         )
 
     return datasets
