@@ -53,11 +53,6 @@ lgr = logging.getLogger('datalad.remake.annexremotes.remake')
 class RemakeRemote(SpecialRemote):
     def __init__(self, annex: Master):
         super().__init__(annex)
-        self.configs = {
-            'allow-untrusted-execution': 'Allow execution of untrusted code '
-            'with untrusted parameters. set to "true" to enable. THIS IS '
-            'DANGEROUS and might lead to remote code execution.',
-        }
         self._config_manager: ConfigManager | None = None
 
     @property
