@@ -26,7 +26,11 @@ data curators, and infrastructure administrators.
 
 ## Requirements
 
-This extension requires Python >= `3.9`.
+This extension requires Python >= `3.9`. It also requires GPG to be installed
+as well as a GPG key-pair to sign and verify commits. In addition,
+git has to be configured to sign commits. For more information on how to sign
+commits, refer to the
+[Git documentation](https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work).
 
 
 ## Installation
@@ -50,7 +54,7 @@ To check your installation, run:
 
 ## Example usage
 
-Create a dataset:
+Ensure that your commits are signed (see the [Git documentation](https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work)), and create a dataset:
 
 
 ```bash
@@ -74,10 +78,14 @@ EOF
 > datalad save -m "add 'one-to-many' remake method"
 ```
 
+Before the computation can be executed, `datalad-make` has to be told to trust
+the public key of the signer. How this is done is described in the section
+[Trusted Keys](#trusted-keys).
+
 Execute a computation and save the result:
 ```bash
 > datalad make -p first=bob -p second=alice -p output=name -o name-1.txt \
--o name-2.txt --allow-untrusted-execution one-to-many
+-o name-2.txt one-to-many
 ```
 The method `one-to-many` will create two files with the names `<output>-1.txt`
 and `<output>-2.txt`. Thus, the two files `name-1.txt` and `name-2.txt` need to
@@ -93,22 +101,11 @@ content: alice
 ### Recomputation
 
 DataLad REMAKE can recompute dropped content. To demonstrate this, we will
-drop a file and then recreate it via `datalad get`. Before we can do that in
-this example we have to make a small adjustement. This is due to the fact that
-we use "untrusted" execution in this example. It makes the example easier
-because no signing keys are required. However, the git annex special remote that
-was created by the `datalad make` command does not allow untrusted execution by
-default (for security reasons we never automatically create a datalad-remake
-remote that supports untrusted execution). To instruct the special remote to
-allow untrusted execution, we have to reconfigure it. This can be done via the
-following command:
+drop a file and then recreate it via `datalad get`.
 
-```bash
-> git annex enableremote datalad-remake-auto allow-untrusted-execution=true
-``` 
-
-Now we drop the content of `name-1.txt`, verify it is gone, and recreate it via
-`datalad get`, which "fetches" it from the `datalad-remake` remote.
+Drop the content of `name-1.txt`, verify it is gone, and recreate it via
+`datalad get`, which "fetches" it from the `datalad-remake` remote. Note: the
+`datalad-remake` remote was automatically created by the command `datalad make`.
 
 ```bash
 > datalad drop name-1.txt
@@ -126,17 +123,17 @@ The prospective computation can be initiated by using the
 
 ```bash
 > datalad make -p first=john -p second=susan -p output=person \
--o person-1.txt -o person-2.txt --prospective-execution --allow-untrusted-execution one-to-many
+-o person-1.txt -o person-2.txt --prospective-execution one-to-many
 ```
 
 The following command will fail, because no computation has been performed,
-and the file content is unavailable:
+and the file content is not yet available:
 
 ```bash
 > cat person-1.txt    # this will fail, because the computation has not yet been performed
 ```
 
-We can further inspect this with `git annex info`:
+We can further inspect `person-1.txt` with `git annex info`:
 
 ```bash
 > git annex info person-1.txt
@@ -160,7 +157,7 @@ content: john
 
 Please note, to use this feature, the following configuration variable
 `remote.datalad-remake-auto.annex-security-allow-unverified-downloads` is set
-to `ACKTHPPT` for each automatically created git-annex special remote
+to `ACKTHPPT` for each automatically created git-annex special remote.
 
 <details>
     <summary>Why does the configuration variable have to be set?</summary>
