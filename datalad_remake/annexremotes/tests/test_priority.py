@@ -4,7 +4,9 @@ from datalad_core.config import ConfigItem
 from datalad_core.tests.fixtures import cfgman  # noqa: F401
 from datalad_next.tests import skip_if_on_windows
 
+import datalad_core.config.manager
 from datalad_remake import (
+    allow_untrusted_execution_key,
     priority_config_key,
     specification_dir,
     template_dir,
@@ -74,9 +76,15 @@ def test_compute_remote_priority(tmp_path, cfgman, monkeypatch, priority):  # no
         for label in ['alpha', 'beta']
     ]
 
-    # Run the special remote with the given priority configuration.
-    with cfgman.overrides({priority_config_key: ConfigItem(','.join(priority))}):
-        run_remake_remote(tmp_path, urls, False)
+    with cfgman.overrides(
+        {
+            # Run the special remote with the given priority configuration.
+            priority_config_key: ConfigItem(','.join(priority)),
+            # Allow the special remote to execute untrusted operations on this dataset
+            allow_untrusted_execution_key + dataset.id: ConfigItem('true'),
+        }
+    ):
+        run_remake_remote(tmp_path, urls)
 
     # At this point the datalad-remake remote should have executed the
     # prioritized template and written the result.
