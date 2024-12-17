@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-from datalad_core.tests.fixtures import cfgman  # noqa: F401
 
 from datalad_remake.annexremotes.tests.test_remake_remote import create_keypair
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy

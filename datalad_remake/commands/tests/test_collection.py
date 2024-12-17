@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from datalad_core.tests.fixtures import cfgman  # noqa: F401
 from datalad_next.tests import skip_if_on_windows
 
 from ..make_cmd import collect

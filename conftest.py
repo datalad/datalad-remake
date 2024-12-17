@@ -3,6 +3,6 @@
 # its tooling
 from datalad_next.conftest import setup_package
 
-pytest_plugins = 'datalad_next.tests.fixtures'
+pytest_plugins = ('datalad_core.tests.fixtures', 'datalad_next.tests.fixtures')
 
 __all__ = ['setup_package']

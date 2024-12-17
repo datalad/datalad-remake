@@ -2,7 +2,6 @@ from unittest.mock import MagicMock
 from urllib.parse import urlparse
 
 from datalad_core.config import ConfigItem
-from datalad_core.tests.fixtures import cfgman
 from datalad_next.datasets import Dataset
 from datalad_next.tests import skip_if_on_windows
 

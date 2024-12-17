@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from datalad_core.config import ConfigItem
-from datalad_core.tests.fixtures import cfgman
 
 from datalad_remake import (
     allow_untrusted_execution_key,

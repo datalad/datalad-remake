@@ -1,7 +1,6 @@
 import pytest
 from annexremote import Master
 from datalad_core.config import ConfigItem
-from datalad_core.tests.fixtures import cfgman  # noqa: F401
 from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake import (

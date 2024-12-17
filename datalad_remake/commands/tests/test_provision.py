@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from datalad.core.distributed.clone import Clone
-from datalad_core.tests.fixtures import cfgman  # noqa: F401
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines
 from datalad_next.tests import skip_if_on_windows

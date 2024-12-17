@@ -2,9 +2,8 @@ from collections.abc import Iterable
 from pathlib import Path
 
 import pytest
-from datalad_core.config import ConfigItem
-from datalad_core.tests.fixtures import cfgman  # noqa: F401
 from datalad.distribution.get import Get as datalad_Get
+from datalad_core.config import ConfigItem
 from datalad_next.datasets import Dataset
 from datalad_next.tests import skip_if_on_windows
 
