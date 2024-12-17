@@ -6,6 +6,7 @@ from datalad_remake._version import __version__
 
 __all__ = [
     '__version__',
+    'allow_untrusted_execution_key',
     'auto_remote_name',
     'command_suite',
     'priority_config_key',
@@ -52,5 +53,6 @@ url_scheme = 'datalad-remake'
 template_dir = '.datalad/make/methods'
 specification_dir = '.datalad/make/specifications'
 trusted_keys_config_key = 'datalad.make.trusted-keys'
+allow_untrusted_execution_key = 'datalad.make.allow-untrusted-execution.d-'
 priority_config_key = 'datalad.make.priority'
 auto_remote_name = 'datalad-remake-auto'
