@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from datalad_core.tests.fixtures import cfgman  # noqa: F401
 from datalad_next.tests import skip_if_on_windows
 
 from ..make_cmd import collect
@@ -8,7 +9,7 @@ from .test_provision import get_file_list
 
 
 @skip_if_on_windows
-def test_collect(tmp_path):
+def test_collect(tmp_path, cfgman):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 1)[0][2]
 
     worktree_dir = tmp_path / 'ds1_worktree'

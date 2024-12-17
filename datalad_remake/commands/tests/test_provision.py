@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from datalad.core.distributed.clone import Clone
+from datalad_core.tests.fixtures import cfgman  # noqa: F401
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines
 from datalad_next.tests import skip_if_on_windows
@@ -32,7 +33,7 @@ b_paths = [path.format(file='b') for path in file_path_templates]
 
 
 @skip_if_on_windows
-def test_worktree_basic(tmp_path):
+def test_worktree_basic(tmp_path, cfgman):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     inputs = [
         'a.txt',
@@ -69,7 +70,7 @@ def test_worktree_basic(tmp_path):
 
 
 @skip_if_on_windows
-def test_worktree_globbing(tmp_path):
+def test_worktree_globbing(tmp_path, cfgman):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     result = dataset.provision(
         worktree_dir=tmp_path / 'ds1_worktree2',
@@ -122,7 +123,7 @@ def get_file_list(
 
 
 @skip_if_on_windows
-def test_provision_context(tmp_path):
+def test_provision_context(tmp_path, cfgman):
     dataset = create_ds_hierarchy(tmp_path, 'ds1')[0][2]
     with provide_context(dataset, branch=None, input_patterns=['**']) as worktree:
         files = set(get_file_list(worktree))
@@ -131,7 +132,7 @@ def test_provision_context(tmp_path):
 
 
 @skip_if_on_windows
-def test_branch_deletion_after_provision(tmp_path):
+def test_branch_deletion_after_provision(tmp_path, cfgman):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     with provide_context(
         dataset=dataset, branch=None, input_patterns=['a.txt']

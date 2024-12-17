@@ -1,13 +1,14 @@
 from pathlib import Path
 
 import pytest
+from datalad_core.tests.fixtures import cfgman  # noqa: F401
 
 from datalad_remake.annexremotes.tests.test_remake_remote import create_keypair
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
 from datalad_remake.utils.verify import verify_file
 
 
-def test_whitelist(tmp_path, monkeypatch):
+def test_whitelist(tmp_path, cfgman, monkeypatch):
     gpg_dir = tmp_path / 'gpg'
     tmp_home = tmp_path / 'tmp_home'
 

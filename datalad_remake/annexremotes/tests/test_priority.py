@@ -4,7 +4,6 @@ from datalad_core.config import ConfigItem
 from datalad_core.tests.fixtures import cfgman  # noqa: F401
 from datalad_next.tests import skip_if_on_windows
 
-import datalad_core.config.manager
 from datalad_remake import (
     allow_untrusted_execution_key,
     priority_config_key,

@@ -37,7 +37,10 @@ from datalad_remake.commands.make_cmd import (
     get_file_dataset,
     provide_context,
 )
-from datalad_remake.utils.getkeys import get_trusted_keys
+from datalad_remake.utils.getconfig import (
+    get_allow_untrusted_execution,
+    get_trusted_keys,
+)
 from datalad_remake.utils.glob import resolve_patterns
 from datalad_remake.utils.verify import verify_file
 
@@ -156,7 +159,10 @@ class RemakeRemote(SpecialRemote):
     def transfer_retrieve(self, key: str, file_name: str) -> None:
         self.annex.debug(f'TRANSFER RETRIEVE key: {key!r}, file_name: {file_name!r}')
 
-        if self.annex.getconfig('allow-untrusted-execution') == 'true':
+        dataset_id = self.config_manager.get('datalad.dataset.id').value
+        self.annex.debug(f'TRANSFER RETRIEVE dataset_id: {dataset_id!r}')
+        self.annex.debug(f'TRANSFER RETRIEVE get_allow_untrusted_execution: {get_allow_untrusted_execution(dataset_id)}')
+        if get_allow_untrusted_execution(dataset_id):
             trusted_key_ids = None
         else:
             trusted_key_ids = get_trusted_keys()
