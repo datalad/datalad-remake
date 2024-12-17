@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from datalad_remake import template_dir
+from datalad_core.config import ConfigItem
+
+from datalad_remake import (
+    allow_untrusted_execution_key,
+    template_dir,
+)
 from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
@@ -21,7 +26,7 @@ command = ["bash", "-c", "cat c1.txt > c2.txt; echo {line} >> c2.txt"]
 """
 
 
-def test_input_is_output(tmp_path: Path):
+def test_input_is_output(tmp_path: Path, cfgman):
     root_dataset = create_simple_computation_dataset(tmp_path, 'ds1', 0, template)
 
     line = 'the second line'
@@ -41,12 +46,19 @@ def test_input_is_output(tmp_path: Path):
     root_dataset.drop('a.txt', result_renderer='disabled')
     assert (root_dataset.pathobj / 'a.txt').exists() is False
 
-    root_dataset.get('a.txt', result_renderer='disabled')
+    with cfgman.overrides(
+        {
+            # Allow the special remote to execute untrusted operations on this
+            # dataset
+            allow_untrusted_execution_key + root_dataset.id: ConfigItem('true'),
+        }
+    ):
+        root_dataset.get('a.txt', result_renderer='disabled')
     assert (root_dataset.pathobj / 'a.txt').exists()
     assert (root_dataset.pathobj / 'a.txt').read_text() == f'a\n{line}\n'
 
 
-def test_chain_dependency(tmp_path: Path):
+def test_chain_dependency(tmp_path: Path, cfgman):
     # c2.txt -> c1.txt -> a.txt
     # Create a simple dataset that can create c1.txt from a.txt
     root_dataset = create_simple_computation_dataset(
@@ -88,5 +100,12 @@ def test_chain_dependency(tmp_path: Path):
         root_dataset.drop(file, result_renderer='disabled')
         assert (root_dataset.pathobj / file).exists() is False
 
-    root_dataset.get('c2.txt', result_renderer='disabled')
+    with cfgman.overrides(
+        {
+            # Allow the special remote to execute untrusted operations on this
+            # dataset
+            allow_untrusted_execution_key + root_dataset.id: ConfigItem('true'),
+        }
+    ):
+        root_dataset.get('c2.txt', result_renderer='disabled')
     assert (root_dataset.pathobj / 'c2.txt').read_text() == f'a\n{c1_line}\n{c2_line}\n'

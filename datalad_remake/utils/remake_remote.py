@@ -9,18 +9,12 @@ from datalad_remake import auto_remote_name
 logger = logging.getLogger('datalad.remake.utils.remake_remote')
 
 
-def add_remake_remote(
-    dataset_root: str,
-    *,
-    allow_untrusted_execution: bool = False,
-):
-    aue = 'true' if allow_untrusted_execution else 'false'
+def add_remake_remote(dataset_root: str):
     options = [
         'type=external',
         'externaltype=datalad-remake',
         'encryption=none',
         'autoenable=true',
-        f'allow-untrusted-execution={aue}',
     ]
 
     # Create a `Dataset`-instance to use the `AnnexRepo`-methods for special

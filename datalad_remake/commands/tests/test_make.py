@@ -1,10 +1,12 @@
 from unittest.mock import MagicMock
 from urllib.parse import urlparse
 
+from datalad_core.config import ConfigItem
 from datalad_next.datasets import Dataset
 from datalad_next.tests import skip_if_on_windows
 
 import datalad_remake.commands.make_cmd
+from datalad_remake import allow_untrusted_execution_key
 from datalad_remake.commands.make_cmd import get_url
 from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
@@ -28,7 +30,7 @@ def test_duplicated_computation(tmp_path):
 
 
 @skip_if_on_windows
-def test_speculative_computation(tmp_path):
+def test_speculative_computation(tmp_path, cfgman):
     root_dataset = create_simple_computation_dataset(tmp_path, 'ds1', 0, test_method)
 
     root_dataset.make(
@@ -39,8 +41,15 @@ def test_speculative_computation(tmp_path):
         result_renderer='disabled',
     )
 
-    # Perform the speculative computation
-    root_dataset.get('spec.txt', result_renderer='disabled')
+    with cfgman.overrides(
+        {
+            # Allow the special remote to execute untrusted operations on this
+            # dataset
+            allow_untrusted_execution_key + root_dataset.id: ConfigItem('true'),
+        }
+    ):
+        # Perform the speculative computation
+        root_dataset.get('spec.txt', result_renderer='disabled')
     assert (root_dataset.pathobj / 'spec.txt').read_text() == 'Hello Robert\n'
 
 

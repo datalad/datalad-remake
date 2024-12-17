@@ -1,10 +1,10 @@
 import pytest
 from annexremote import Master
 from datalad_core.config import ConfigItem
-from datalad_core.tests.fixtures import cfgman  # noqa: F401
 from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake import (
+    allow_untrusted_execution_key,
     priority_config_key,
     specification_dir,
     template_dir,
@@ -29,7 +29,7 @@ command = ["bash", "-c", "echo from {label}: {{content}} > 'a.txt'"]
 
 @skip_if_on_windows
 @pytest.mark.parametrize('priority', [['alpha', 'beta'], ['beta', 'alpha']])
-def test_compute_remote_priority(tmp_path, cfgman, monkeypatch, priority):  # noqa: F811
+def test_compute_remote_priority(tmp_path, cfgman, monkeypatch, priority):
     dataset = create_ds_hierarchy(
         tmp_path=tmp_path,
         name='ds1',
@@ -74,9 +74,15 @@ def test_compute_remote_priority(tmp_path, cfgman, monkeypatch, priority):  # no
         for label in ['alpha', 'beta']
     ]
 
-    # Run the special remote with the given priority configuration.
-    with cfgman.overrides({priority_config_key: ConfigItem(','.join(priority))}):
-        run_remake_remote(tmp_path, urls, False)
+    with cfgman.overrides(
+        {
+            # Run the special remote with the given priority configuration.
+            priority_config_key: ConfigItem(','.join(priority)),
+            # Allow the special remote to execute untrusted operations on this dataset
+            allow_untrusted_execution_key + dataset.id: ConfigItem('true'),
+        }
+    ):
+        run_remake_remote(tmp_path, urls)
 
     # At this point the datalad-remake remote should have executed the
     # prioritized template and written the result.
@@ -85,7 +91,7 @@ def test_compute_remote_priority(tmp_path, cfgman, monkeypatch, priority):  # no
     ).read_text().strip() == f'from {priority[0]}: {priority[0]}_parameter'
 
 
-def test_config_precedence(existing_dataset, tmp_path, cfgman, monkeypatch):  # noqa: F811
+def test_config_precedence(existing_dataset, tmp_path, cfgman, monkeypatch):
     existing_dataset.config.add('datalad.make.priority', '1', scope='branch')
 
     monkeypatch.setattr(

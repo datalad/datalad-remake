@@ -42,7 +42,7 @@ from datalad_remake import (
 )
 from datalad_remake.utils.chdir import chdir
 from datalad_remake.utils.compute import compute
-from datalad_remake.utils.getkeys import get_trusted_keys
+from datalad_remake.utils.getconfig import get_trusted_keys
 from datalad_remake.utils.glob import resolve_patterns
 from datalad_remake.utils.remake_remote import add_remake_remote
 from datalad_remake.utils.verify import verify_file
@@ -534,7 +534,7 @@ def initialize_remotes(dataset: Dataset, files: Iterable[str]) -> None:
     }
 
     for dataset_dir in touched_dataset_dirs:
-        add_remake_remote(str(dataset_dir), allow_untrusted_execution=False)
+        add_remake_remote(str(dataset_dir))
 
 
 def unlock_files(dataset: Dataset, files: Iterable[str]) -> None:

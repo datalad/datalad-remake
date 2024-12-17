@@ -3,9 +3,11 @@ from pathlib import Path
 
 import pytest
 from datalad.distribution.get import Get as datalad_Get
+from datalad_core.config import ConfigItem
 from datalad_next.datasets import Dataset
 from datalad_next.tests import skip_if_on_windows
 
+from datalad_remake import allow_untrusted_execution_key
 from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
@@ -78,7 +80,7 @@ def _check_content(dataset, file_content: Iterable[tuple[str, str]]):
 
 @skip_if_on_windows
 @pytest.mark.parametrize('output_pattern', [output_pattern_static, output_pattern_glob])
-def test_end_to_end(tmp_path, monkeypatch, output_pattern):
+def test_end_to_end(tmp_path, cfgman, monkeypatch, output_pattern):
     root_dataset = create_simple_computation_dataset(tmp_path, 'd2', 3, test_method)
 
     # run `make` command
@@ -103,21 +105,28 @@ def test_end_to_end(tmp_path, monkeypatch, output_pattern):
     # check computation success
     _check_content(root_dataset, test_file_content)
 
-    # Drop all computed content
-    _drop_files(root_dataset, collected_output)
-
     # Go to the subdataset `d2_subds0/d2_subds1` and fetch the content of `a1.txt`
     # from a datalad-remake remote.
-    monkeypatch.chdir(root_dataset.pathobj / 'd2_subds0' / 'd2_subds1')
-    datalad_Get()('a1.txt')
+    with cfgman.overrides(
+        {
+            # Allow the special remote to execute untrusted operations on the
+            # dataset `root_dataset/d2_subds0/d2_subds1`
+            allow_untrusted_execution_key
+            + Dataset(root_dataset.pathobj / 'd2_subds0' / 'd2_subds1').id: ConfigItem(
+                'true'
+            ),
+        }
+    ):
+        # Drop all computed content
+        _drop_files(root_dataset, collected_output)
 
-    # check that all known files that were computed are added to the annex
-    _check_content(root_dataset, test_file_content)
+        monkeypatch.chdir(root_dataset.pathobj / 'd2_subds0' / 'd2_subds1')
+        datalad_Get()('a1.txt')
+        # check that all known files that were computed are added to the annex
+        _check_content(root_dataset, test_file_content)
 
-    _drop_files(root_dataset, collected_output)
+        _drop_files(root_dataset, collected_output)
 
-    # check get in subdatasets
-    monkeypatch.chdir(root_dataset.pathobj)
-    datalad_Get()('d2_subds0/d2_subds1/a1.txt')
-
-    _check_content(root_dataset, test_file_content)
+        monkeypatch.chdir(root_dataset.pathobj)
+        datalad_Get()('d2_subds0/d2_subds1/a1.txt')
+        _check_content(root_dataset, test_file_content)

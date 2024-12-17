@@ -4,7 +4,10 @@ from pathlib import Path
 
 from datalad_next.datasets import Dataset
 
-from datalad_remake import template_dir
+from datalad_remake import (
+    template_dir,
+    trusted_keys_config_key,
+)
 from datalad_remake.utils.remake_remote import add_remake_remote
 
 
@@ -19,7 +22,7 @@ def create_ds_hierarchy(
     root_dataset.create(force=True, result_renderer='disabled')
     (root_dataset.pathobj / 'a.txt').write_text('a\n')
     (root_dataset.pathobj / 'b.txt').write_text('b\n')
-    _enable_signing(root_dataset, signing_key)
+    _enable_verification(root_dataset, signing_key)
     root_dataset.save(result_renderer='disabled')
     datasets = [(name, tmp_path / name, root_dataset)]
 
@@ -31,7 +34,7 @@ def create_ds_hierarchy(
         (subdataset.pathobj / f'a{level}.txt').write_text(f'a{level}\n')
         (subdataset.pathobj / f'b{level}.txt').write_text(f'b{level}\n')
         subdataset.save(result_renderer='disabled')
-        _enable_signing(subdataset, signing_key)
+        _enable_verification(subdataset, signing_key)
         datasets.append((f'{name}_subds{level}', subdataset_path, subdataset))
 
     # Link the datasets
@@ -47,22 +50,20 @@ def create_ds_hierarchy(
     root_dataset.get(recursive=True, result_renderer='disabled')
 
     # Add datalad-remake remotes to the root dataset and all subdatasets
-    add_remake_remote(root_dataset.path, allow_untrusted_execution=signing_key is None)
+    add_remake_remote(root_dataset.path)
     subdataset_path = Path()
     for index in range(subdataset_levels):
         subdataset_path /= f'{name}_subds{index}'
-        add_remake_remote(
-            str(root_dataset.pathobj / subdataset_path),
-            allow_untrusted_execution=signing_key is None,
-        )
+        add_remake_remote(str(root_dataset.pathobj / subdataset_path))
 
     return datasets
 
 
-def _enable_signing(dataset: Dataset, key: str | None):
+def _enable_verification(dataset: Dataset, key: str | None):
     if key is not None:
         dataset.config.set('commit.gpgsign', 'true', scope='local')
         dataset.config.set('user.signingkey', key, scope='local')
+        dataset.config.set(trusted_keys_config_key, key, scope='global')
 
 
 def create_simple_computation_dataset(
