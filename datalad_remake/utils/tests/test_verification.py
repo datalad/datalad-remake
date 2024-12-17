@@ -7,7 +7,7 @@ from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
 from datalad_remake.utils.verify import verify_file
 
 
-def test_whitelist(tmp_path, cfgman, monkeypatch):
+def test_whitelist(tmp_path, monkeypatch, cfgman):  # noqa ARG001
     gpg_dir = tmp_path / 'gpg'
     tmp_home = tmp_path / 'tmp_home'
 

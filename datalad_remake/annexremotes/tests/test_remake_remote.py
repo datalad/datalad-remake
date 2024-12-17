@@ -24,7 +24,7 @@ command = ["bash", "-c", "echo content: {content} > 'a.txt'"]
 
 @skip_if_on_windows
 @pytest.mark.parametrize('trusted', [True, False])
-def test_compute_remote_main(tmp_path, cfgman, monkeypatch, trusted):  # noqa: F811
+def test_compute_remote_main(tmp_path, cfgman, monkeypatch, trusted):
     if trusted:
         gpg_homedir = tmp_path / 'tmp_gpg_dir'
         tmp_home = tmp_path / 'tmp_home'
@@ -70,7 +70,6 @@ def test_compute_remote_main(tmp_path, cfgman, monkeypatch, trusted):  # noqa: F
         {
             trusted_keys_config_key: ConfigItem(signing_key),
             allow_untrusted_execution_key + dataset.id: ConfigItem('true'),
-
         }
     ):
         run_remake_remote(tmp_path, [url])

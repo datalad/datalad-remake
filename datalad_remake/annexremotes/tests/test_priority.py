@@ -29,7 +29,7 @@ command = ["bash", "-c", "echo from {label}: {{content}} > 'a.txt'"]
 
 @skip_if_on_windows
 @pytest.mark.parametrize('priority', [['alpha', 'beta'], ['beta', 'alpha']])
-def test_compute_remote_priority(tmp_path, cfgman, monkeypatch, priority):  # noqa: F811
+def test_compute_remote_priority(tmp_path, cfgman, monkeypatch, priority):
     dataset = create_ds_hierarchy(
         tmp_path=tmp_path,
         name='ds1',
@@ -91,7 +91,7 @@ def test_compute_remote_priority(tmp_path, cfgman, monkeypatch, priority):  # no
     ).read_text().strip() == f'from {priority[0]}: {priority[0]}_parameter'
 
 
-def test_config_precedence(existing_dataset, tmp_path, cfgman, monkeypatch):  # noqa: F811
+def test_config_precedence(existing_dataset, tmp_path, cfgman, monkeypatch):
     existing_dataset.config.add('datalad.make.priority', '1', scope='branch')
 
     monkeypatch.setattr(

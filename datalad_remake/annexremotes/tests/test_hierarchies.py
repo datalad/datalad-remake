@@ -112,7 +112,9 @@ def test_end_to_end(tmp_path, cfgman, monkeypatch, output_pattern):
             # Allow the special remote to execute untrusted operations on the
             # dataset `root_dataset/d2_subds0/d2_subds1`
             allow_untrusted_execution_key
-            + Dataset(root_dataset.pathobj / 'd2_subds0' / 'd2_subds1').id: ConfigItem('true'),
+            + Dataset(root_dataset.pathobj / 'd2_subds0' / 'd2_subds1').id: ConfigItem(
+                'true'
+            ),
         }
     ):
         # Drop all computed content

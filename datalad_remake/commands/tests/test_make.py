@@ -42,11 +42,11 @@ def test_speculative_computation(tmp_path, cfgman):
     )
 
     with cfgman.overrides(
-            {
-                # Allow the special remote to execute untrusted operations on this
-                # dataset
-                allow_untrusted_execution_key + root_dataset.id: ConfigItem('true'),
-            }
+        {
+            # Allow the special remote to execute untrusted operations on this
+            # dataset
+            allow_untrusted_execution_key + root_dataset.id: ConfigItem('true'),
+        }
     ):
         # Perform the speculative computation
         root_dataset.get('spec.txt', result_renderer='disabled')

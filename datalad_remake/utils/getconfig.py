@@ -19,8 +19,7 @@ def get_trusted_keys(config_manager: ConfigManager | None = None) -> list[str]:
 
 
 def get_allow_untrusted_execution(
-    dataset_id: str,
-    config_manager: ConfigManager | None = None
+    dataset_id: str, config_manager: ConfigManager | None = None
 ) -> bool:
     """Get an allow-untrusted-execution indicator for a dataset."""
     value = get_protected_config(
@@ -31,8 +30,7 @@ def get_allow_untrusted_execution(
 
 
 def get_protected_config(
-    config_key: str,
-    config_manager: ConfigManager | None = None
+    config_key: str, config_manager: ConfigManager | None = None
 ) -> str:
     if config_manager is None:
         config_manager = get_manager()

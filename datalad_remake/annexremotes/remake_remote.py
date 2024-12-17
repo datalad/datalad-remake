@@ -161,7 +161,10 @@ class RemakeRemote(SpecialRemote):
 
         dataset_id = self.config_manager.get('datalad.dataset.id').value
         self.annex.debug(f'TRANSFER RETRIEVE dataset_id: {dataset_id!r}')
-        self.annex.debug(f'TRANSFER RETRIEVE get_allow_untrusted_execution: {get_allow_untrusted_execution(dataset_id)}')
+        self.annex.debug(
+            'TRANSFER RETRIEVE get_allow_untrusted_execution: '
+            f'{get_allow_untrusted_execution(dataset_id)}'
+        )
         if get_allow_untrusted_execution(dataset_id):
             trusted_key_ids = None
         else:
