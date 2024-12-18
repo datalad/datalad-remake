@@ -167,6 +167,7 @@ class RemakeRemote(SpecialRemote):
         )
         if get_allow_untrusted_execution(dataset_id):
             trusted_key_ids = None
+            lgr.warning('datalad remake remote performs UNTRUSTED execution')
         else:
             trusted_key_ids = get_trusted_keys()
 
