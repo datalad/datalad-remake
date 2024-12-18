@@ -197,7 +197,8 @@ class Make(ValidatedInterface):
             doc='Skip commit signature verification before executing code. This '
             'should only be used in a strictly controlled environment with '
             'fully trusted datasets. Trusted dataset means: every commit '
-            'stems from a trusted entity.  '
+            'stems from a trusted entity. This option has no effect when '
+            'combined with `--prospective-execution`.  '
             'DO NOT USE THIS OPTION, unless you are sure to understand the '
             'consequences. One of which is that arbitrary parties can '
             'execute arbitrary code under your account on your '
@@ -258,6 +259,11 @@ class Make(ValidatedInterface):
                 )
                 resolved_output = collect(worktree, ds, output_pattern)
         else:
+            if allow_untrusted_execution:
+                lgr.warning(
+                    '--allow-untrusted-execution has no effect if '
+                    '--prospective-execution`is provided.'
+                )
             resolved_output = set(output_pattern)
 
         initialize_remotes(ds, resolved_output)
