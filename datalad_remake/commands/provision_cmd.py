@@ -390,7 +390,15 @@ def install_subdataset(
             absolute_path.as_uri(),
         ]
         call_git_lines(args)
-    worktree.get(str(subdataset_path), get_data=False, result_renderer='disabled')
+    stored_environ = dict(os.environ)
+    try:
+        for key in ('GIT_DIR', 'GIT_WORK_TREE'):
+            if key in os.environ:
+                del os.environ[key]
+        worktree.get(str(subdataset_path), get_data=False, result_renderer='disabled')
+    finally:
+        os.environ.clear()
+        os.environ.update(stored_environ)
     uninstalled_subdatasets.remove(subdataset_path)
     uninstalled_subdatasets.update(get_uninstalled_subdatasets(worktree))
 
