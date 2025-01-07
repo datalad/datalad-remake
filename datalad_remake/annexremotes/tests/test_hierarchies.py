@@ -130,3 +130,41 @@ def test_end_to_end(tmp_path, cfgman, monkeypatch, output_pattern):
         monkeypatch.chdir(root_dataset.pathobj)
         datalad_Get()('d2_subds0/d2_subds1/a1.txt')
         _check_content(root_dataset, test_file_content)
+
+
+@skip_if_on_windows
+def test_input_subdatasets(tmp_path, cfgman):
+    simple_test_method = """
+    parameters = ['first', 'second', 'third']
+    command = ["bash", "-c", "echo content: {first} > 'a0.txt'"]
+    """
+
+    root_dataset = create_simple_computation_dataset(
+        tmp_path, 'd3', 1, simple_test_method
+    )
+
+    # run `make` command
+    root_dataset.make(
+        template='test_method',
+        parameter=[
+            'first=first',
+            'second=second',
+            'third=third',
+        ],
+        input=['d3_subds0/a.txt'],
+        output=['a0.txt'],
+        result_renderer='disabled',
+        allow_untrusted_execution=True,
+    )
+
+    _drop_files(root_dataset, ['a0.txt'])
+
+    with cfgman.overrides(
+        {
+            # Allow the special remote to execute untrusted operations on the
+            # dataset `root_dataset`
+            allow_untrusted_execution_key
+            + Dataset(root_dataset.pathobj).id: ConfigItem('true'),
+        }
+    ):
+        root_dataset.get('a0.txt', result_renderer='disabled')
