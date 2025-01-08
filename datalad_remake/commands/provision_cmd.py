@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import platform
 import re
+import sys
 from pathlib import Path
 from re import Match
 from tempfile import TemporaryDirectory
@@ -163,12 +164,13 @@ class Provision(ValidatedInterface):
             )
             return
 
+        resolved_worktree_dir: Path = Path(worktree_dir or TemporaryDirectory().name)
         inputs = input or [*read_list(input_list)]
         yield from provide(
             dataset=ds,
             input_patterns=[PatternPath(inp) for inp in inputs],
             source_branch=branch,
-            worktree_dir=worktree_dir,
+            worktree_dir=resolved_worktree_dir,
         )
 
 
@@ -217,12 +219,20 @@ def provide(
 
     lgr.debug('Provisioning dataset %s at %s', dataset, resolved_worktree_dir)
 
-    # Create a worktree
-    args = (
-        ['worktree', 'add']
-        + [str(resolved_worktree_dir)]
-        + ([source_branch] if source_branch else [])
-    )
+    if sys.platform == 'win32':
+        # Create a worktree via `git clone`
+        args = (
+            ['clone']
+            + (['--branch', source_branch] if source_branch else [])
+            + ['.']
+            + [str(resolved_worktree_dir)]
+        )
+    else:    # Create a worktree
+        args = (
+            ['worktree', 'add']
+            + [str(resolved_worktree_dir)]
+            + ([source_branch] if source_branch else [])
+        )
     call_git_lines(args, cwd=dataset.pathobj)
     worktree_dataset = Dataset(resolved_worktree_dir)
 
