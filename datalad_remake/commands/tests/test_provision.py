@@ -33,7 +33,7 @@ all_paths = [
 b_paths = [path.format(file='b') for path in file_path_templates]
 
 
-@skip_if_on_windows
+#@skip_if_on_windows
 def test_worktree_basic(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     inputs = [
@@ -60,7 +60,7 @@ def test_worktree_basic(tmp_path):
         with chdir(ds.path):
             for line in call_git_lines(['worktree', 'list']):
                 directory = line.split()[0]
-                assert directory == ds.path
+                assert Path(directory) == ds.pathobj
         for sub_ds in ds.subdatasets(result_renderer='disabled'):
             check_deleted_worktrees(Dataset(sub_ds['path']))
 
@@ -70,7 +70,7 @@ def test_worktree_basic(tmp_path):
     )
 
 
-@skip_if_on_windows
+#@skip_if_on_windows
 def test_worktree_globbing(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     result = dataset.provision(
@@ -123,7 +123,7 @@ def get_file_list(
                 yield str((prefix / child).relative_to(root))
 
 
-@skip_if_on_windows
+#@skip_if_on_windows
 def test_provision_context(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1')[0][2]
     with provide_context(
@@ -134,7 +134,7 @@ def test_provision_context(tmp_path):
     assert not worktree.exists()
 
 
-@skip_if_on_windows
+#@skip_if_on_windows
 def test_branch_deletion_after_provision(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     with provide_context(
@@ -147,7 +147,7 @@ def test_branch_deletion_after_provision(tmp_path):
     assert worktree.name not in branches
 
 
-@skip_if_on_windows
+#@skip_if_on_windows
 def test_not_present_local_datasets(tmp_path):
     root_ds = Dataset(tmp_path / 'ds1')
     root_ds.create(cfg_proc='text2git', result_renderer='disabled')
