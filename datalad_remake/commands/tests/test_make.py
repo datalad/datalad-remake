@@ -23,7 +23,7 @@ command = ["bash", "-c", "echo Hello {name} > {file}"]
 output_pattern = ['a.txt']
 
 
-@skip_if_on_windows
+#@skip_if_on_windows
 def test_duplicated_computation(tmp_path):
     root_dataset = create_simple_computation_dataset(tmp_path, 'ds1', 0, test_method)
 
@@ -32,7 +32,7 @@ def test_duplicated_computation(tmp_path):
     _run_simple_computation(root_dataset)
 
 
-@skip_if_on_windows
+#@skip_if_on_windows
 def test_speculative_computation(tmp_path, cfgman):
     root_dataset = create_simple_computation_dataset(tmp_path, 'ds1', 0, test_method)
 
