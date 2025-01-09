@@ -227,7 +227,8 @@ def provide(
             + ['.']
             + [str(resolved_worktree_dir)]
         )
-    else:    # Create a worktree
+    else:
+        # Create a worktree via `git worktree`
         args = (
             ['worktree', 'add']
             + [str(resolved_worktree_dir)]
