@@ -204,11 +204,16 @@ perform the cryptographic processes. To successfully verify a signature, the
 signer's public key must be added to the active GPG-keyring. To indicate to
 `datalad make` that the signer should be trusted, the key-id of the signer's
 public key must be added to
-the git configuration variable `datalad.make.trusted-keys`. This can be done
-via the command:
+the git configuration variable `datalad.make.trusted-keys`. To ensure that you
+have control about trusted keys, datalad-remake will not
+read this variable from the repository configuration, but only
+from git global variables, from git system variables, or from the command
+itself (via the option `-c`).
+
+A trusted key could, for example, be added by executing the following command:
 
 ```bash
-> git config --add datalad.make.trusted-keys <key-id>
+> git config --global --add datalad.make.trusted-keys <key-id>
 ```
 
 If more than one key should be defined as trusted, the configuration variable
@@ -216,7 +221,7 @@ If more than one key should be defined as trusted, the configuration variable
 e.g.:
 
 ```bash
-> git config datalad.make.trusted-keys <key-id-1>,<key-id-2>,...,<key-id-n>
+> git config --global --add datalad.make.trusted-keys <key-id-1>,<key-id-2>,...,<key-id-n>
 ```
 
 The key-id can be obtained via `gpg --list-keys --keyid-format long`. The key
