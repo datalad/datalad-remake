@@ -179,7 +179,7 @@ Additional examples can be found in the [examples](https://github.com/datalad/da
 
 ## Trusted execution
 
-By default, the `datalad-remake` will only perform "trusted"
+By default, `datalad-remake` will only perform "trusted"
 computations. That holds for the direct execution via `datalad make` as well as
 for the indirect execution via the git-annex special remote as a result of
 `datalad get`. A computation is trusted, if the method and the parameters
@@ -241,7 +241,7 @@ the key id is `F1B64364FF34DDCB`. To inform `datalad make` and the git-annex
 special remote that this key is trusted, the following command could be used:
     
 ```bash
-> git config --add datalad.make.trusted-keys F1B64364FF34DDCB
+> git config --global --add datalad.make.trusted-keys F1B64364FF34DDCB
 ```
 For instructions how to sign commits, see the [Git documentation](https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work).
 
