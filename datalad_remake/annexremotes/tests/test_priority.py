@@ -1,7 +1,7 @@
 import pytest
+import sys
 from annexremote import Master
 from datalad_core.config import ConfigItem
-from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake import (
     PatternPath,
@@ -22,13 +22,18 @@ from .utils import run_remake_remote
 # content validation. So they are not a valid example for different compute
 # instructions that lead to identical results, but just a way to test the
 # priority code.
-template = """
-parameters = ['content']
-command = ["bash", "-c", "echo from {label}: {{content}} > 'a.txt'"]
-"""
+if sys.platform == 'win32':
+    template = """
+    parameters = ['content']
+    command = ["pwsh", "-c", "Write-Output 'from {label}: {{content}}' > a.txt"]
+    """
+else:
+    template = """
+    parameters = ['content']
+    command = ["bash", "-c", "echo from {label}: {{content}} > 'a.txt'"]
+    """
 
 
-@skip_if_on_windows
 @pytest.mark.parametrize('priority', [['alpha', 'beta'], ['beta', 'alpha']])
 def test_compute_remote_priority(tmp_path, cfgman, monkeypatch, priority):
     dataset = create_ds_hierarchy(
