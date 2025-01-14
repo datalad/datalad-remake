@@ -17,13 +17,17 @@ from .utils import (
     run_remake_remote,
 )
 
-template = """
+btemplate = """
 parameters = ['content']
 command = ["bash", "-c", "echo content: {content} > 'a.txt'"]
 """
 
+template = """
+parameters = ['content']
+command = ["pwsh", "-c", "Write-Output 'content: {content}' > a.txt"]
+"""
 
-@skip_if_on_windows
+#@skip_if_on_windows
 @pytest.mark.parametrize('trusted', [True, False])
 def test_compute_remote_main(tmp_path, cfgman, monkeypatch, trusted):
     if trusted:

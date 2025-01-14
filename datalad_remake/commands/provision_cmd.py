@@ -220,13 +220,13 @@ def provide(
     lgr.debug('Provisioning dataset %s at %s', dataset, resolved_worktree_dir)
 
     if sys.platform == 'win32':
-        # Create a worktree via `git clone`
-        args = (
-            ['clone']
-            + (['--branch', source_branch] if source_branch else [])
-            + ['.']
-            + [str(resolved_worktree_dir)]
-        )
+        with patched_env(remove=['GIT_WORK_TREE', 'GIT_DIR']):
+            # Create a worktree via `git clone` and check out the requested commit
+            args = (['clone', '.', str(resolved_worktree_dir)])
+            call_git_lines(args, cwd=dataset.pathobj)
+            if source_branch:
+                args = ['checkout', source_branch]
+                call_git_lines(args, cwd=resolved_worktree_dir)
     else:
         # Create a worktree via `git worktree`
         args = (

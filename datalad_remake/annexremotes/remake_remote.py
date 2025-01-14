@@ -156,6 +156,9 @@ class RemakeRemote(SpecialRemote):
         with open(spec_path, 'rb') as f:
             spec = json.load(f)
 
+        method_path = dataset.pathobj / template_dir / spec['method']
+        dataset.get(method_path, result_renderer='disabled')
+
         return {
             'root_version': root_version,
             'this': PatternPath(this),

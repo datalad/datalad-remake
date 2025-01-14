@@ -9,7 +9,7 @@ from .create_datasets import create_ds_hierarchy
 from .test_provision import get_file_list
 
 
-@skip_if_on_windows
+#@skip_if_on_windows
 def test_collect(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 1)[0][2]
 

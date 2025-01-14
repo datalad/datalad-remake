@@ -1,3 +1,4 @@
+import sys
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -5,35 +6,98 @@ import pytest
 from datalad.distribution.get import Get as datalad_Get
 from datalad_core.config import ConfigItem
 from datalad_next.datasets import Dataset
-from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake import allow_untrusted_execution_key
 from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
 
-script = (
-    "echo content: {first} > 'a.txt';"
-    "mkdir -p 'd2_subds0/d2_subds1/d2_subds2';"
-    "echo content: {second} > 'b.txt';"
-    "echo content: {third} > 'new.txt';"
-    "echo content: {first} > 'd2_subds0/a0.txt';"
-    "echo content: {second} > 'd2_subds0/b0.txt';"
-    "echo content: {third} > 'd2_subds0/new.txt';"
-    "echo content: {first} > 'd2_subds0/d2_subds1/a1.txt';"
-    "echo content: {second} > 'd2_subds0/d2_subds1/b1.txt';"
-    "echo content: {third} > 'd2_subds0/d2_subds1/new.txt';"
-    "echo content: {first} > 'd2_subds0/d2_subds1/d2_subds2/a2.txt';"
-    "echo content: {second} > 'd2_subds0/d2_subds1/d2_subds2/b2.txt';"
-    "echo content: {third} > 'd2_subds0/d2_subds1/d2_subds2/new.txt'"
+from .utils import (
+    echo_line,
+    mkdir_line,
 )
 
-test_method = '\n'.join(
-    [
-        "parameters = ['first', 'second', 'third']",
-        'command = ["bash", "-c", "' + script + '"]',
-    ]
+
+script = (
+    mkdir_line('d2_subds0') + ';'
+    + mkdir_line('d2_subds0/d2_subds1') + ';'
+    + mkdir_line('d2_subds0/d2_subds1/d2_subds2') + ';'
+    + echo_line("content: {first}", "a.txt") + ";"
+    + echo_line("content: {second}", "b.txt") + ";"
+    + echo_line("content: {third}", "new.txt") + ";"
+    + echo_line("content: {first}", "d2_subds0/a0.txt") + ";"
+    + echo_line("content: {second}", "d2_subds0/b0.txt") + ";"
+    + echo_line("content: {third}", "d2_subds0/new.txt") + ";"
+    + echo_line("content: {first}", "d2_subds0/d2_subds1/a1.txt") + ";"
+    + echo_line("content: {second}", "d2_subds0/d2_subds1/b1.txt") + ";"
+    + echo_line("content: {third}", "d2_subds0/d2_subds1/new.txt") + ";"
+    + echo_line("content: {first}", "d2_subds0/d2_subds1/d2_subds2/a2.txt") + ";"
+    + echo_line("content: {second}", "d2_subds0/d2_subds1/d2_subds2/b2.txt") + ";"
+    + echo_line("content: {third}", "d2_subds0/d2_subds1/d2_subds2/new.txt") + ";"
 )
+
+if sys.platform == 'win32':
+    test_method = '\n'.join(
+        [
+            "parameters = ['first', 'second', 'third']",
+            'command = ["pwsh", "-c", "' + script.replace('"', '\\"') + '"]',
+        ]
+    )
+else:
+    test_method = '\n'.join(
+        [
+            "parameters = ['first', 'second', 'third']",
+            'command = ["bash", "-c", "' + script.replace('"', '\\"') + '"]',
+        ]
+    )
+
+if sys.platform == 'win32':
+    script = (
+        "Write-Output 'content: {first}' > a.txt;"
+        "Write-Output 'content: {second}' > b.txt;"
+        "Write-Output 'content: {third}' > new.txt;"
+        "ni -type directory d2_subds0;"
+        "ni -type directory d2_subds0/d2_subds1;"
+        "ni -type directory d2_subds0/d2_subds1/d2_subds2;"
+        "Write-Output 'content: {first}' > d2_subds0/a0.txt;"
+        "Write-Output 'content: {second}' > d2_subds0/b0.txt;"
+        "Write-Output 'content: {third}' > d2_subds0/new.txt;"
+        "Write-Output 'content: {first}' > d2_subds0/d2_subds1/a1.txt;"
+        "Write-Output 'content: {second}' > d2_subds0/d2_subds1/b1.txt;"
+        "Write-Output 'content: {third}' > d2_subds0/d2_subds1/new.txt;"
+        "Write-Output 'content: {first}' > d2_subds0/d2_subds1/d2_subds2/a2.txt;"
+        "Write-Output 'content: {second}' > d2_subds0/d2_subds1/d2_subds2/b2.txt;"
+        "Write-Output 'content: {third}' > d2_subds0/d2_subds1/d2_subds2/new.txt"
+    )
+    test_method = '\n'.join(
+        [
+            "parameters = ['first', 'second', 'third']",
+            'command = ["pwsh", "-c", "' + script + '"]',
+        ]
+    )
+else:
+    script = (
+        "echo content: {first} > 'a.txt';"
+        "mkdir -p 'd2_subds0/d2_subds1/d2_subds2';"
+        "echo content: {second} > 'b.txt';"
+        "echo content: {third} > 'new.txt';"
+        "echo content: {first} > 'd2_subds0/a0.txt';"
+        "echo content: {second} > 'd2_subds0/b0.txt';"
+        "echo content: {third} > 'd2_subds0/new.txt';"
+        "echo content: {first} > 'd2_subds0/d2_subds1/a1.txt';"
+        "echo content: {second} > 'd2_subds0/d2_subds1/b1.txt';"
+        "echo content: {third} > 'd2_subds0/d2_subds1/new.txt';"
+        "echo content: {first} > 'd2_subds0/d2_subds1/d2_subds2/a2.txt';"
+        "echo content: {second} > 'd2_subds0/d2_subds1/d2_subds2/b2.txt';"
+        "echo content: {third} > 'd2_subds0/d2_subds1/d2_subds2/new.txt'"
+    )
+    test_method = '\n'.join(
+        [
+            "parameters = ['first', 'second', 'third']",
+            'command = ["bash", "-c", "' + script + '"]',
+        ]
+    )
+
 
 output_pattern_static = [
     'a.txt',
@@ -70,7 +134,10 @@ test_file_content = list(
 def _drop_files(dataset: Dataset, files: Iterable[str]):
     for file in files:
         dataset.drop(file, reckless='availability', result_renderer='disabled')
-        assert not (dataset.pathobj / file).exists()
+        if (dataset.pathobj / file).exists():
+            # On an adjusted branch, the file might still exist, but point
+            # to a git annex object.
+            assert (dataset.pathobj / file).read_text().startswith('/annex/objects')
 
 
 def _check_content(dataset, file_content: Iterable[tuple[str, str]]):
@@ -78,7 +145,6 @@ def _check_content(dataset, file_content: Iterable[tuple[str, str]]):
         assert (dataset.pathobj / file).read_text() == content
 
 
-@skip_if_on_windows
 @pytest.mark.parametrize('output_pattern', [output_pattern_static, output_pattern_glob])
 def test_end_to_end(tmp_path, cfgman, monkeypatch, output_pattern):
     root_dataset = create_simple_computation_dataset(tmp_path, 'd2', 3, test_method)
@@ -100,7 +166,7 @@ def test_end_to_end(tmp_path, cfgman, monkeypatch, output_pattern):
         str(Path(result['path']).relative_to(root_dataset.pathobj))
         for result in results
     ]
-    assert set(collected_output) == set(output_pattern_static)
+    assert set(map(Path, collected_output)) == set(map(Path, output_pattern_static))
 
     # check computation success
     _check_content(root_dataset, test_file_content)
@@ -132,11 +198,16 @@ def test_end_to_end(tmp_path, cfgman, monkeypatch, output_pattern):
         _check_content(root_dataset, test_file_content)
 
 
-@skip_if_on_windows
+#@skip_if_on_windows
 def test_input_subdatasets(tmp_path, cfgman):
     simple_test_method = """
     parameters = ['first', 'second', 'third']
     command = ["bash", "-c", "echo content: {first} > 'a0.txt'"]
+    """
+
+    simple_test_method = """
+    parameters = ['content']
+    command = ["pwsh", "-c", "Write-Output 'content: {first}' > a0.txt"]
     """
 
     root_dataset = create_simple_computation_dataset(

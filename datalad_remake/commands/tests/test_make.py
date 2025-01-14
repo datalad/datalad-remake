@@ -15,10 +15,16 @@ from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
 
+xtest_method = """
+parameters = ['name', 'file']
+command = ["echo", "Hello {name}" > {file}"]
+"""
+
 test_method = """
 parameters = ['name', 'file']
-command = ["bash", "-c", "echo Hello {name} > {file}"]
+command = ["pwsh", "-c", "Write-Output Hello {name} > {file}"]
 """
+
 
 output_pattern = ['a.txt']
 
