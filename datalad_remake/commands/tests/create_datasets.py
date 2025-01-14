@@ -49,6 +49,11 @@ def create_ds_hierarchy(
 
     root_dataset.get(recursive=True, result_renderer='disabled')
 
+    # Modify subdatasets that are installed in the root dataset
+    if subdataset_levels > 0:
+        (root_dataset.pathobj / f'{name}_subds0' / 'm0.txt').write_text('m0\n')
+        root_dataset.save(recursive=True, result_renderer='disabled')
+
     # Add datalad-remake remotes to the root dataset and all subdatasets
     add_remake_remote(root_dataset.path)
     subdataset_path = Path()
