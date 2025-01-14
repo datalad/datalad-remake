@@ -21,6 +21,7 @@ file_path_templates = [
     '{{ds_name}}_subds0/{file}0.txt',
     '{{ds_name}}_subds0/{{ds_name}}_subds1/{file}1.txt',
     '{{ds_name}}_subds0/{{ds_name}}_subds1/{{ds_name}}_subds2/{file}2.txt',
+    '{{ds_name}}_subds0/m0.txt',
 ]
 
 

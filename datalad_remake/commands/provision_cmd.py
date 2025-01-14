@@ -381,13 +381,25 @@ def install_subdataset(
     if local_subdataset:
         absolute_path, parent_ds_path, path_from_root = local_subdataset[0]
         # Set the URL to the full source path
+        submodule_name = str(path_from_root.relative_to(parent_ds_path))
         args = [
             '-C',
             str(worktree.pathobj / parent_ds_path),
             'submodule',
             'set-url',
             '--',
-            str(path_from_root.relative_to(parent_ds_path)),
+            submodule_name,
+            absolute_path.as_uri(),
+        ]
+        call_git_lines(args)
+        args = [
+            '-C',
+            str(worktree.pathobj / parent_ds_path),
+            'config',
+            '-f',
+            '.gitmodules',
+            '--replace-all',
+            f'submodule.{submodule_name}.datalad-url',
             absolute_path.as_uri(),
         ]
         call_git_lines(args)
