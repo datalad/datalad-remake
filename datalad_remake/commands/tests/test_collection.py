@@ -25,7 +25,7 @@ def test_collect(tmp_path):
     result = collect(
         worktree=Path(worktree[0]['path']),
         dataset=dataset,
-        output_pattern=['results/**'],
+        output_pattern=[PatternPath('results/**')],
     )
     assert result == {
         PatternPath('results/sub-01/a.txt'),
