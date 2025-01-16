@@ -39,7 +39,7 @@ def resolve_patterns(
                     )
                     for pattern in patterns
                 ),
-            )
+            ),
         )
     )
 

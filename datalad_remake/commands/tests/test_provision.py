@@ -126,7 +126,9 @@ def get_file_list(
 @skip_if_on_windows
 def test_provision_context(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1')[0][2]
-    with provide_context(dataset, branch=None, input_patterns=[PatternPath('**')]) as worktree:
+    with provide_context(
+        dataset, branch=None, input_patterns=[PatternPath('**')]
+    ) as worktree:
         files = set(get_file_list(worktree))
         assert files
     assert not worktree.exists()

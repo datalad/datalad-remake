@@ -27,8 +27,8 @@ from datalad_next.annexremotes import SpecialRemote, super_main
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_success
 
-from datalad_remake import PatternPath
 from datalad_remake import (
+    PatternPath,
     priority_config_key,
     specification_dir,
     template_dir,
@@ -192,13 +192,12 @@ class RemakeRemote(SpecialRemote):
             compute_info['root_version'],
             compute_info['input'],
         ) as worktree:
-
             # Ensure that the method template is present, in case it is annexed.
             lgr.debug('Fetching method template')
             with patched_env(remove=['GIT_DIR', 'GIT_WORK_TREE']):
                 Dataset(worktree).get(
                     PatternPath(template_dir) / compute_info['method'],
-                    result_renderer='disabled'
+                    result_renderer='disabled',
                 )
 
             lgr.debug('Starting execution')

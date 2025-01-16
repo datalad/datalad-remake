@@ -2,11 +2,11 @@ from pathlib import Path
 
 from datalad_next.tests import skip_if_on_windows
 
+from datalad_remake.commands.make_cmd import collect
 
 from ... import PatternPath
 from .create_datasets import create_ds_hierarchy
 from .test_provision import get_file_list
-from datalad_remake.commands.make_cmd import collect
 
 
 @skip_if_on_windows

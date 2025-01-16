@@ -229,12 +229,8 @@ class Make(ValidatedInterface):
     ) -> Generator:
         ds: Dataset = dataset.ds if dataset else Dataset('.')
 
-        input_pattern = list(
-            map(PatternPath, (input or []) + read_list(input_list))
-        )
-        output_pattern = list(
-            map(PatternPath, (output or []) + read_list(output_list))
-        )
+        input_pattern = list(map(PatternPath, (input or []) + read_list(input_list)))
+        output_pattern = list(map(PatternPath, (output or []) + read_list(output_list)))
         parameter = (parameter or []) + read_list(parameter_list)
 
         parameter_dict = dict([p.split('=', 1) for p in parameter])
@@ -363,7 +359,9 @@ def add_url(
     *,
     url_only: bool,
 ) -> str:
-    lgr.debug('add_url: %s %s %s %s', str(dataset), str(file_path), url_base, repr(url_only))
+    lgr.debug(
+        'add_url: %s %s %s %s', str(dataset), str(file_path), url_base, repr(url_only)
+    )
 
     # Build the file-specific URL and store it in the annex
     url = url_base + f'&this={quote(str(file_path))}'
@@ -513,7 +511,9 @@ def install_containing_subdatasets(
     subdataset_infos = {
         # Determine the relative path of the parent dataset with system `Path`
         # instances, and convert it into `PatternPath` objects.
-        PatternPath(Path(result['path']).relative_to(Path(result['parentds']))): result['state']
+        PatternPath(Path(result['path']).relative_to(Path(result['parentds']))): result[
+            'state'
+        ]
         == 'present'
         for result in dataset.subdatasets(recursive=True)
     }
@@ -534,8 +534,9 @@ def install_containing_subdatasets(
             dataset.install(path=str(path), result_renderer='disabled')
             # Update subdataset_info to get newly installed subdatasets.
             subdataset_infos = {
-                PatternPath(Path(result['path']).relative_to(Path(result['parentds']))): result['state']
-                == 'present'
+                PatternPath(
+                    Path(result['path']).relative_to(Path(result['parentds']))
+                ): result['state'] == 'present'
                 for result in dataset.subdatasets(recursive=True)
             }
 

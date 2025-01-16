@@ -211,9 +211,7 @@ def provide(
     ).absolute()
     resolved_worktree_dir.mkdir(parents=True, exist_ok=True)
 
-    lgr.debug(
-        'Provisioning dataset %s at %s', dataset, resolved_worktree_dir
-    )
+    lgr.debug('Provisioning dataset %s at %s', dataset, resolved_worktree_dir)
 
     # Create a worktree
     args = (
