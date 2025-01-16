@@ -7,7 +7,6 @@ are currently also provisioned.
 from __future__ import annotations
 
 import logging
-import os
 import re
 from pathlib import Path
 from re import Match
@@ -38,10 +37,11 @@ from datalad_next.constraints import (
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines, call_git_success
 
-from datalad_remake.commands.make_cmd import read_list
+from datalad_remake import PatternPath
 from datalad_remake.utils.chdir import chdir
 from datalad_remake.utils.glob import glob
 from datalad_remake.utils.patched_env import patched_env
+from datalad_remake.utils.read_list import read_list
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
@@ -159,9 +159,13 @@ class Provision(ValidatedInterface):
             )
             return
 
-        resolved_worktree_dir: Path = Path(worktree_dir or TemporaryDirectory().name)
         inputs = input or [*read_list(input_list)]
-        yield from provide(ds, resolved_worktree_dir, inputs, branch)
+        yield from provide(
+            dataset=ds,
+            input_patterns=[PatternPath(inp) for inp in inputs],
+            source_branch=branch,
+            worktree_dir=worktree_dir,
+        )
 
 
 def remove(dataset: Dataset, worktree: Dataset) -> None:
@@ -178,40 +182,47 @@ def prune_worktrees(dataset: Dataset) -> None:
 
 def provide(
     dataset: Dataset,
-    worktree_dir: Path,
-    input_patterns: list[str],
+    input_patterns: list[PatternPath],
     source_branch: str | None = None,
+    worktree_dir: str | Path | None = None,
 ) -> Generator:
     """Provide paths defined by input_patterns in a temporary worktree
 
     Parameters
     ----------
     dataset: Dataset
-        Dataset that should be provisioned
-    worktree_dir: Path
-        Path to a directory that should contain the provisioned worktree
-    input_patterns: list[str]
-        List of patterns that describe the input files
+        Dataset that should be provisioned.
+    input_patterns: list[PatternPath]
+        List of patterns that describe the input files.
     source_branch: str | None
-        Branch that should be provisioned, if None HEAD will be used [optional]
+        Branch that should be provisioned, if `None` HEAD will be used.
+    worktree_dir: Path | None
+        Path to a directory that should contain the provisioned worktree or
+        `None`. If `None` a temporary directory will be created.
 
     Returns
     -------
-
+    Generator
+        A generator that yields either a single result with the directory in
+        which the dataset was provisioned, or one or more error-results.
     """
+    resolved_worktree_dir: Path = Path(
+        worktree_dir or TemporaryDirectory().name
+    ).absolute()
+    resolved_worktree_dir.mkdir(parents=True, exist_ok=True)
 
-    lgr.debug('Provisioning dataset %s at %s', dataset, worktree_dir)
-
-    worktree_dir.mkdir(parents=True, exist_ok=True)
+    lgr.debug(
+        'Provisioning dataset %s at %s', dataset, resolved_worktree_dir
+    )
 
     # Create a worktree
     args = (
         ['worktree', 'add']
-        + [str(worktree_dir)]
+        + [str(resolved_worktree_dir)]
         + ([source_branch] if source_branch else [])
     )
     call_git_lines(args, cwd=dataset.pathobj)
-    worktree_dataset = Dataset(worktree_dir)
+    worktree_dataset = Dataset(resolved_worktree_dir)
 
     # Get all input files in the worktree
     with chdir(worktree_dataset.path):
@@ -220,15 +231,17 @@ def provide(
 
     yield get_status_dict(
         action='provision',
-        path=str(worktree_dir),
+        path=str(resolved_worktree_dir),
         status='ok',
         message=f'provisioned dataset: {dataset} in workspace: {worktree_dir!r}',
     )
 
 
 def resolve_patterns(
-    dataset: Dataset, worktree: Dataset, pattern_list: list[str]
-) -> set[Path]:
+    dataset: Dataset,
+    worktree: Dataset,
+    pattern_list: list[PatternPath],
+) -> set[PatternPath]:
     """Resolve file patterns in the dataset
 
     This method will resolve relative path-patterns in the dataset. It will
@@ -242,17 +255,17 @@ def resolve_patterns(
         Dataset that should be provisioned.
     worktree : Dataset
         Worktree dataset, in which the patterns should be resolved.
-    pattern_list : list[str]
-        List of patterns thatThat should be resolved.
+    pattern_list : list[PatternPath]
+        List of patterns that should be resolved.
 
     Returns
     -------
-    set[Path]
+    set[PatternPath]
         Set of paths that match the patterns.
     """
     matches = set()
     for pattern in pattern_list:
-        pattern_parts = pattern.split(os.sep)
+        pattern_parts = pattern.parts
 
         if pattern_parts[0] == '':
             lgr.warning('Ignoring absolute input pattern %s', pattern)
@@ -261,7 +274,7 @@ def resolve_patterns(
         matches.update(
             glob_pattern(
                 worktree,
-                Path(),
+                PatternPath(),
                 pattern_parts,
                 get_uninstalled_subdatasets(worktree),
                 get_locally_available_subdatasets(dataset),
@@ -270,10 +283,10 @@ def resolve_patterns(
     return matches
 
 
-def get_uninstalled_subdatasets(dataset: Dataset) -> set[Path]:
+def get_uninstalled_subdatasets(dataset: Dataset) -> set[PatternPath]:
     """Get relative paths of all visible, non-installed subdatasets"""
     return {
-        Path(result['path']).relative_to(dataset.pathobj)
+        PatternPath(*Path(result['path']).relative_to(dataset.pathobj).parts)
         for result in dataset.subdatasets(recursive=True, result_renderer='disabled')
         if result['state'] == 'absent'
     }
@@ -281,11 +294,11 @@ def get_uninstalled_subdatasets(dataset: Dataset) -> set[Path]:
 
 def glob_pattern(
     root: Dataset,
-    position: Path,
-    pattern: list[str],
-    uninstalled_subdatasets: set[Path],
-    locally_available_subdatasets: Iterable[tuple[Path, Path, Path]],
-) -> set[Path]:
+    position: PatternPath,
+    pattern: tuple[str, ...],
+    uninstalled_subdatasets: set[PatternPath],
+    locally_available_subdatasets: Iterable[tuple[Path, PatternPath, PatternPath]],
+) -> set[PatternPath]:
     """Glob a pattern in a dataset installing subdatasets if necessary
 
     Parameters
@@ -295,9 +308,10 @@ def glob_pattern(
     position: Path
         A relative path that denotes the position in the dataset from which a
         pattern is matched.
-    pattern: list[str]
+    pattern: tuple[str, ...]
         The path-elements of the pattern. For example `['*', 'a', '*.txt']`
-        represents the pattern `'*/a/*.txt'`.
+        represents the pattern `'*/a/*.txt'` (NOTE: all patterns are denoted
+        in Posix convention, i.e. they use `'/'` as separator).
     uninstalled_subdatasets: set[Path]
         A set that contains all currently known uninstalled subdatasets. This
         set will be updated in the method.
@@ -307,7 +321,7 @@ def glob_pattern(
 
     Returns
     -------
-    set[Path]
+    set[PatternPath]
         A set that contains all paths that match the pattern.
     """
     if not pattern:
@@ -332,12 +346,13 @@ def glob_pattern(
         '*' if pattern[0] == '**' else pattern[0],
         root_dir=root.pathobj / position,
     ):
-        match = position / rec_match
+        match = position / PatternPath(*Path(rec_match).parts)
+        system_match = Path(*position.parts) / rec_match
 
         # If the match is a directory that is in uninstalled subdatasets,
         # install the dataset and updated uninstalled datasets before proceeding
         # with matching the pattern.
-        if match.is_dir() and match in uninstalled_subdatasets:
+        if system_match.is_dir() and match in uninstalled_subdatasets:
             lgr.info('Installing subdataset %s to glob input', match)
             install_subdataset(
                 root, match, uninstalled_subdatasets, locally_available_subdatasets
@@ -367,9 +382,9 @@ def get_dirty_elements(dataset: Dataset) -> Generator:
 
 def install_subdataset(
     worktree: Dataset,
-    subdataset_path: Path,
-    uninstalled_subdatasets: set[Path],
-    locally_available_datasets: Iterable[tuple[Path, Path, Path]],
+    subdataset_path: PatternPath,
+    uninstalled_subdatasets: set[PatternPath],
+    locally_available_datasets: Iterable[tuple[Path, PatternPath, PatternPath]],
 ) -> None:
     """Install a subdataset, prefer locally available subdatasets"""
     local_subdataset = [
@@ -411,7 +426,7 @@ def install_subdataset(
 
 def get_locally_available_subdatasets(
     dataset: Dataset,
-) -> Iterable[tuple[Path, Path, Path]]:
+) -> Iterable[tuple[Path, PatternPath, PatternPath]]:
     """Get all locally available subdatasets in the dataset `dataset
 
     A subdataset is locally available if it is:
@@ -430,18 +445,22 @@ def get_locally_available_subdatasets(
     results = dataset.subdatasets(recursive=True, result_renderer='disabled')
     installed_subdatasets = [
         (
+            # Absolute OS-specific path of the subdataset
             Path(result['path']),
-            Path(result['parentds']).relative_to(dataset.pathobj),
-            Path(result['path']).relative_to(dataset.pathobj),
+            # Relative path of the parent dataset in the root dataset
+            PatternPath(*Path(result['parentds']).relative_to(dataset.pathobj).parts),
+            # Relative path of the subdataset in the root dataset
+            PatternPath(*Path(result['path']).relative_to(dataset.pathobj).parts),
         )
         for result in results
         if result['state'] == 'present'
     ]
     local_subdatasets = [
         (
+            # Absolute OS-specific path of the subdataset
             Path(resolve_relative_module_url(dataset, result)),
-            Path(result['parentds']).relative_to(dataset.pathobj),
-            Path(result['path']).relative_to(dataset.pathobj),
+            PatternPath(*Path(result['parentds']).relative_to(dataset.pathobj).parts),
+            PatternPath(*Path(result['path']).relative_to(dataset.pathobj).parts),
         )
         for result in results
         if result['state'] == 'absent'

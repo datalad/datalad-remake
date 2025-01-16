@@ -4,7 +4,7 @@ from pathlib import Path
 from hypothesis import given
 from hypothesis.strategies import lists, text
 
-from datalad_remake.commands.make_cmd import read_list
+from datalad_remake.utils.read_list import read_list
 
 
 def test_empty_list_reading():

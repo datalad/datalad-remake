@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import PurePosixPath as PatternPath
+
 from datalad_remake._version import __version__
 
 __all__ = [
@@ -14,6 +16,7 @@ __all__ = [
     'template_dir',
     'trusted_keys_config_key',
     'url_scheme',
+    'PatternPath',
 ]
 
 

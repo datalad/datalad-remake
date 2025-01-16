@@ -4,6 +4,7 @@ from datalad_core.config import ConfigItem
 from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake import (
+    PatternPath,
     allow_untrusted_execution_key,
     priority_config_key,
     specification_dir,
@@ -52,7 +53,7 @@ def test_compute_remote_priority(tmp_path, cfgman, monkeypatch, priority):
             build_json(
                 label,
                 [],
-                ['a.txt'],
+                [PatternPath('a.txt')],
                 {'content': f'{label}_parameter'},
             )
         )

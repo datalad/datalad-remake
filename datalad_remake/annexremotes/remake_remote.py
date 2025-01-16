@@ -27,9 +27,11 @@ from datalad_next.annexremotes import SpecialRemote, super_main
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_success
 
+from datalad_remake import PatternPath
 from datalad_remake import (
     priority_config_key,
     specification_dir,
+    template_dir,
     url_scheme,
 )
 from datalad_remake.commands.make_cmd import (
@@ -42,6 +44,7 @@ from datalad_remake.utils.getconfig import (
     get_trusted_keys,
 )
 from datalad_remake.utils.glob import resolve_patterns
+from datalad_remake.utils.patched_env import patched_env
 from datalad_remake.utils.verify import verify_file
 
 if TYPE_CHECKING:
@@ -147,13 +150,20 @@ class RemakeRemote(SpecialRemote):
         spec_path = dataset.pathobj / specification_dir / spec_name
         if trusted_key_ids is not None:
             verify_file(dataset.pathobj, spec_path, trusted_key_ids)
+
+        # Ensure that the spec is actually present and read it
+        with patched_env(remove=['GIT_DIR', 'GIT_WORK_TREE']):
+            dataset.get(spec_path, result_renderer='disabled')
         with open(spec_path, 'rb') as f:
             spec = json.load(f)
 
         return {
             'root_version': root_version,
-            'this': this,
-            **{name: spec[name] for name in ['method', 'input', 'output', 'parameter']},
+            'this': PatternPath(this),
+            'method': Path(spec['method']),
+            'input': [PatternPath(path) for path in spec['input']],
+            'output': [PatternPath(path) for path in spec['output']],
+            'parameter': spec['parameter'],
         }, dataset
 
     def transfer_retrieve(self, key: str, file_name: str) -> None:
@@ -178,8 +188,19 @@ class RemakeRemote(SpecialRemote):
         lgr.debug('Starting provision')
         self.annex.debug('Starting provision')
         with provide_context(
-            dataset, compute_info['root_version'], compute_info['input']
+            dataset,
+            compute_info['root_version'],
+            compute_info['input'],
         ) as worktree:
+
+            # Ensure that the method template is present, in case it is annexed.
+            lgr.debug('Fetching method template')
+            with patched_env(remove=['GIT_DIR', 'GIT_WORK_TREE']):
+                Dataset(worktree).get(
+                    PatternPath(template_dir) / compute_info['method'],
+                    result_renderer='disabled'
+                )
+
             lgr.debug('Starting execution')
             self.annex.debug('Starting execution')
             execute(
@@ -189,6 +210,7 @@ class RemakeRemote(SpecialRemote):
                 compute_info['output'],
                 trusted_key_ids,
             )
+
             lgr.debug('Starting collection')
             self.annex.debug('Starting collection')
             self._collect(
@@ -230,8 +252,8 @@ class RemakeRemote(SpecialRemote):
         self,
         worktree: Path,
         dataset: Dataset,
-        output_patterns: Iterable[str],
-        this: str,
+        output_patterns: Iterable[PatternPath],
+        this: PatternPath,
         this_destination: str,
     ) -> None:
         """Collect computation results for `this` (and all other outputs)"""

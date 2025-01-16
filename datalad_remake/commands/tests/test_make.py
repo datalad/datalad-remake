@@ -6,7 +6,10 @@ from datalad_next.datasets import Dataset
 from datalad_next.tests import skip_if_on_windows
 
 import datalad_remake.commands.make_cmd
-from datalad_remake import allow_untrusted_execution_key
+from datalad_remake import (
+    PatternPath,
+    allow_untrusted_execution_key,
+)
 from datalad_remake.commands.make_cmd import get_url
 from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
@@ -78,8 +81,8 @@ def test_label_url(monkeypatch):
         branch=None,
         template_name=test_method,
         parameters={'name': 'Robert', 'file': 'a.txt'},
-        input_pattern=['a.txt'],
-        output_pattern=['b.txt'],
+        input_pattern=[PatternPath('a.txt')],
+        output_pattern=[PatternPath('b.txt')],
         label='label1',
     )
     parts = urlparse(url).query.split('&')
