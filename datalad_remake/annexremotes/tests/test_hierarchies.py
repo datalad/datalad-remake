@@ -11,47 +11,9 @@ from datalad_remake import allow_untrusted_execution_key
 from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
+from datalad_remake.utils.platform import on_windows
 
-from .utils import (
-    echo_line,
-    mkdir_line,
-)
-
-
-script = (
-    mkdir_line('d2_subds0') + ';'
-    + mkdir_line('d2_subds0/d2_subds1') + ';'
-    + mkdir_line('d2_subds0/d2_subds1/d2_subds2') + ';'
-    + echo_line("content: {first}", "a.txt") + ";"
-    + echo_line("content: {second}", "b.txt") + ";"
-    + echo_line("content: {third}", "new.txt") + ";"
-    + echo_line("content: {first}", "d2_subds0/a0.txt") + ";"
-    + echo_line("content: {second}", "d2_subds0/b0.txt") + ";"
-    + echo_line("content: {third}", "d2_subds0/new.txt") + ";"
-    + echo_line("content: {first}", "d2_subds0/d2_subds1/a1.txt") + ";"
-    + echo_line("content: {second}", "d2_subds0/d2_subds1/b1.txt") + ";"
-    + echo_line("content: {third}", "d2_subds0/d2_subds1/new.txt") + ";"
-    + echo_line("content: {first}", "d2_subds0/d2_subds1/d2_subds2/a2.txt") + ";"
-    + echo_line("content: {second}", "d2_subds0/d2_subds1/d2_subds2/b2.txt") + ";"
-    + echo_line("content: {third}", "d2_subds0/d2_subds1/d2_subds2/new.txt") + ";"
-)
-
-if sys.platform == 'win32':
-    test_method = '\n'.join(
-        [
-            "parameters = ['first', 'second', 'third']",
-            'command = ["pwsh", "-c", "' + script.replace('"', '\\"') + '"]',
-        ]
-    )
-else:
-    test_method = '\n'.join(
-        [
-            "parameters = ['first', 'second', 'third']",
-            'command = ["bash", "-c", "' + script.replace('"', '\\"') + '"]',
-        ]
-    )
-
-if sys.platform == 'win32':
+if on_windows:
     script = (
         "Write-Output 'content: {first}' > a.txt;"
         "Write-Output 'content: {second}' > b.txt;"
@@ -71,7 +33,7 @@ if sys.platform == 'win32':
     )
     test_method = '\n'.join(
         [
-            "parameters = ['first', 'second', 'third']",
+            'parameters = ["first", "second", "third"]',
             'command = ["pwsh", "-c", "' + script + '"]',
         ]
     )
@@ -93,11 +55,10 @@ else:
     )
     test_method = '\n'.join(
         [
-            "parameters = ['first', 'second', 'third']",
+            'parameters = ["first", "second", "third"]',
             'command = ["bash", "-c", "' + script + '"]',
         ]
     )
-
 
 output_pattern_static = [
     'a.txt',
@@ -200,15 +161,16 @@ def test_end_to_end(tmp_path, cfgman, monkeypatch, output_pattern):
 
 #@skip_if_on_windows
 def test_input_subdatasets(tmp_path, cfgman):
-    simple_test_method = """
-    parameters = ['first', 'second', 'third']
-    command = ["bash", "-c", "echo content: {first} > 'a0.txt'"]
-    """
-
-    simple_test_method = """
-    parameters = ['content']
-    command = ["pwsh", "-c", "Write-Output 'content: {first}' > a0.txt"]
-    """
+    if on_windows:
+        simple_test_method = """
+        parameters = ['content']
+        command = ["pwsh", "-c", "Write-Output 'content: {content}' > a0.txt"]
+        """
+    else:
+        simple_test_method = """
+        parameters = ['content']
+        command = ["bash", "-c", "echo content: {content} > 'a0.txt'"]
+        """
 
     root_dataset = create_simple_computation_dataset(
         tmp_path, 'd3', 1, simple_test_method
@@ -217,11 +179,7 @@ def test_input_subdatasets(tmp_path, cfgman):
     # run `make` command
     root_dataset.make(
         template='test_method',
-        parameter=[
-            'first=first',
-            'second=second',
-            'third=third',
-        ],
+        parameter=['content=some_content'],
         input=['d3_subds0/a.txt'],
         output=['a0.txt'],
         result_renderer='disabled',

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 import subprocess
 import sys
@@ -154,25 +153,3 @@ def run_remake_remote(dest_path, urls):
     remote = RemakeRemote(master)
     master.LinkRemote(remote)
     master.Listen(input=cast(TextIOBase, input_))
-
-
-def echo_command(message: str, output_file: str | None = None) -> list[str]:
-    if sys.platform == 'win32':
-        return ['pwsh', '-c', echo_line(message, output_file)]
-    else:
-        return ['bash', '-c', echo_line(message, output_file)]
-
-
-def echo_line(message: str, output_file: str | None = None) -> str:
-    trailer = ('' if output_file is None else ' > ' + output_file)
-    if sys.platform == 'win32':
-        return 'Write-Output \"' + message + '\"' + trailer
-    else:
-        return 'echo \"' + message + '\"' + trailer
-
-
-def mkdir_line(directory: str) -> str:
-    if sys.platform == 'win32':
-        return 'New-Item -type directory ' + directory
-    else:
-        return 'mkdir -p ' + directory

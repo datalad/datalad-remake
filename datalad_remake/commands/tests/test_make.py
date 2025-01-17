@@ -14,22 +14,23 @@ from datalad_remake.commands.make_cmd import get_url
 from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
+from datalad_remake.utils.platform import on_windows
 
-xtest_method = """
-parameters = ['name', 'file']
-command = ["echo", "Hello {name}" > {file}"]
-"""
 
-test_method = """
-parameters = ['name', 'file']
-command = ["pwsh", "-c", "Write-Output Hello {name} > {file}"]
-"""
-
+if on_windows:
+    test_method = """
+    parameters = ['name', 'file']
+    command = ["pwsh", "-c", "Write-Output 'Hello {name}' > {file}"]
+    """
+else:
+    test_method = """
+    parameters = ['name', 'file']
+    command = ["bash", "-c", "echo Hello {name} > {file}"]
+    """
 
 output_pattern = ['a.txt']
 
 
-#@skip_if_on_windows
 def test_duplicated_computation(tmp_path):
     root_dataset = create_simple_computation_dataset(tmp_path, 'ds1', 0, test_method)
 
@@ -38,7 +39,6 @@ def test_duplicated_computation(tmp_path):
     _run_simple_computation(root_dataset)
 
 
-#@skip_if_on_windows
 def test_speculative_computation(tmp_path, cfgman):
     root_dataset = create_simple_computation_dataset(tmp_path, 'ds1', 0, test_method)
 

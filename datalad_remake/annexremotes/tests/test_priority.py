@@ -1,5 +1,4 @@
 import pytest
-import sys
 from annexremote import Master
 from datalad_core.config import ConfigItem
 
@@ -13,6 +12,7 @@ from datalad_remake import (
 from datalad_remake.annexremotes.remake_remote import RemakeRemote
 from datalad_remake.commands.make_cmd import build_json
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
+from datalad_remake.utils.platform import on_windows
 
 from .utils import run_remake_remote
 
@@ -22,7 +22,7 @@ from .utils import run_remake_remote
 # content validation. So they are not a valid example for different compute
 # instructions that lead to identical results, but just a way to test the
 # priority code.
-if sys.platform == 'win32':
+if on_windows:
     template = """
     parameters = ['content']
     command = ["pwsh", "-c", "Write-Output 'from {label}: {{content}}' > a.txt"]

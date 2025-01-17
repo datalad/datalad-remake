@@ -7,9 +7,7 @@ are currently also provisioned.
 from __future__ import annotations
 
 import logging
-import platform
 import re
-import sys
 from pathlib import Path
 from re import Match
 from tempfile import TemporaryDirectory
@@ -42,6 +40,8 @@ from datalad_next.runners import call_git_lines, call_git_success
 from datalad_remake import PatternPath
 from datalad_remake.utils.chdir import chdir
 from datalad_remake.utils.glob import glob
+from datalad_remake.utils.patched_env import patched_env
+from datalad_remake.utils.platform import on_windows
 from datalad_remake.utils.read_list import read_list
 
 if TYPE_CHECKING:
@@ -50,8 +50,6 @@ if TYPE_CHECKING:
 lgr = logging.getLogger('datalad.remake.provision_cmd')
 
 drive_letter_matcher = re.compile('^[A-Z]:')
-
-on_windows = platform.system().lower() == 'windows'
 
 
 # decoration auto-generates standard help
@@ -219,14 +217,13 @@ def provide(
 
     lgr.debug('Provisioning dataset %s at %s', dataset, resolved_worktree_dir)
 
-    if sys.platform == 'win32':
-        with patched_env(remove=['GIT_WORK_TREE', 'GIT_DIR']):
-            # Create a worktree via `git clone` and check out the requested commit
-            args = (['clone', '.', str(resolved_worktree_dir)])
-            call_git_lines(args, cwd=dataset.pathobj)
-            if source_branch:
-                args = ['checkout', source_branch]
-                call_git_lines(args, cwd=resolved_worktree_dir)
+    if on_windows:
+        # Create a worktree via `git clone` and check out the requested commit
+        args = (['clone', '.', str(resolved_worktree_dir)])
+        call_git_lines(args, cwd=dataset.pathobj)
+        if source_branch:
+            args = ['checkout', source_branch]
+            call_git_lines(args, cwd=resolved_worktree_dir)
     else:
         # Create a worktree via `git worktree`
         args = (
