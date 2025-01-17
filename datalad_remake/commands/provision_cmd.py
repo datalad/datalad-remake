@@ -213,7 +213,6 @@ def provide(
     resolved_worktree_dir: Path = Path(
         worktree_dir or TemporaryDirectory().name
     ).absolute()
-    resolved_worktree_dir.mkdir(parents=True, exist_ok=True)
 
     lgr.debug('Provisioning dataset %s at %s', dataset, resolved_worktree_dir)
 
@@ -231,7 +230,8 @@ def provide(
             + [str(resolved_worktree_dir)]
             + ([source_branch] if source_branch else [])
         )
-    call_git_lines(args, cwd=dataset.pathobj)
+        call_git_lines(args, cwd=dataset.pathobj)
+
     worktree_dataset = Dataset(resolved_worktree_dir)
 
     # Get all input files in the worktree
