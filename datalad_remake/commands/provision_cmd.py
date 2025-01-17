@@ -7,6 +7,7 @@ are currently also provisioned.
 from __future__ import annotations
 
 import logging
+import platform
 import re
 from pathlib import Path
 from re import Match
@@ -17,7 +18,6 @@ from typing import (
     cast,
 )
 
-from datalad.utils import on_windows
 from datalad_next.commands import (
     EnsureCommandParameterization,
     Parameter,
@@ -50,6 +50,9 @@ if TYPE_CHECKING:
 lgr = logging.getLogger('datalad.remake.provision_cmd')
 
 drive_letter_matcher = re.compile('^[A-Z]:')
+
+on_windows = platform.system().lower() == 'windows'
+
 
 # decoration auto-generates standard help
 @build_doc
@@ -529,8 +532,7 @@ def get_remote_url(dataset: Dataset) -> str:
 
 
 def is_file_url(url: str) -> bool:
-    if on_windows:
-        starts_with_drive_letter = drive_letter_matcher.match(url)
-    else:
-        starts_with_drive_letter = False
+    starts_with_drive_letter = (
+        drive_letter_matcher.match(url) is not None if on_windows else False
+    )
     return url.startswith(('/', './', '../')) or starts_with_drive_letter
