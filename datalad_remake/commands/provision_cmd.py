@@ -17,6 +17,7 @@ from typing import (
     cast,
 )
 
+from datalad.utils import on_windows
 from datalad_next.commands import (
     EnsureCommandParameterization,
     Parameter,
@@ -48,6 +49,7 @@ if TYPE_CHECKING:
 
 lgr = logging.getLogger('datalad.remake.provision_cmd')
 
+drive_letter_matcher = re.compile('^[A-Z]:')
 
 # decoration auto-generates standard help
 @build_doc
@@ -486,7 +488,7 @@ def get_parent_dataset_origin(dataset: Dataset, submodule_info: dict) -> str:
 
     # If the remote_url is an absolute or relative path, resolve it against
     # the parent dataset's path.
-    if remote_url.startswith('/'):
+    if Path(remote_url).is_absolute():
         # This is an absolute file-URL, append the submodule-URL
         return str(
             (Path(remote_url) / submodule_info['gitmodule_url']).resolve().absolute()
@@ -518,9 +520,17 @@ def get_remote_url(dataset: Dataset) -> str:
     # Look for file URLs, return the first (that might not be correct in any
     # case, because we need a remote that has the current sha).
     for remote, url in remotes.items():
-        if url.startswith(('/', './', '../')):
+        if is_file_url(url):
             lgr.debug('get_remote_url: using remote %s with URL %s', remote, url)
             return url
 
     # If there are no remotes, return the path of the dataset
     return dataset.path
+
+
+def is_file_url(url: str) -> bool:
+    if on_windows:
+        starts_with_drive_letter = drive_letter_matcher.match(url)
+    else:
+        starts_with_drive_letter = False
+    return url.startswith(('/', './', '../')) or starts_with_drive_letter
