@@ -20,28 +20,25 @@ def resolve_patterns(
     *,
     recursive: bool = True,
 ) -> set[PatternPath]:
-    return set(
-        map(
-            PatternPath,
-            filter(
-                # This expression works because a `PatternPath` instance can be
-                # safely appended to a system path via `/`. The result is a system
-                # path where the last parts are the parts of the `PatternPath`
-                # instance.
-                lambda p: not (Path(root_dir) / p).is_dir(),
-                chain.from_iterable(
-                    glob(
-                        # Convert `PatternPath` instance to a platform path and then
-                        # to a string, which is required by the `glob` function.
-                        str(Path(pattern)),
-                        root_dir=root_dir,
-                        recursive=recursive,
-                    )
-                    for pattern in patterns
-                ),
+    return {
+        PatternPath(Path(p)) for p in filter(
+            # This expression works because a `PatternPath` instance can be
+            # safely appended to a system path via `/`. The result is a system
+            # path where the last parts are the parts of the `PatternPath`
+            # instance.
+            lambda p: not (Path(root_dir) / p).is_dir(),
+            chain.from_iterable(
+                glob(
+                    # Convert `PatternPath` instance to a platform path and then
+                    # to a string, which is required by the `glob` function.
+                    str(Path(pattern)),
+                    root_dir=root_dir,
+                    recursive=recursive,
+                )
+                for pattern in patterns
             ),
         )
-    )
+    }
 
 
 # Support kwarg `root_dir` in `glob` in python version < 3.10. If the minimal
