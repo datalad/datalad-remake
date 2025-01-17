@@ -9,21 +9,39 @@ from datalad_remake import (
 from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
+from datalad_remake.utils.platform import on_windows
 
-template = """
-parameters = ['line']
-command = ["bash", "-c", "echo {line} >> 'a.txt'"]
-"""
 
-template_c1 = """
-parameters = ['line']
-command = ["bash", "-c", "cat a.txt > c1.txt;  echo {line} >> c1.txt"]
-"""
+if on_windows:
+    template = """
+    parameters = ['line']
+    command = ["pwsh", "-c", "Write-Output '{line}' >> 'a.txt'"]
+    """
 
-template_c2 = """
-parameters = ['line']
-command = ["bash", "-c", "cat c1.txt > c2.txt; echo {line} >> c2.txt"]
-"""
+    template_c1 = """
+    parameters = ['line']
+    command = ["pwsh", "-c", "copy a.txt c1.txt; Write-Output '{line}' >> c1.txt"]
+    """
+
+    template_c2 = """
+    parameters = ['line']
+    command = ["pwsh", "-c", "copy c1.txt c2.txt; Write-Output '{line}' >> c2.txt"]
+    """
+else:
+    template = """
+    parameters = ['line']
+    command = ["bash", "-c", "echo {line} >> 'a.txt'"]
+    """
+
+    template_c1 = """
+    parameters = ['line']
+    command = ["bash", "-c", "cat a.txt > c1.txt;  echo {line} >> c1.txt"]
+    """
+
+    template_c2 = """
+    parameters = ['line']
+    command = ["bash", "-c", "cat c1.txt > c2.txt; echo {line} >> c2.txt"]
+    """
 
 
 def test_input_is_output(tmp_path: Path, cfgman):
@@ -44,7 +62,10 @@ def test_input_is_output(tmp_path: Path, cfgman):
 
     # check that get works
     root_dataset.drop('a.txt', result_renderer='disabled')
-    assert (root_dataset.pathobj / 'a.txt').exists() is False
+    if (root_dataset.pathobj / 'a.txt').exists():
+        assert (root_dataset.pathobj / 'a.txt').read_text().startswith(
+            '/annex/objects'
+        )
 
     with cfgman.overrides(
         {
@@ -98,7 +119,10 @@ def test_chain_dependency(tmp_path: Path, cfgman):
     # drop c1.txt and c2.txt and check that get c2.works
     for file in ['c1.txt', 'c2.txt']:
         root_dataset.drop(file, result_renderer='disabled')
-        assert (root_dataset.pathobj / file).exists() is False
+        if (root_dataset.pathobj / file).exists():
+            assert (root_dataset.pathobj / file).read_text().startswith(
+                '/annex/objects'
+            )
 
     with cfgman.overrides(
         {

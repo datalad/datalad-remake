@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 from datalad.core.distributed.clone import Clone
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines
-from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake.utils.chdir import chdir
 
