@@ -36,14 +36,17 @@ from datalad_next.runners import (
 )
 
 from datalad_remake import (
+    PatternPath,
     specification_dir,
     template_dir,
     url_scheme,
 )
+from datalad_remake.commands import provision_cmd
 from datalad_remake.utils.chdir import chdir
 from datalad_remake.utils.compute import compute
 from datalad_remake.utils.getconfig import get_trusted_keys
 from datalad_remake.utils.glob import resolve_patterns
+from datalad_remake.utils.read_list import read_list
 from datalad_remake.utils.remake_remote import add_remake_remote
 from datalad_remake.utils.verify import verify_file
 
@@ -226,8 +229,8 @@ class Make(ValidatedInterface):
     ) -> Generator:
         ds: Dataset = dataset.ds if dataset else Dataset('.')
 
-        input_pattern = (input or []) + read_list(input_list)
-        output_pattern = (output or []) + read_list(output_list)
+        input_pattern = list(map(PatternPath, (input or []) + read_list(input_list)))
+        output_pattern = list(map(PatternPath, (output or []) + read_list(output_list)))
         parameter = (parameter or []) + read_list(parameter_list)
 
         parameter_dict = dict([p.split('=', 1) for p in parameter])
@@ -278,27 +281,13 @@ class Make(ValidatedInterface):
             )
 
 
-def read_list(list_file: str | Path | None) -> list[str]:
-    if list_file is None:
-        return []
-    return list(
-        filter(
-            lambda s: s != '' and not s.startswith('#'),
-            [
-                line.strip()
-                for line in Path(list_file).read_text().splitlines(keepends=False)
-            ],
-        )
-    )
-
-
 def get_url(
     dataset: Dataset,
     branch: str | None,
     template_name: str,
     parameters: dict[str, str],
-    input_pattern: list[str],
-    output_pattern: list[str],
+    input_pattern: list[PatternPath],
+    output_pattern: list[PatternPath],
     label: str,
 ) -> tuple[str, str]:
     # If something goes wrong after the compute specification was saved,
@@ -321,8 +310,8 @@ def get_url(
 def write_spec(
     dataset: Dataset,
     method: str,
-    input_pattern: list[str],
-    output_pattern: list[str],
+    input_pattern: list[PatternPath],
+    output_pattern: list[PatternPath],
     parameters: dict[str, str],
 ) -> str:
     # create the specification and hash it
@@ -347,24 +336,35 @@ def write_spec(
 
 
 def build_json(
-    method: str, inputs: list[str], outputs: list[str], parameters: dict[str, str]
+    method: str,
+    inputs: list[PatternPath],
+    outputs: list[PatternPath],
+    parameters: dict[str, str],
 ) -> str:
     return json.dumps(
         {
             'method': method,
-            'input': sorted(inputs),
-            'output': sorted(outputs),
+            'input': sorted(map(str, inputs)),
+            'output': sorted(map(str, outputs)),
             'parameter': parameters,
         },
         sort_keys=True,
     )
 
 
-def add_url(dataset: Dataset, file_path: str, url_base: str, *, url_only: bool) -> str:
-    lgr.debug('add_url: %s %s %s %s', str(dataset), file_path, url_base, repr(url_only))
+def add_url(
+    dataset: Dataset,
+    file_path: PatternPath,
+    url_base: str,
+    *,
+    url_only: bool,
+) -> str:
+    lgr.debug(
+        'add_url: %s %s %s %s', str(dataset), str(file_path), url_base, repr(url_only)
+    )
 
     # Build the file-specific URL and store it in the annex
-    url = url_base + f'&this={quote(file_path)}'
+    url = url_base + f'&this={quote(str(file_path))}'
     dataset_path, path = get_file_dataset(dataset.pathobj / file_path)
 
     # If the file does not exist and speculative computation is requested, we
@@ -410,11 +410,15 @@ def get_file_dataset(file: Path) -> tuple[Path, Path]:
 def provide(
     dataset: Dataset,
     branch: str | None,
-    input_patterns: list[str],
+    input_patterns: list[PatternPath],
 ) -> Path:
     lgr.debug('provide: %s %s %s', dataset, branch, input_patterns)
-    result = dataset.provision(
-        input=input_patterns, branch=branch, result_renderer='disabled'
+    result = list(
+        provision_cmd.provide(
+            dataset=dataset,
+            input_patterns=input_patterns,
+            source_branch=branch,
+        )
     )
     return Path(result[0]['path'])
 
@@ -423,7 +427,7 @@ def provide(
 def provide_context(
     dataset: Dataset,
     branch: str | None,
-    input_patterns: list[str],
+    input_patterns: list[PatternPath],
 ) -> Generator:
     worktree = provide(dataset, branch=branch, input_patterns=input_patterns)
     try:
@@ -437,7 +441,7 @@ def execute(
     worktree: Path,
     template_name: str,
     parameter: dict[str, str],
-    output_pattern: list[str],
+    output_pattern: list[PatternPath],
     trusted_key_ids: list[str] | None,
 ) -> None:
     lgr.debug(
@@ -471,8 +475,8 @@ def execute(
 def collect(
     worktree: Path,
     dataset: Dataset,
-    output_pattern: Iterable[str],
-) -> set[str]:
+    output_pattern: Iterable[PatternPath],
+) -> set[PatternPath]:
     output = resolve_patterns(root_dir=worktree, patterns=output_pattern)
 
     # Ensure that all subdatasets that are touched by paths in `output` are
@@ -492,7 +496,10 @@ def collect(
     return output
 
 
-def install_containing_subdatasets(dataset: Dataset, files: Iterable[str]) -> None:
+def install_containing_subdatasets(
+    dataset: Dataset,
+    files: Iterable[PatternPath],
+) -> None:
     """Install all subdatasets that contain a file from `files`."""
 
     # Set the set of subdatasets to the set of subdatasets that are installed.
@@ -502,7 +509,11 @@ def install_containing_subdatasets(dataset: Dataset, files: Iterable[str]) -> No
 
     # Get the relative paths of all known subdatasets
     subdataset_infos = {
-        Path(result['path']).relative_to(Path(result['parentds'])): result['state']
+        # Determine the relative path of the parent dataset with system `Path`
+        # instances, and convert it into `PatternPath` objects.
+        PatternPath(Path(result['path']).relative_to(Path(result['parentds']))): result[
+            'state'
+        ]
         == 'present'
         for result in dataset.subdatasets(recursive=True)
     }
@@ -512,8 +523,8 @@ def install_containing_subdatasets(dataset: Dataset, files: Iterable[str]) -> No
         {
             prefix
             for file in files
-            for prefix in Path(file).parents
-            if prefix != Path('.')
+            for prefix in file.parents
+            if prefix != PatternPath('.')
         },
         key=lambda p: p.parts.__len__(),
     )
@@ -523,15 +534,17 @@ def install_containing_subdatasets(dataset: Dataset, files: Iterable[str]) -> No
             dataset.install(path=str(path), result_renderer='disabled')
             # Update subdataset_info to get newly installed subdatasets.
             subdataset_infos = {
-                Path(result['path']).relative_to(Path(result['parentds'])): result[
-                    'state'
-                ]
-                == 'present'
+                PatternPath(
+                    Path(result['path']).relative_to(Path(result['parentds']))
+                ): result['state'] == 'present'
                 for result in dataset.subdatasets(recursive=True)
             }
 
 
-def initialize_remotes(dataset: Dataset, files: Iterable[str]) -> None:
+def initialize_remotes(
+    dataset: Dataset,
+    files: Iterable[PatternPath],
+) -> None:
     """Add a remake remote to all datasets that are touched by the files"""
 
     # Get the subdatasets that contain generated files
@@ -543,7 +556,10 @@ def initialize_remotes(dataset: Dataset, files: Iterable[str]) -> None:
         add_remake_remote(str(dataset_dir))
 
 
-def unlock_files(dataset: Dataset, files: Iterable[str]) -> None:
+def unlock_files(
+    dataset: Dataset,
+    files: Iterable[PatternPath],
+) -> None:
     """Use datalad to resolve subdatasets and unlock files in the dataset."""
     # TODO: for some reason `dataset unlock` does not operate in the
     #  context of `dataset.pathobj`, so we need to change the working
@@ -561,8 +577,13 @@ def unlock_files(dataset: Dataset, files: Iterable[str]) -> None:
                 dataset.unlock(file, result_renderer='disabled')
 
 
-def create_output_space(dataset: Dataset, files: Iterable[str]) -> None:
+def create_output_space(
+    dataset: Dataset,
+    files: Iterable[PatternPath],
+) -> None:
     """Get all files that are part of the output space."""
     for f in files:
         with contextlib.suppress(IncompleteResultsError):
-            dataset.get(f, result_renderer='disabled')
+            # Convert the `PatternPath` instance to a system path and pass its
+            # string representation to `Dataset.get()`.
+            dataset.get(str(Path(f)), result_renderer='disabled')

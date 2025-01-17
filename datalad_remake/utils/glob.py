@@ -6,6 +6,7 @@ from itertools import chain
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from datalad_remake import PatternPath
 from datalad_remake.utils.chdir import chdir
 
 if TYPE_CHECKING:
@@ -13,13 +14,31 @@ if TYPE_CHECKING:
 
 
 # Resolve input file patterns in the original dataset
-def resolve_patterns(root_dir: str | Path, patterns: Iterable[str]) -> set[str]:
+def resolve_patterns(
+    root_dir: str | Path,
+    patterns: Iterable[PatternPath],
+    *,
+    recursive: bool = True,
+) -> set[PatternPath]:
     return set(
-        filter(
-            lambda p: not (Path(root_dir) / p).is_dir(),
-            chain.from_iterable(
-                glob(pattern, root_dir=str(root_dir), recursive=True)
-                for pattern in patterns
+        map(
+            PatternPath,
+            filter(
+                # This expression works because a `PatternPath` instance can be
+                # safely appended to a system path via `/`. The result is a system
+                # path where the last parts are the parts of the `PatternPath`
+                # instance.
+                lambda p: not (Path(root_dir) / p).is_dir(),
+                chain.from_iterable(
+                    glob(
+                        # Convert `PatternPath` instance to a platform path and then
+                        # to a string, which is required by the `glob` function.
+                        str(Path(pattern)),
+                        root_dir=root_dir,
+                        recursive=recursive,
+                    )
+                    for pattern in patterns
+                ),
             ),
         )
     )

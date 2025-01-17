@@ -10,6 +10,7 @@ from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake.utils.chdir import chdir
 
+from ... import PatternPath
 from ..make_cmd import provide_context
 from .create_datasets import create_ds_hierarchy
 
@@ -125,7 +126,9 @@ def get_file_list(
 @skip_if_on_windows
 def test_provision_context(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1')[0][2]
-    with provide_context(dataset, branch=None, input_patterns=['**']) as worktree:
+    with provide_context(
+        dataset, branch=None, input_patterns=[PatternPath('**')]
+    ) as worktree:
         files = set(get_file_list(worktree))
         assert files
     assert not worktree.exists()
@@ -135,7 +138,7 @@ def test_provision_context(tmp_path):
 def test_branch_deletion_after_provision(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     with provide_context(
-        dataset=dataset, branch=None, input_patterns=['a.txt']
+        dataset=dataset, branch=None, input_patterns=[PatternPath('a.txt')]
     ) as worktree:
         assert worktree.exists()
     assert not worktree.exists()
