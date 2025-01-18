@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from datalad_next.tests import skip_if_on_windows
-
 from datalad_remake.commands.make_cmd import collect
 
 from ... import PatternPath

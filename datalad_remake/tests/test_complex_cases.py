@@ -11,7 +11,6 @@ from datalad_remake.commands.tests.create_datasets import (
 )
 from datalad_remake.utils.platform import on_windows
 
-
 if on_windows:
     template = """
     parameters = ['line']
@@ -63,9 +62,7 @@ def test_input_is_output(tmp_path: Path, cfgman):
     # check that get works
     root_dataset.drop('a.txt', result_renderer='disabled')
     if (root_dataset.pathobj / 'a.txt').exists():
-        assert (root_dataset.pathobj / 'a.txt').read_text().startswith(
-            '/annex/objects'
-        )
+        assert (root_dataset.pathobj / 'a.txt').read_text().startswith('/annex/objects')
 
     with cfgman.overrides(
         {
@@ -120,8 +117,8 @@ def test_chain_dependency(tmp_path: Path, cfgman):
     for file in ['c1.txt', 'c2.txt']:
         root_dataset.drop(file, result_renderer='disabled')
         if (root_dataset.pathobj / file).exists():
-            assert (root_dataset.pathobj / file).read_text().startswith(
-                '/annex/objects'
+            assert (
+                (root_dataset.pathobj / file).read_text().startswith('/annex/objects')
             )
 
     with cfgman.overrides(

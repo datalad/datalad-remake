@@ -17,9 +17,9 @@ if on_windows:
         "Write-Output 'content: {first}' > a.txt;"
         "Write-Output 'content: {second}' > b.txt;"
         "Write-Output 'content: {third}' > new.txt;"
-        "ni -type directory d2_subds0;"
-        "ni -type directory d2_subds0/d2_subds1;"
-        "ni -type directory d2_subds0/d2_subds1/d2_subds2;"
+        'ni -type directory d2_subds0;'
+        'ni -type directory d2_subds0/d2_subds1;'
+        'ni -type directory d2_subds0/d2_subds1/d2_subds2;'
         "Write-Output 'content: {first}' > d2_subds0/a0.txt;"
         "Write-Output 'content: {second}' > d2_subds0/b0.txt;"
         "Write-Output 'content: {third}' > d2_subds0/new.txt;"
@@ -158,7 +158,6 @@ def test_end_to_end(tmp_path, cfgman, monkeypatch, output_pattern):
         _check_content(root_dataset, test_file_content)
 
 
-#@skip_if_on_windows
 def test_input_subdatasets(tmp_path, cfgman):
     if on_windows:
         simple_test_method = """

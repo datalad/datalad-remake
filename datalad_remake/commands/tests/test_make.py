@@ -3,7 +3,6 @@ from urllib.parse import urlparse
 
 from datalad_core.config import ConfigItem
 from datalad_next.datasets import Dataset
-from datalad_next.tests import skip_if_on_windows
 
 import datalad_remake.commands.make_cmd
 from datalad_remake import (
@@ -15,7 +14,6 @@ from datalad_remake.commands.tests.create_datasets import (
     create_simple_computation_dataset,
 )
 from datalad_remake.utils.platform import on_windows
-
 
 if on_windows:
     test_method = """

@@ -218,7 +218,7 @@ def provide(
 
     if on_windows:
         # Create a worktree via `git clone` and check out the requested commit
-        args = (['clone', '.', str(resolved_worktree_dir)])
+        args = ['clone', '.', str(resolved_worktree_dir)]
         call_git_lines(args, cwd=dataset.pathobj)
         if source_branch:
             args = ['checkout', source_branch]

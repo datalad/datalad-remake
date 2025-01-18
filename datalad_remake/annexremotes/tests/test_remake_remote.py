@@ -4,6 +4,7 @@ from datalad_core.config import ConfigItem
 from datalad_remake import allow_untrusted_execution_key
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
 from datalad_remake.utils.platform import on_windows
+
 from ... import (
     PatternPath,
     specification_dir,
@@ -15,7 +16,6 @@ from .utils import (
     create_keypair,
     run_remake_remote,
 )
-
 
 if on_windows:
     template = """

@@ -21,7 +21,8 @@ def resolve_patterns(
     recursive: bool = True,
 ) -> set[PatternPath]:
     return {
-        PatternPath(Path(p)) for p in filter(
+        PatternPath(Path(p))
+        for p in filter(
             # This expression works because a `PatternPath` instance can be
             # safely appended to a system path via `/`. The result is a system
             # path where the last parts are the parts of the `PatternPath`
