@@ -41,7 +41,6 @@ from datalad_next.runners import call_git_lines, call_git_success
 from datalad_remake import PatternPath
 from datalad_remake.utils.chdir import chdir
 from datalad_remake.utils.glob import glob
-from datalad_remake.utils.patched_env import patched_env
 from datalad_remake.utils.read_list import read_list
 
 if TYPE_CHECKING:
@@ -421,8 +420,7 @@ def install_subdataset(
             absolute_path.as_uri(),
         ]
         call_git_lines(args)
-    with patched_env(remove=['GIT_DIR', 'GIT_WORK_TREE']):
-        worktree.get(str(subdataset_path), get_data=False, result_renderer='disabled')
+    worktree.get(str(subdataset_path), get_data=False, result_renderer='disabled')
     uninstalled_subdatasets.remove(subdataset_path)
     uninstalled_subdatasets.update(get_uninstalled_subdatasets(worktree))
 

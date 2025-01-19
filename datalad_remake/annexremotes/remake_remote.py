@@ -152,8 +152,7 @@ class RemakeRemote(SpecialRemote):
             verify_file(dataset.pathobj, spec_path, trusted_key_ids)
 
         # Ensure that the spec is actually present and read it
-        with patched_env(remove=['GIT_DIR', 'GIT_WORK_TREE']):
-            dataset.get(spec_path, result_renderer='disabled')
+        dataset.get(spec_path, result_renderer='disabled')
         with open(spec_path, 'rb') as f:
             spec = json.load(f)
 
@@ -169,58 +168,61 @@ class RemakeRemote(SpecialRemote):
     def transfer_retrieve(self, key: str, file_name: str) -> None:
         self.annex.debug(f'TRANSFER RETRIEVE key: {key!r}, file_name: {file_name!r}')
 
-        dataset_id = self.config_manager.get('datalad.dataset.id').value
-        self.annex.debug(f'TRANSFER RETRIEVE dataset_id: {dataset_id!r}')
-        self.annex.debug(
-            'TRANSFER RETRIEVE get_allow_untrusted_execution: '
-            f'{get_allow_untrusted_execution(dataset_id)}'
-        )
-        if get_allow_untrusted_execution(dataset_id):
-            trusted_key_ids = None
-            lgr.warning('datalad remake remote performs UNTRUSTED execution')
-        else:
-            trusted_key_ids = get_trusted_keys()
+        # Remove any `GIT_DIR` and `GIT_WORK_TREE` environment variables during
+        # the computation. This is necessary to avoid interference with the
+        # `Dataset.get` implementation in DataLad.
+        with patched_env(remove=['GIT_DIR', 'GIT_WORK_TREE']):
+            dataset_id = self.config_manager.get('datalad.dataset.id').value
+            self.annex.debug(f'TRANSFER RETRIEVE dataset_id: {dataset_id!r}')
+            self.annex.debug(
+                'TRANSFER RETRIEVE get_allow_untrusted_execution: '
+                f'{get_allow_untrusted_execution(dataset_id)}'
+            )
+            if get_allow_untrusted_execution(dataset_id):
+                trusted_key_ids = None
+                lgr.warning('datalad remake remote performs UNTRUSTED execution')
+            else:
+                trusted_key_ids = get_trusted_keys()
 
-        compute_info, dataset = self.get_compute_info(key, trusted_key_ids)
-        self.annex.debug(f'TRANSFER RETRIEVE compute_info: {compute_info!r}')
+            compute_info, dataset = self.get_compute_info(key, trusted_key_ids)
+            self.annex.debug(f'TRANSFER RETRIEVE compute_info: {compute_info!r}')
 
-        # Perform the computation, and collect the results
-        lgr.debug('Starting provision')
-        self.annex.debug('Starting provision')
-        with provide_context(
-            dataset,
-            compute_info['root_version'],
-            compute_info['input'],
-        ) as worktree:
-            # Ensure that the method template is present, in case it is annexed.
-            lgr.debug('Fetching method template')
-            with patched_env(remove=['GIT_DIR', 'GIT_WORK_TREE']):
+            # Perform the computation, and collect the results
+            lgr.debug('Starting provision')
+            self.annex.debug('Starting provision')
+            with provide_context(
+                dataset,
+                compute_info['root_version'],
+                compute_info['input'],
+            ) as worktree:
+                # Ensure that the method template is present, in case it is annexed.
+                lgr.debug('Fetching method template')
                 Dataset(worktree).get(
                     PatternPath(template_dir) / compute_info['method'],
                     result_renderer='disabled',
                 )
 
-            lgr.debug('Starting execution')
-            self.annex.debug('Starting execution')
-            execute(
-                worktree,
-                compute_info['method'],
-                compute_info['parameter'],
-                compute_info['output'],
-                trusted_key_ids,
-            )
+                lgr.debug('Starting execution')
+                self.annex.debug('Starting execution')
+                execute(
+                    worktree,
+                    compute_info['method'],
+                    compute_info['parameter'],
+                    compute_info['output'],
+                    trusted_key_ids,
+                )
 
-            lgr.debug('Starting collection')
-            self.annex.debug('Starting collection')
-            self._collect(
-                worktree,
-                dataset,
-                compute_info['output'],
-                compute_info['this'],
-                file_name,
-            )
-            lgr.debug('Leaving provision context')
-            self.annex.debug('Leaving provision context')
+                lgr.debug('Starting collection')
+                self.annex.debug('Starting collection')
+                self._collect(
+                    worktree,
+                    dataset,
+                    compute_info['output'],
+                    compute_info['this'],
+                    file_name,
+                )
+                lgr.debug('Leaving provision context')
+                self.annex.debug('Leaving provision context')
 
     def checkpresent(self, key: str) -> bool:
         # See if at least one URL with the remake url-scheme is present
