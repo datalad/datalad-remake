@@ -40,7 +40,6 @@ from datalad_next.runners import call_git_lines, call_git_success
 from datalad_remake import PatternPath
 from datalad_remake.utils.chdir import chdir
 from datalad_remake.utils.glob import glob
-from datalad_remake.utils.patched_env import patched_env
 from datalad_remake.utils.platform import on_windows
 from datalad_remake.utils.read_list import read_list
 
