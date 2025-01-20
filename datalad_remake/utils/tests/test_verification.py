@@ -4,10 +4,14 @@ import pytest
 
 from datalad_remake.annexremotes.tests.test_remake_remote import create_keypair
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
+from datalad_remake.utils.platform import on_windows
 from datalad_remake.utils.verify import verify_file
 
 
 def test_whitelist(tmp_path, monkeypatch, cfgman):  # noqa ARG001
+    if on_windows:
+        pytest.skip('GPG key generation currently not supported on Windows')
+
     gpg_dir = tmp_path / 'gpg'
     tmp_home = tmp_path / 'tmp_home'
 

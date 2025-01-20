@@ -32,6 +32,9 @@ else:
 @pytest.mark.parametrize('trusted', [True, False])
 def test_compute_remote_main(tmp_path, cfgman, monkeypatch, trusted):
     if trusted:
+        if on_windows:
+            pytest.skip('GPG key generation currently not supported on Windows')
+
         gpg_homedir = tmp_path / 'tmp_gpg_dir'
         tmp_home = tmp_path / 'tmp_home'
 
