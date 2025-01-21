@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import re
+from contextlib import suppress
 from pathlib import Path
 from re import Match
 from tempfile import TemporaryDirectory
@@ -17,6 +18,7 @@ from typing import (
     cast,
 )
 
+from datalad.runner import CommandError
 from datalad_next.commands import (
     EnsureCommandParameterization,
     Parameter,
@@ -216,11 +218,21 @@ def provide(
     lgr.debug('Provisioning dataset %s at %s', dataset, resolved_worktree_dir)
 
     if on_windows:
+        # Check whether we are already in a provisioned worktree. If that is the
+        # case, we have to provision from the original source.
+        source = dataset.config.get('datalad.make.provision-source', None)
+        if not source:
+            source = dataset.path
         # Create a worktree via `git clone` and check out the requested commit
-        args = ['clone', '.', str(resolved_worktree_dir)]
+        args = ['clone', source, str(resolved_worktree_dir)]
         call_git_lines(args, cwd=dataset.pathobj)
+        args = ['config', '--add', 'datalad.make.provision-source', source]
+        call_git_lines(args, cwd=resolved_worktree_dir)
         if source_branch:
             args = ['checkout', source_branch]
+            call_git_lines(args, cwd=resolved_worktree_dir)
+        args = ['annex', 'enableremote', 'datalad-remake-auto']
+        with suppress(CommandError):
             call_git_lines(args, cwd=resolved_worktree_dir)
     else:
         # Create a worktree via `git worktree`
