@@ -18,7 +18,6 @@ from typing import (
     cast,
 )
 
-from datalad.runner import CommandError
 from datalad_next.commands import (
     EnsureCommandParameterization,
     Parameter,
@@ -37,6 +36,7 @@ from datalad_next.constraints import (
     EnsureStr,
 )
 from datalad_next.datasets import Dataset
+from datalad_next.exceptions import CommandError
 from datalad_next.runners import call_git_lines, call_git_success
 
 from datalad_remake import PatternPath

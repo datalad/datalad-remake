@@ -1,0 +1,3 @@
+from datalad.runner.exception import CommandError as CommandError
+from datalad.support.exceptions import CapturedException as CapturedException, IncompleteResultsError as IncompleteResultsError, NoDatasetFound as NoDatasetFound
+from datalad_next.url_operations import UrlOperationsAuthenticationError as UrlOperationsAuthenticationError, UrlOperationsAuthorizationError as UrlOperationsAuthorizationError, UrlOperationsInteractionError as UrlOperationsInteractionError, UrlOperationsRemoteError as UrlOperationsRemoteError, UrlOperationsResourceUnknown as UrlOperationsResourceUnknown
