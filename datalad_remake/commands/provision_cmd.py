@@ -1,7 +1,7 @@
 """
 A data provisioner that works with local git repositories.
 Data is provisioned in a temporary worktree. All subdatasets
-are currently also provisioned.
+are currently also provisioned, if they match an input pattern.
 """
 
 from __future__ import annotations
@@ -39,7 +39,10 @@ from datalad_next.datasets import Dataset
 from datalad_next.exceptions import CommandError
 from datalad_next.runners import call_git_lines, call_git_success
 
-from datalad_remake import PatternPath
+from datalad_remake import (
+    PatternPath,
+    worktree_source_config_key,
+)
 from datalad_remake.utils.chdir import chdir
 from datalad_remake.utils.glob import glob
 from datalad_remake.utils.platform import on_windows
@@ -218,30 +221,12 @@ def provide(
     lgr.debug('Provisioning dataset %s at %s', dataset, resolved_worktree_dir)
 
     if on_windows:
-        # Check whether we are already in a provisioned worktree. If that is the
-        # case, we have to provision from the original source.
-        source = dataset.config.get('datalad.make.provision-source', None)
-        if not source:
-            source = dataset.path
-        # Create a worktree via `git clone` and check out the requested commit
-        args = ['clone', source, str(resolved_worktree_dir)]
-        call_git_lines(args, cwd=dataset.pathobj)
-        args = ['config', '--add', 'datalad.make.provision-source', source]
-        call_git_lines(args, cwd=resolved_worktree_dir)
-        if source_branch:
-            args = ['checkout', source_branch]
-            call_git_lines(args, cwd=resolved_worktree_dir)
-        args = ['annex', 'enableremote', 'datalad-remake-auto']
-        with suppress(CommandError):
-            call_git_lines(args, cwd=resolved_worktree_dir)
+        # `git worktree` does not work with `git annex` on Windows, create a
+        # cloned worktree instead.
+        create_cloned_worktree(dataset, source_branch, resolved_worktree_dir)
     else:
         # Create a worktree via `git worktree`
-        args = (
-            ['worktree', 'add']
-            + [str(resolved_worktree_dir)]
-            + ([source_branch] if source_branch else [])
-        )
-        call_git_lines(args, cwd=dataset.pathobj)
+        create_git_worktree(dataset, source_branch, resolved_worktree_dir)
 
     worktree_dataset = Dataset(resolved_worktree_dir)
 
@@ -256,6 +241,43 @@ def provide(
         status='ok',
         message=f'provisioned dataset: {dataset} in workspace: {worktree_dir!r}',
     )
+
+
+def create_cloned_worktree(
+    dataset: Dataset,
+    commit_ish: str | None,
+    worktree_dir: Path,
+) -> None:
+    # Check whether `dataset` is a worktree that was provisioned by `git clone`.
+    # If that is the case, we have to provision from the original source.
+    source = dataset.config.get(worktree_source_config_key, None) or dataset.path
+
+    # Create a repo via `git clone` and check out the requested commit-ish. The
+    # newly created repo will serve as worktree.
+    args = ['clone', source, str(worktree_dir)]
+    call_git_lines(args, cwd=dataset.pathobj)
+    if commit_ish:
+        args = ['checkout', commit_ish]
+        call_git_lines(args, cwd=worktree_dir)
+
+    # Add a `provisioned worktree` key with the original source as value
+    args = ['config', '--add', worktree_source_config_key, source]
+    call_git_lines(args, cwd=worktree_dir)
+
+    # Enable automatically create `datalad-remake` special remotes. Ignore
+    # cases in which the special remotes do not yet exist.
+    args = ['annex', 'enableremote', 'datalad-remake-auto']
+    with suppress(CommandError):
+        call_git_lines(args, cwd=worktree_dir)
+
+
+def create_git_worktree(
+    dataset: Dataset,
+    commit_ish: str | None,
+    worktree_dir: Path,
+) -> None:
+    args = ['worktree', 'add', str(worktree_dir)] + ([commit_ish] if commit_ish else [])
+    call_git_lines(args, cwd=dataset.pathobj)
 
 
 def resolve_patterns(
