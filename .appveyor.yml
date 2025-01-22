@@ -87,10 +87,7 @@ environment:
       COVERAGE_ROOT: C:\DLTMP
       HATCH_DATA_DIR: C:\hatch-data-dir
       PIP_CACHE: C:\Users\appveyor\AppData\Local\pip\Cache
-      KEYWORDS: >
-        not test_whitelist
-        and not test_input_is_output
-        and not test_chain_dependency
+      KEYWORDS: not no_such_test
 
     # MacOS core tests
     - job_name: test-mac

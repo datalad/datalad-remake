@@ -16,6 +16,7 @@ __all__ = [
     'template_dir',
     'trusted_keys_config_key',
     'url_scheme',
+    'worktree_source_config_key',
     'PatternPath',
 ]
 
@@ -59,3 +60,4 @@ trusted_keys_config_key = 'datalad.make.trusted-keys'
 allow_untrusted_execution_key = 'datalad.make.allow-untrusted-execution.d-'
 priority_config_key = 'datalad.make.priority'
 auto_remote_name = 'datalad-remake-auto'
+worktree_source_config_key = 'datalad.make.provision-source'

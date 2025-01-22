@@ -1,9 +1,9 @@
 import pytest
 from datalad_core.config import ConfigItem
-from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake import allow_untrusted_execution_key
 from datalad_remake.commands.tests.create_datasets import create_ds_hierarchy
+from datalad_remake.utils.platform import on_windows
 
 from ... import (
     PatternPath,
@@ -17,16 +17,24 @@ from .utils import (
     run_remake_remote,
 )
 
-template = """
-parameters = ['content']
-command = ["bash", "-c", "echo content: {content} > 'a.txt'"]
-"""
+if on_windows:
+    template = """
+    parameters = ['content']
+    command = ["pwsh", "-c", "Write-Output 'content: {content}' > a.txt"]
+    """
+else:
+    template = """
+    parameters = ['content']
+    command = ["bash", "-c", "echo content: {content} > 'a.txt'"]
+    """
 
 
-@skip_if_on_windows
 @pytest.mark.parametrize('trusted', [True, False])
 def test_compute_remote_main(tmp_path, cfgman, monkeypatch, trusted):
     if trusted:
+        if on_windows:
+            pytest.skip('GPG key generation currently not supported on Windows')
+
         gpg_homedir = tmp_path / 'tmp_gpg_dir'
         tmp_home = tmp_path / 'tmp_home'
 

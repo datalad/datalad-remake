@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 from datalad.core.distributed.clone import Clone
 from datalad_next.datasets import Dataset
 from datalad_next.runners import call_git_lines
-from datalad_next.tests import skip_if_on_windows
 
 from datalad_remake.utils.chdir import chdir
 
@@ -33,7 +32,6 @@ all_paths = [
 b_paths = [path.format(file='b') for path in file_path_templates]
 
 
-@skip_if_on_windows
 def test_worktree_basic(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     inputs = [
@@ -60,7 +58,7 @@ def test_worktree_basic(tmp_path):
         with chdir(ds.path):
             for line in call_git_lines(['worktree', 'list']):
                 directory = line.split()[0]
-                assert directory == ds.path
+                assert Path(directory) == ds.pathobj
         for sub_ds in ds.subdatasets(result_renderer='disabled'):
             check_deleted_worktrees(Dataset(sub_ds['path']))
 
@@ -70,7 +68,6 @@ def test_worktree_basic(tmp_path):
     )
 
 
-@skip_if_on_windows
 def test_worktree_globbing(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     result = dataset.provision(
@@ -86,7 +83,7 @@ def test_worktree_globbing(tmp_path):
 
     worktree = Path(result['path'])
     worktree_set = set(get_file_list(worktree))
-    assert worktree_set == {path.format(ds_name='ds1') for path in all_paths}
+    assert worktree_set == {Path(path.format(ds_name='ds1')) for path in all_paths}
     dataset.provision(delete=worktree, result_renderer='disabled')
 
     result = dataset.provision(
@@ -102,7 +99,7 @@ def test_worktree_globbing(tmp_path):
 
     worktree = Path(result['path'])
     worktree_set = set(get_file_list(worktree))
-    assert {path.format(ds_name='ds1') for path in b_paths}.issubset(worktree_set)
+    assert {Path(path.format(ds_name='ds1')) for path in b_paths}.issubset(worktree_set)
     dataset.provision(delete=worktree, result_renderer='disabled')
 
     dataset.drop(
@@ -112,7 +109,7 @@ def test_worktree_globbing(tmp_path):
 
 def get_file_list(
     root: Path, path: Path | None = None, prefix: Path | None = None
-) -> Iterable[str]:
+) -> Iterable[Path]:
     prefix = prefix or Path('')
     path = path or root
     for child in path.iterdir():
@@ -120,10 +117,9 @@ def get_file_list(
             if child.is_dir():
                 yield from get_file_list(root, child, prefix=prefix / child)
             else:
-                yield str((prefix / child).relative_to(root))
+                yield (prefix / child).relative_to(root)
 
 
-@skip_if_on_windows
 def test_provision_context(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1')[0][2]
     with provide_context(
@@ -134,7 +130,6 @@ def test_provision_context(tmp_path):
     assert not worktree.exists()
 
 
-@skip_if_on_windows
 def test_branch_deletion_after_provision(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 3)[0][2]
     with provide_context(
@@ -147,7 +142,6 @@ def test_branch_deletion_after_provision(tmp_path):
     assert worktree.name not in branches
 
 
-@skip_if_on_windows
 def test_not_present_local_datasets(tmp_path):
     root_ds = Dataset(tmp_path / 'ds1')
     root_ds.create(cfg_proc='text2git', result_renderer='disabled')
@@ -160,7 +154,7 @@ def test_not_present_local_datasets(tmp_path):
         ]
     )
     url = _get_submodule_url(provisioned_dataset, 'ds000102')
-    assert url.startswith(f'file://{root_ds.path}')
+    assert url.startswith(root_ds.pathobj.as_uri())
 
     root_ds.drop(
         'ds000102', what='all', reckless='availability', result_renderer='disabled'

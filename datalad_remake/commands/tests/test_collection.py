@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from datalad_next.tests import skip_if_on_windows
-
 from datalad_remake.commands.make_cmd import collect
 
 from ... import PatternPath
@@ -9,7 +7,6 @@ from .create_datasets import create_ds_hierarchy
 from .test_provision import get_file_list
 
 
-@skip_if_on_windows
 def test_collect(tmp_path):
     dataset = create_ds_hierarchy(tmp_path, 'ds1', 1)[0][2]
 
@@ -32,6 +29,6 @@ def test_collect(tmp_path):
         PatternPath('results/sub-01/b.txt'),
     }
     assert set(get_file_list(dataset.pathobj / 'results')) == {
-        'sub-01/a.txt',
-        'sub-01/b.txt',
+        Path('sub-01/a.txt'),
+        Path('sub-01/b.txt'),
     }
