@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import subprocess
+from io import BufferedWriter
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -65,6 +66,7 @@ def compute(
     root_directory: Path,
     template_path: Path,
     compute_arguments: dict[str, str],
+    stdout: BufferedWriter,
 ) -> None:
     template = toml_load(template_path)
 
@@ -75,4 +77,4 @@ def compute(
 
     with chdir(root_directory):
         lgr.debug(f'compute: RUNNING: {substituted_command}')
-        subprocess.run(substituted_command, check=True)
+        subprocess.run(substituted_command, check=True, stdout=stdout)
