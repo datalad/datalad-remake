@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import PurePosixPath as PatternPath
-
 from datalad_remake._version import __version__
+from datalad_remake.utils.patternpath import PatternPath
 
 __all__ = [
     '__version__',
