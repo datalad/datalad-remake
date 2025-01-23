@@ -18,17 +18,21 @@ def test_collect(tmp_path):
     result_dir.mkdir(parents=True)
     (result_dir / 'a.txt').write_text('content: a\n')
     (result_dir / 'b.txt').write_text('content: b\n')
+    (result_dir / 'stdout.txt').write_text('stdout\n')
 
     result = collect(
         worktree=Path(worktree[0]['path']),
         dataset=dataset,
         output_pattern=[PatternPath('results/**')],
+        stdout=PatternPath('results/sub-01/stdout.txt'),
     )
     assert result == {
         PatternPath('results/sub-01/a.txt'),
         PatternPath('results/sub-01/b.txt'),
+        PatternPath('results/sub-01/stdout.txt'),
     }
     assert set(get_file_list(dataset.pathobj / 'results')) == {
         Path('sub-01/a.txt'),
         Path('sub-01/b.txt'),
+        Path('sub-01/stdout.txt'),
     }

@@ -14,6 +14,7 @@ from datalad_remake.utils.platform import on_windows
 
 if on_windows:
     script = (
+        "Write-Output 'some stdout content';"
         "Write-Output 'content: {first}' > a.txt;"
         "Write-Output 'content: {second}' > b.txt;"
         "Write-Output 'content: {third}' > new.txt;"
@@ -38,6 +39,7 @@ if on_windows:
     )
 else:
     script = (
+        'echo some stdout content;'
         "echo content: {first} > 'a.txt';"
         "mkdir -p 'd2_subds0/d2_subds1/d2_subds2';"
         "echo content: {second} > 'b.txt';"
@@ -74,7 +76,6 @@ output_pattern_static = [
     'd2_subds0/d2_subds1/d2_subds2/new.txt',
 ]
 
-
 output_pattern_glob = [
     '*.txt',
     'd2_subds0/*.txt',
@@ -82,13 +83,14 @@ output_pattern_glob = [
     'd2_subds0/d2_subds1/d2_subds2/*.txt',
 ]
 
-
 test_file_content = list(
     zip(  # noqa: B905, remove this comment when the minimum python version is 3.10
         output_pattern_static,
         ['content: first\n', 'content: second\n', 'content: third\n'] * 4,
     )
 )
+
+test_file_content.insert(0, ('stdout.txt', 'some stdout content\n'))
 
 
 def _drop_files(dataset: Dataset, files: Iterable[str]):
@@ -118,6 +120,7 @@ def test_end_to_end(tmp_path, cfgman, monkeypatch, output_pattern):
             'third=third',
         ],
         output=output_pattern,
+        stdout='stdout.txt',
         result_renderer='disabled',
         allow_untrusted_execution=True,
     )
@@ -126,7 +129,9 @@ def test_end_to_end(tmp_path, cfgman, monkeypatch, output_pattern):
         str(Path(result['path']).relative_to(root_dataset.pathobj))
         for result in results
     ]
-    assert set(map(Path, collected_output)) == set(map(Path, output_pattern_static))
+    assert set(map(Path, collected_output)) == set(
+        map(Path, [*output_pattern_static, 'stdout.txt'])
+    )
 
     # check computation success
     _check_content(root_dataset, test_file_content)
