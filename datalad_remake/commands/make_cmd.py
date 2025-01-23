@@ -249,10 +249,11 @@ class Make(ValidatedInterface):
 
         input_pattern = list(map(PatternPath, (input or []) + read_list(input_list)))
         output_pattern = list(map(PatternPath, (output or []) + read_list(output_list)))
-        parameter = (parameter or []) + read_list(parameter_list)
         stdout_path = None if stdout is None else PatternPath(stdout)
 
-        parameter_dict = dict([p.split('=', 1) for p in parameter])
+        parameter_dict = dict(
+            [p.split('=', 1) for p in (parameter or []) + read_list(parameter_list)]
+        )
 
         # We have to get the URL first, because saving the specification to
         # the dataset will change the version.
