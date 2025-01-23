@@ -137,7 +137,9 @@ class Make(ValidatedInterface):
             'file pattern support python globbing, globbing is performed by '
             'installing all possibly matching subdatasets and performing '
             'globbing in those, recursively. That means expressions like `**` '
-            'might pull in a huge number of datasets).',
+            'might pull in a huge number of datasets). Input file patterns '
+            'must be relative, they are dereferenced from the root of the '
+            'dataset.',
         ),
         'input_list': Parameter(
             args=(
@@ -159,7 +161,9 @@ class Make(ValidatedInterface):
             action='append',
             doc='An output file pattern (repeat for multiple outputs)'
             'file pattern support python globbing, output globbing is performed '
-            'in the worktree after the computation).',
+            'in the worktree after the computation). Output file patterns '
+            'must be relative, they are dereferenced from the root of the '
+            'dataset.',
         ),
         'output_list': Parameter(
             args=(
@@ -200,7 +204,11 @@ class Make(ValidatedInterface):
             ),
             default=None,
             doc='Name of a file that will receive `stdout` output from the '
-            'computation. If not given, `stdout` output will be discarded.',
+            'computation. If not given, `stdout` output will be discarded. '
+            'It is preferable to NOT add the `stdout` file to the dataset on '
+            'which the computation is performed. The reason is that `stdout` '
+            'output tends to differ between runs, for example due to time '
+            'stamps or other non-deterministic factors.',
         ),
         'allow_untrusted_execution': Parameter(
             args=('--allow-untrusted-execution',),
