@@ -281,7 +281,9 @@ class RemakeRemote(SpecialRemote):
             if output == this:
                 continue
             is_annexed, dataset_path, file_path = self._is_annexed(dataset, output)
-            self.annex.debug(f'_collect: _is_annexd({output}): {is_annexed}, {dataset_path}, {file_path}')
+            self.annex.debug(
+                f'_collect: _is_annexd({output}): {is_annexed}, {dataset_path}, {file_path}'
+            )
             if is_annexed:
                 self.annex.debug(
                     f'_collect: reinject: {worktree / output} -> {dataset_path}:{file_path}'
@@ -312,13 +314,13 @@ class RemakeRemote(SpecialRemote):
         shutil.copyfile(worktree / this, this_destination)
 
     def _is_annexed(
-        self,
-        dataset: Dataset,
-        file_path: PatternPath
+        self, dataset: Dataset, file_path: PatternPath
     ) -> tuple[bool, Path, Path]:
         """Check whether file_path is annexed and return the dataset and intra dataset path"""
         dataset_path, in_dataset_path = get_file_dataset(dataset.pathobj / file_path)
-        self.annex.debug(f'_is_annexed: {dataset}:{file_path} --> dataset_path: {dataset_path}, in_dataset_path: {in_dataset_path}')
+        self.annex.debug(
+            f'_is_annexed: {dataset}:{file_path} --> dataset_path: {dataset_path}, in_dataset_path: {in_dataset_path}'
+        )
         result = call_git_lines(
             ['annex', 'whereis', str(in_dataset_path)],
             cwd=dataset_path,
