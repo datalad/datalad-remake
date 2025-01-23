@@ -25,7 +25,10 @@ from datalad_core.config import (
 )
 from datalad_next.annexremotes import SpecialRemote, super_main
 from datalad_next.datasets import Dataset
-from datalad_next.runners import call_git_success
+from datalad_next.runners import (
+    call_git_lines,
+    call_git_success,
+)
 
 from datalad_remake import (
     PatternPath,
@@ -159,12 +162,15 @@ class RemakeRemote(SpecialRemote):
         method_path = dataset.pathobj / template_dir / spec['method']
         dataset.get(method_path, result_renderer='disabled')
 
+        stdout = spec.get('stdout', None)
+
         return {
             'root_version': root_version,
             'this': PatternPath(this),
             'method': Path(spec['method']),
             'input': [PatternPath(path) for path in spec['input']],
             'output': [PatternPath(path) for path in spec['output']],
+            'stdout': PatternPath(stdout) if stdout else None,
             'parameter': spec['parameter'],
         }, dataset
 
@@ -212,6 +218,7 @@ class RemakeRemote(SpecialRemote):
                     compute_info['method'],
                     compute_info['parameter'],
                     compute_info['output'],
+                    compute_info['stdout'],
                     trusted_key_ids,
                 )
 
@@ -221,6 +228,7 @@ class RemakeRemote(SpecialRemote):
                     worktree,
                     dataset,
                     compute_info['output'],
+                    compute_info['stdout'],
                     compute_info['this'],
                     file_name,
                 )
@@ -257,6 +265,7 @@ class RemakeRemote(SpecialRemote):
         worktree: Path,
         dataset: Dataset,
         output_patterns: Iterable[PatternPath],
+        stdout: PatternPath | None,
         this: PatternPath,
         this_destination: str,
     ) -> None:
@@ -268,13 +277,12 @@ class RemakeRemote(SpecialRemote):
         # Collect all output files that have been created while creating
         # `this` file.
         for output in outputs:
+            # Skip `this` file because it will be copied to the destination
             if output == this:
                 continue
-            dataset_path, file_path = get_file_dataset(dataset.pathobj / output)
-            is_annexed = call_git_success(
-                ['annex', 'whereis', str(file_path)],
-                cwd=dataset_path,
-                capture_output=True,
+            is_annexed, dataset_path, file_path = self._is_annexed(dataset, output)
+            self.annex.debug(
+                f'_collect: _is_annexd({output}): {is_annexed}, {dataset_path}, {file_path}'
             )
             if is_annexed:
                 self.annex.debug(
@@ -286,9 +294,39 @@ class RemakeRemote(SpecialRemote):
                     capture_output=True,
                 )
 
+        # Collect possible stdout
+        if stdout is not None:
+            is_annexed, dataset_path, file_path = self._is_annexed(dataset, stdout)
+            if is_annexed:
+                self.annex.debug(
+                    f'_collect: reinject: {worktree / stdout} -> {dataset_path}:{file_path}'
+                )
+                call_git_success(
+                    ['annex', 'reinject', str(worktree / stdout), str(file_path)],
+                    cwd=dataset_path,
+                    capture_output=True,
+                )
+            else:
+                shutil.copyfile(worktree / stdout, dataset.pathobj / stdout)
+
         # Collect `this` file. It has to be copied to the destination given
         # by git-annex. Git-annex will check its integrity.
         shutil.copyfile(worktree / this, this_destination)
+
+    def _is_annexed(
+        self, dataset: Dataset, file_path: PatternPath
+    ) -> tuple[bool, Path, Path]:
+        """Check whether file_path is annexed and return the dataset and intra dataset path"""
+        dataset_path, in_dataset_path = get_file_dataset(dataset.pathobj / file_path)
+        self.annex.debug(
+            f'_is_annexed: {dataset}:{file_path} --> dataset_path: {dataset_path}, in_dataset_path: {in_dataset_path}'
+        )
+        result = call_git_lines(
+            ['annex', 'whereis', str(in_dataset_path)],
+            cwd=dataset_path,
+        )
+        self.annex.debug(f'_is_annexed: result {result}')
+        return result != [], dataset_path, in_dataset_path
 
     def _get_priorities(self) -> list[str]:
         """Get configured priorities

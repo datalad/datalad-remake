@@ -87,6 +87,7 @@ def test_label_url(monkeypatch):
         parameters={'name': 'Robert', 'file': 'a.txt'},
         input_pattern=[PatternPath('a.txt')],
         output_pattern=[PatternPath('b.txt')],
+        stdout=None,
         label='label1',
     )
     parts = urlparse(url).query.split('&')

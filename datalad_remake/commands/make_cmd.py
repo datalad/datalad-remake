@@ -137,7 +137,9 @@ class Make(ValidatedInterface):
             'file pattern support python globbing, globbing is performed by '
             'installing all possibly matching subdatasets and performing '
             'globbing in those, recursively. That means expressions like `**` '
-            'might pull in a huge number of datasets).',
+            'might pull in a huge number of datasets). Input file patterns '
+            'must be relative, they are dereferenced from the root of the '
+            'dataset.',
         ),
         'input_list': Parameter(
             args=(
@@ -159,7 +161,9 @@ class Make(ValidatedInterface):
             action='append',
             doc='An output file pattern (repeat for multiple outputs)'
             'file pattern support python globbing, output globbing is performed '
-            'in the worktree after the computation).',
+            'in the worktree after the computation). Output file patterns '
+            'must be relative, they are dereferenced from the root of the '
+            'dataset.',
         ),
         'output_list': Parameter(
             args=(
@@ -193,6 +197,19 @@ class Make(ValidatedInterface):
             'before used. This is useful if a large number of parameters '
             'should be provided.',
         ),
+        'stdout': Parameter(
+            args=(
+                '-s',
+                '--stdout',
+            ),
+            default=None,
+            doc='Name of a file that will receive `stdout` output from the '
+            'computation. If not given, `stdout` output will be discarded. '
+            'It is preferable to NOT add the `stdout` file to the dataset on '
+            'which the computation is performed. The reason is that `stdout` '
+            'output tends to differ between runs, for example due to time '
+            'stamps or other non-deterministic factors.',
+        ),
         'allow_untrusted_execution': Parameter(
             args=('--allow-untrusted-execution',),
             action='store_true',
@@ -225,15 +242,18 @@ class Make(ValidatedInterface):
         output_list: Path | None = None,
         parameter: list[str] | None = None,
         parameter_list: Path | None = None,
+        stdout: str | None = None,
         allow_untrusted_execution: bool = False,
     ) -> Generator:
         ds: Dataset = dataset.ds if dataset else Dataset('.')
 
         input_pattern = list(map(PatternPath, (input or []) + read_list(input_list)))
         output_pattern = list(map(PatternPath, (output or []) + read_list(output_list)))
-        parameter = (parameter or []) + read_list(parameter_list)
+        stdout_path = None if stdout is None else PatternPath(stdout)
 
-        parameter_dict = dict([p.split('=', 1) for p in parameter])
+        parameter_dict = dict(
+            [p.split('=', 1) for p in (parameter or []) + read_list(parameter_list)]
+        )
 
         # We have to get the URL first, because saving the specification to
         # the dataset will change the version.
@@ -244,6 +264,7 @@ class Make(ValidatedInterface):
             parameter_dict,
             input_pattern,
             output_pattern,
+            stdout_path,
             label or template,
         )
 
@@ -258,9 +279,10 @@ class Make(ValidatedInterface):
                     template,
                     parameter_dict,
                     output_pattern,
+                    stdout_path,
                     None if allow_untrusted_execution else get_trusted_keys(),
                 )
-                resolved_output = collect(worktree, ds, output_pattern)
+                resolved_output = collect(worktree, ds, output_pattern, stdout_path)
         else:
             if allow_untrusted_execution:
                 lgr.warning(
@@ -288,6 +310,7 @@ def get_url(
     parameters: dict[str, str],
     input_pattern: list[PatternPath],
     output_pattern: list[PatternPath],
+    stdout: PatternPath | None,
     label: str,
 ) -> tuple[str, str]:
     # If something goes wrong after the compute specification was saved,
@@ -296,7 +319,7 @@ def get_url(
 
     # Write the compute specification to a file in the dataset
     digest = write_spec(
-        dataset, template_name, input_pattern, output_pattern, parameters
+        dataset, template_name, input_pattern, output_pattern, stdout, parameters
     )
 
     return (
@@ -312,10 +335,11 @@ def write_spec(
     method: str,
     input_pattern: list[PatternPath],
     output_pattern: list[PatternPath],
+    stdout: PatternPath | None,
     parameters: dict[str, str],
 ) -> str:
     # create the specification and hash it
-    spec = build_json(method, input_pattern, output_pattern, parameters)
+    spec = build_json(method, input_pattern, output_pattern, stdout, parameters)
     hasher = hashlib.md5()  # noqa S324
     hasher.update(spec.encode())
     digest = hasher.hexdigest()
@@ -339,6 +363,7 @@ def build_json(
     method: str,
     inputs: list[PatternPath],
     outputs: list[PatternPath],
+    stdout: PatternPath | None,
     parameters: dict[str, str],
 ) -> str:
     return json.dumps(
@@ -346,6 +371,7 @@ def build_json(
             'method': method,
             'input': sorted(map(str, inputs)),
             'output': sorted(map(str, outputs)),
+            'stdout': None if stdout is None else str(stdout),
             'parameter': parameters,
         },
         sort_keys=True,
@@ -442,6 +468,7 @@ def execute(
     template_name: str,
     parameter: dict[str, str],
     output_pattern: list[PatternPath],
+    stdout: PatternPath | None,
     trusted_key_ids: list[str] | None,
 ) -> None:
     lgr.debug(
@@ -450,6 +477,7 @@ def execute(
         template_name,
         repr(parameter),
         repr(output_pattern),
+        repr(stdout),
     )
 
     worktree_ds = Dataset(worktree)
@@ -469,15 +497,23 @@ def execute(
         verify_file(worktree_ds.pathobj, template_path, trusted_key_ids)
 
     worktree_ds.get(template_path, result_renderer='disabled')
-    compute(worktree, worktree / template_path, parameter)
+    compute(
+        worktree,
+        worktree / template_path,
+        parameter,
+        None if stdout is None else worktree / stdout,
+    )
 
 
 def collect(
     worktree: Path,
     dataset: Dataset,
     output_pattern: Iterable[PatternPath],
+    stdout: PatternPath | None,
 ) -> set[PatternPath]:
     output = resolve_patterns(root_dir=worktree, patterns=output_pattern)
+    if stdout is not None:
+        output.add(stdout)
 
     # Ensure that all subdatasets that are touched by paths in `output` are
     # installed.

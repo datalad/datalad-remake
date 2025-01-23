@@ -59,6 +59,7 @@ def test_compute_remote_priority(tmp_path, cfgman, monkeypatch, priority):
                 label,
                 [],
                 [PatternPath('a.txt')],
+                None,
                 {'content': f'{label}_parameter'},
             )
         )

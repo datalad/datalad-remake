@@ -62,7 +62,7 @@ def test_compute_remote_main(tmp_path, cfgman, monkeypatch, trusted):
     spec_name = '000001111122222'
     specification_path.mkdir(parents=True, exist_ok=True)
     (specification_path / spec_name).write_text(
-        build_json('echo', [], [PatternPath('a.txt')], {'content': 'some_string'})
+        build_json('echo', [], [PatternPath('a.txt')], None, {'content': 'some_string'})
     )
     dataset.save()
 
