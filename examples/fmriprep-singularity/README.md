@@ -55,21 +55,6 @@ my-project
     └── ds001734
 ```
 
-### Configure special remote
-
-Configure the dataset in which you want to collect the results of the (re)computation, in this case `derivatives/ds001734` subdataset.
-
-```bash
-> cd $HOME/my-project/derivatives/ds001734
-```
-
-Add a `datalad-remake` special remote:
-
-```bash
-> git annex initremote datalad-remake type=external externaltype=datalad-remake \
-encryption=none allow-untrusted-execution=true autoenable=true
-```
-
 ### Add template
 
 Place the `fmriprep-singularity` template in the `.datalad/make/methods` of the root dataset:
