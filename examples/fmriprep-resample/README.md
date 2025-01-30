@@ -16,7 +16,7 @@ Please note, that there is no need to install fMRIPrep. The singularity containe
 
 ## How to install
 
-Install `datalad-remake` extension, as described [here](https://github.com/datalad/datalad-remake/tree/main?tab=readme-ov-file#installation).
+Install `datalad-remake` extension, as described [here](https://github.com/datalad/datalad-remake/tree/main?tab=readme-ov-file#installation). Make sure that you have a valid GPG key and that you have successfully configured Git for commit signing, as described [here](https://github.com/datalad/datalad-remake/tree/main?tab=readme-ov-file#requirements).
 
 ## How to use
 
@@ -71,6 +71,14 @@ Place the `input.txt`, `output.txt` and `parameter.txt` files in the root datase
 ```bash
 > mkdir -p code/make/fmriprep-resample
 > cp $EXAMPLE/*.txt ./code/make/fmriprep-resample/
+```
+
+### Configure trusted keys
+
+Configure trusted keys, by executing the command below. Replace `<key-id>` with a GPG key that you have used for signing commits. For more details, please go [here](https://github.com/datalad/datalad-remake#trusted-keys).
+
+```bash
+> git config --global --add datalad.make.trusted-keys <key-id>
 ```
 
 ### Execute (re)computation
