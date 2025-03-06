@@ -43,13 +43,6 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 
-# This section is required to allow the direct refernces to the `datalad_core`
-# in the dependencies section below and in
-# `tool.hatch.envs.hatch-test.extra_dependencies`. Remove the section
-# `tool.hatch.metadata` when `datalad_core` is available on PyPI.
-[tool.hatch.metadata]
-allow-direct-references = true
-
 dependencies = [
   "annexremote",
   "datalad",
@@ -58,6 +51,13 @@ dependencies = [
   "datasalad",
   "toml",
 ]
+
+# This section is required to allow the direct refernces to the `datalad_core`
+# in the project.dependencies section above and in
+# `tool.hatch.envs.hatch-test.extra_dependencies`. Remove the section
+# `tool.hatch.metadata` when `datalad_core` is available on PyPI.
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [project.urls]
 Homepage = "https://github.com/datalad/datalad-remake"
