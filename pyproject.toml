@@ -22,7 +22,7 @@ authors = [
   { name = "The DataLad Team and Contributors", email = "team@datalad.org" },
 ]
 maintainers = [
-#  { name = "Michael Hanke", email = "michael.hanke@gmail.com" },
+  { name = "Christian Mönch", email = "christian.moench@web.de" },
 ]
 classifiers = [
   "License :: OSI Approved :: MIT License",
