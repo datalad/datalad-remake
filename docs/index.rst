@@ -1,20 +1,19 @@
 The `datalad-remake` documentation
-==================================
+**********************************
 
-Package overview
-----------------
+Functionality provided by DataLad remake
+========================================
 
-Also see the :ref:`modindex`.
+.. toctree::
+   :maxdepth: 1
 
-.. currentmodule:: datalad_remake
-..
-   .. autosummary::
-   :toctree: generated
+   api.rst
+   annex-specialremotes.rst
 
-   commands
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
+* :ref:`modindex`
 * :ref:`search`
