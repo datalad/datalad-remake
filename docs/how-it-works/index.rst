@@ -5,3 +5,4 @@ How it works
    :maxdepth: 2
 
    files
+   trusted-execution
