@@ -20,6 +20,7 @@ Functionality provided by DataLad remake
 .. toctree::
    :maxdepth: 1
 
+   how-it-works/index.rst
    api.rst
    annex-specialremotes.rst
 
