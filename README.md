@@ -41,7 +41,6 @@ and install it via `pip` (preferably in a virtual environment):
 ```bash
 > git clone https://github.com/datalad/datalad-remake.git
 > cd datalad-remake
-> pip install -r requirements-devel.txt
 > pip install .
 ```
 

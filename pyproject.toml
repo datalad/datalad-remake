@@ -1,5 +1,6 @@
 [build-system]
 requires = [
+  "hatch",
   "hatchling",
   "hatch-vcs",
 ]
@@ -21,7 +22,7 @@ authors = [
   { name = "The DataLad Team and Contributors", email = "team@datalad.org" },
 ]
 maintainers = [
-#  { name = "Michael Hanke", email = "michael.hanke@gmail.com" },
+  { name = "Christian Mönch", email = "christian.moench@web.de" },
 ]
 classifiers = [
   "License :: OSI Approved :: MIT License",
@@ -43,20 +44,33 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 
+dependencies = [
+  "annexremote",
+  "datalad",
+  "datalad-core @ git+https://github.com/datalad/datalad-core",
+  "datalad-next",
+  "datasalad",
+  "toml",
+]
+
 # This section is required to allow the direct refernces to the `datalad_core`
-# in the dependencies section below and in
+# in the project.dependencies section above and in
 # `tool.hatch.envs.hatch-test.extra_dependencies`. Remove the section
 # `tool.hatch.metadata` when `datalad_core` is available on PyPI.
 [tool.hatch.metadata]
 allow-direct-references = true
 
-dependencies = [
-  "annexremote",
-  "datalad",
-  "datalad_core @ git+https://github.com/datalad/datalad-core",
-  "datalad_next",
-  "datasalad",
-  "toml",
+[project.optional-dependencies]
+test = [
+  "coverage",
+  "hypothesis",
+  "pytest",
+  "pytest-cov"
+]
+docs = [
+  "sphinx",
+  "sphinx_rtd_theme",
+  "sphinx_copybutton"
 ]
 
 [project.urls]
@@ -81,15 +95,13 @@ version-file = "datalad_remake/_version.py"
 [tool.hatch.envs.hatch-test]
 default-args = ["datalad_remake"]
 extra-dependencies = [
-  "datalad_next",
-  "datalad_core @ git+https://github.com/datalad/datalad-core",
+  "coverage",
   "hypothesis",
   "pytest",
   # if you come here, because coverage combination crashed for you
   # run `hatch test --cover` and/or see
   # https://github.com/pypa/hatch/issues/1565#issuecomment-2163773123
-  "pytest-cov",
-  "toml",
+  "pytest-cov"
 ]
 
 [tool.hatch.envs.hatch-test.env-vars]
@@ -104,13 +116,17 @@ python = ["3.9", "3.10", "3.11", "3.12"]
 
 [tool.hatch.envs.tests.scripts]
 run = 'python -m pytest {args}'
+extra-dependencies = [
+  "coverage",
+  "hypothesis",
+  "pytest",
+  "pytest-cov"
+]
 
 [tool.hatch.envs.types]
 description = "type checking with MyPy"
 extra-dependencies = [
-  "hypothesis",
-  "mypy>=1.0.0",
-  "pytest",
+  "mypy"
 ]
 
 [tool.hatch.envs.types.scripts]
@@ -122,6 +138,8 @@ check = [
 description = "build Sphinx-based docs"
 extra-dependencies = [
   "sphinx",
+  "sphinx_rtd_theme",
+  "sphinx_copybutton"
 ]
 
 [tool.hatch.envs.docs.scripts]
