@@ -13,6 +13,13 @@ can lead to more effective resource utilization. Thus, this extension may be
 of interest to a wide, interdisciplinary audience, including researchers,
 data curators, and infrastructure administrators.
 
+Concepts and technologies
+=========================
+
+.. toctree::
+   :maxdepth: 2
+
+   design/index.rst
 
 Functionality provided by DataLad remake
 ========================================
@@ -20,7 +27,6 @@ Functionality provided by DataLad remake
 .. toctree::
    :maxdepth: 1
 
-   how-it-works/index.rst
    api.rst
    annex-specialremotes.rst
 

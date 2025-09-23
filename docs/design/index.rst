@@ -1,10 +1,10 @@
-How it works
-************
+Design
+******
 
 .. toctree::
    :maxdepth: 2
 
-   design
+   basics
    files
    trusted-execution
    related
