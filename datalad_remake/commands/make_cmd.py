@@ -116,8 +116,8 @@ class Make(ValidatedInterface):
             'reading the git configuration `datalad.make.priority` (which '
             'should contain a comma-separated list of labels). If this '
             'configuration key does not exist, the priority list is read from '
-            'the file `$DATASET/.datalad/make/priority`. If that does not exist '
-            'not exist either, a random computation is chosen.)',
+            'the file `$DATASET/.datalad/make/priority`. If that does not '
+            'exist either, a random computation is chosen.)',
         ),
         'branch': Parameter(
             args=(
@@ -133,11 +133,11 @@ class Make(ValidatedInterface):
                 '--input',
             ),
             action='append',
-            doc='An input file pattern (repeat for multiple inputs, '
-            'file pattern support python globbing, globbing is performed by '
+            doc='An input file pattern (repeat for multiple inputs). '
+            'File patterns support python globbing, globbing is performed by '
             'installing all possibly matching subdatasets and performing '
             'globbing in those, recursively. That means expressions like `**` '
-            'might pull in a huge number of datasets). Input file patterns '
+            'might pull in a huge number of datasets. Input file patterns '
             'must be relative, they are dereferenced from the root of the '
             'dataset.',
         ),
@@ -150,7 +150,7 @@ class Make(ValidatedInterface):
             'Format is one file per line, relative path from `dataset`. '
             'Empty lines, i.e. lines that contain only newlines, and lines '
             "that start with '#' are ignored. Line content is stripped "
-            'before used. This is useful if a large number of input file '
+            'before being used. This is useful if a large number of input file '
             'patterns should be provided.',
         ),
         'output': Parameter(
@@ -170,11 +170,12 @@ class Make(ValidatedInterface):
                 '-O',
                 '--output-list',
             ),
-            doc='Name of a file that contains a list of output patterns. Format '
-            'is one file per line, relative path from `dataset`. Empty '
-            'lines, i.e. lines that contain only newlines, arg ignored. '
-            'This is useful if a large number of output files should be '
-            'provided.',
+            doc='Name of a file that contains a list of output file patterns. '
+            'Format is one file per line, relative path from `dataset`. '
+            'Empty lines, i.e. lines that contain only newlines, and lines '
+            "that start with '#' are ignored. Line content is stripped "
+            'before being used. This is useful if a large number of output '
+            'file patterns should be provided.',
         ),
         'parameter': Parameter(
             args=(
@@ -194,7 +195,7 @@ class Make(ValidatedInterface):
             'is one `<name>=<value>` string per line. '
             'Empty lines, i.e. lines that contain only newlines, and lines '
             "that start with '#' are ignored. Line content is stripped "
-            'before used. This is useful if a large number of parameters '
+            'before being used. This is useful if a large number of parameters '
             'should be provided.',
         ),
         'stdout': Parameter(
