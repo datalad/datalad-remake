@@ -55,48 +55,40 @@ environment:
   COVERAGE_ROOT: /home/appveyor/DLTMP
   # we pin hatch's data file to make it easy to cache it
   HATCH_DATA_DIR: /home/appveyor/hatch-data-dir
-  # same for pip
-  PIP_CACHE: /home/appveyor/.cache/pip
-  # Do not use `image` as a matrix dimension, to have fine-grained control over
-  # what tests run on which platform
-  # The ID variable had no impact, but sorts first in the CI run overview
-  # an intelligible name can help to locate a specific test run
+  # same for uv
+  UV_CACHE_DIR: /home/appveyor/.cache/uv
+  # expose uv to hatch and implicitly enable it
+  HATCH_ENV_TYPE_VIRTUAL_UV_PATH: /home/appveyor/.local/bin/uv
   matrix:
     # List a CI run for each platform first, to have immediate access when there
     # is a need for debugging
 
     # Ubuntu core tests
-    - job_name: test-linux-3.9
+    - job_name: test-linux
       APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PY: 3.9
-      INSTALL_GITANNEX: git-annex -m snapshot
-      KEYWORDS: not no_such_test
-
-    - job_name: test-linux-3.12
-      APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-      PY: 3.12
-      INSTALL_GITANNEX: git-annex -m snapshot
       KEYWORDS: not no_such_test
 
     # Windows core tests
     - job_name: test-win
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2022
-      # Python version specification is non-standard on windows
-      PY: 3.12
-      INSTALL_GITANNEX: git-annex -m datalad/packages
       COVERAGE_ROOT: C:\DLTMP
       HATCH_DATA_DIR: C:\hatch-data-dir
-      PIP_CACHE: C:\Users\appveyor\AppData\Local\pip\Cache
-      KEYWORDS: not no_such_test
+      HATCH_ENV_TYPE_VIRTUAL_UV_PATH: C:\Users\appveyor\.local\bin\uv.exe
+      # appveyor has a default path that comprises _everything_. here we trim
+      # it to the bare necessities to reduce using preinstalled software
+      # that changes without notice. importantly, we
+      # - reset the default python to be a 64bit one
+      # - include the installation target path for `uv`
+      CUSTOMPATH: C:\Users\\appveyor\.local\bin;C:\Program Files\Git\cmd;C:\Program Files\Git\usr\bin;C:\Windows\system32;C:\Windows\System32\WindowsPowerShell\v1.0;C:\Windows\System32\OpenSSH;C:\Program Files\PowerShell\7;C:\Program Files\7-Zip;C:\Python312-x64;C:\Python312-x64\Scripts"
+      UV_CACHE_DIR: C:\Users\appveyor\AppData\Local\uv\cache
 
     # MacOS core tests
     - job_name: test-mac
       APPVEYOR_BUILD_WORKER_IMAGE: macos-sonoma
-      PY: 3.12
-      INSTALL_GITANNEX: git-annex
       COVERAGE_ROOT: /Users/appveyor/DLTMP
       HATCH_DATA_DIR: /Users/appveyor/hatch-data-dir
-      PIP_CACHE: /Users/appveyor/.cache/pip
+      HATCH_ENV_TYPE_VIRTUAL_UV_PATH: /Users/appveyor/.local/bin/uv
+      UV_CACHE_DIR: /Users/appveyor/.cache/uv
       KEYWORDS: >
         not test_compute_remote_main[True]
         and not test_whitelist
@@ -126,13 +118,12 @@ for:
   #
   - matrix:
       only:
-        - job_name: test-linux-3.9
-        - job_name: test-linux-3.12
+        - job_name: test-linux
         - job_name: test-mac
 
     cache:
-      # pip cache
-      - "${PIP_CACHE} -> .appveyor.yml"
+      # uv cache
+      - "${UV_CACHE_DIR} -> .appveyor.yml"
       # hatch-managed python versions
       - "${HATCH_DATA_DIR}/env/virtual/.pythons -> pyproject.toml"
 
@@ -142,33 +133,29 @@ for:
       # enable external SSH access to CI worker
       # needs APPVEYOR_SSH_KEY defined in project settings (or environment)
       - curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
+      # wipe out appveyor's collection of environment shims to prevent
+      # hatch from being confused by it
+      - rm -rf /home/appveyor/.pyenv
+      # install `uv`
+      - curl -LsSf https://astral.sh/uv/install.sh | sh
+      - source $HOME/.local/bin/env
       # Scratch space
       # we place the "unix" one into the user's HOME to avoid git-annex issues on MacOSX
       # gh-5291
       - mkdir ~/DLTMP && export TMPDIR=~/DLTMP
 
     install:
-      # verify that a PY variable is declared that identifies the desired Python version
-      # for this run
-      - "[ \"x$PY\" != x ]"
       # create a dedicated socket directory to prevent too long socket names
       - tools/appveyor/setup-gpg
       # Missing system software
       - tools/appveyor/install-syspkgs $INSTALL_SYSPKGS
-      # activate Python env solely to get `python` to become available consistently
-      # hatch will manage the actual testing environment
-      - '. ${HOME}/venv${PY}/bin/activate'
-      - tools/appveyor/install-git-annex ${INSTALL_GITANNEX}
-      # enable the git-annex provisioned by the installer
-      - "[ -f ${HOME}/dlinstaller_env.sh ] && . ${HOME}/dlinstaller_env.sh || true"
 
     test_script:
-      - 'hatch run tests.py${PY}:run-cov --doctest-modules --durations 10 -k "$KEYWORDS"'
+      - hatch test -i py=3.9,3.13 --cover --doctest-modules --durations 10 -k "$KEYWORDS"
 
     after_test:
-      - 'hatch run tests.py${PY}:cov-combine'
-      - 'hatch run tests.py${PY}:coverage xml'
-      - 'codecovcli --auto-load-params-from AppVeyor upload-process -n "appveyor-$APPVEYOR_JOB_NAME" --disable-search -f coverage.xml'
+      - coverage xml
+      - codecovcli --auto-load-params-from AppVeyor upload-process -n "appveyor-${APPVEYOR_JOB_NAME}" --disable-search -f coverage.xml
 
     on_finish:
       # conditionally block the exit of a CI run for direct debugging
@@ -182,8 +169,7 @@ for:
       only:
         - job_name: test-win
     cache:
-      # pip cache
-      - "%PIP_CACHE% -> .appveyor.yml"
+      - "%UV_CACHE_DIR% -> .appveyor.yml"
       # hatch-managed python versions
       - "%HATCH_DATA_DIR%\\env\\virtual\\.pythons -> pyproject.toml"
 
@@ -198,35 +184,27 @@ for:
       # enable RDP access on windows (RDP password is in appveyor project config)
       # this is relatively expensive (1-2min), but very convenient to jump into any build at any time
       - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      - cmd: "set PATH=%CUSTOMPATH%"
+      # install `uv`
+      - cmd: powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+      # remove windows 260-char limit on path names
+      - ps: Set-Itemproperty -path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -value 1
       # Scratch space
       - cmd: md C:\DLTMP
       # and use that scratch space to get short paths in test repos
       # (avoiding length-limits as much as possible)
-      - cmd: "set TMP=C:\\DLTMP"
-      - cmd: "set TEMP=C:\\DLTMP"
+      - cmd: "set TMP=C:\\DLTMP & set TEMP=C:\\DLTMP"
 
     install:
       # place a debug setup helper at a convenient location
       - cmd: copy tools\appveyor\env_setup.bat C:\\datalad_debug.bat
-      - cmd: "set PATH=C:\\Python%PY%;C:\\Python%PY%\\Scripts;%PATH%"
-      # deploy the datalad installer, override version via DATALAD_INSTALLER_VERSION
-      - cmd:
-          IF DEFINED DATALAD_INSTALLER_VERSION (
-          python -m pip install "datalad-installer%DATALAD_INSTALLER_VERSION%"
-          ) ELSE (
-          python -m pip install datalad-installer
-          )
-      # Install git-annex on windows, otherwise INSTALL_SYSPKGS can be used
-      # deploy git-annex, if desired
-      - cmd: IF DEFINED INSTALL_GITANNEX datalad-installer --sudo ok %INSTALL_GITANNEX%
 
     test_script:
-      - cmd: 'hatch run tests.py%PY%:run-cov --doctest-modules -k "%KEYWORDS%" --durations 10'
+      - hatch test -i py=3.13 --cover --doctest-modules --durations 10
 
     after_test:
-      - cmd: 'hatch run tests.py%PY%:cov-combine'
-      - cmd: 'hatch run tests.py%PY%:coverage xml'
-      - cmd: 'codecovcli --auto-load-params-from AppVeyor upload-process -n "appveyor-%APPVEYOR_JOB_NAME%" --disable-search -f coverage.xml'
+      - coverage xml
+      - codecovcli --auto-load-params-from AppVeyor upload-process -n "appveyor-%APPVEYOR_JOB_NAME%" --disable-search -f coverage.xml
 
     on_finish:
       # conditionally block the exit of a CI run for direct debugging
@@ -237,7 +215,9 @@ for:
 # ALL TEST RUNS
 #
 build_script:
-  - python -m pip install hatch codecov-cli
+  - uv tool install hatch
+  - uv tool install coverage[toml]
+  - uv tool install codecov-cli
 
 after_build:
   # Identity setup
