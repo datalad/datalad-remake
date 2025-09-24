@@ -21,11 +21,12 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autodoc.typehints',
     'sphinx.ext.viewcode',
+    'sphinx.ext.todo',
 ]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
+todo_include_todos = True
 
 
 # -- Options for HTML output -------------------------------------------------
