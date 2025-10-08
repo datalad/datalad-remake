@@ -63,6 +63,7 @@ Place the `fmriprep-singularity` template in the `.datalad/make/methods` of the 
 > cd $HOME/my-project
 > mkdir -p .datalad/make/methods
 > cp $EXAMPLE/fmriprep-singularity .datalad/make/methods/fmriprep-singularity
+> echo '{"bold": {"datatype": "func", "run": "01"}}' > code/filter.json
 > datalad save -m "Add a make method"
 ```
 
