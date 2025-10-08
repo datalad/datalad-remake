@@ -91,5 +91,5 @@ To test the example, run:
 -I code/make/fmriprep-resample/input.txt \
 -O code/make/fmriprep-resample/output.txt \
 -P code/make/fmriprep-resample/parameter.txt \
---allow-untrusted-execution fmriprep-resample
+fmriprep-resample
 ```

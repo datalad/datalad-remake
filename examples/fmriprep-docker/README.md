@@ -88,7 +88,7 @@ To test the example, run:
 -I code/make/fmriprep-docker/input.txt \
 -O code/make/fmriprep-docker/output.txt \
 -P code/make/fmriprep-docker/parameter.txt \
---allow-untrusted-execution fmriprep-docker
+fmriprep-docker
 ```
 
 You can also do that in `debug` mode:
@@ -98,7 +98,7 @@ You can also do that in `debug` mode:
 -I code/make/fmriprep-docker/input.txt \
 -O code/make/fmriprep-docker/output.txt \
 -P code/make/fmriprep-docker/parameter.txt \
---allow-untrusted-execution fmriprep-docker
+fmriprep-docker
 ```
 
 ### Final note

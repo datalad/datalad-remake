@@ -91,7 +91,7 @@ To test the example, run:
 -I code/make/fmriprep-singularity/input.txt \
 -O code/make/fmriprep-singularity/output.txt \
 -P code/make/fmriprep-singularity/parameter.txt \
---allow-untrusted-execution fmriprep-singularity
+fmriprep-singularity
 ```
 
 You can also do that in `debug` mode:
@@ -101,7 +101,7 @@ You can also do that in `debug` mode:
 -I code/make/fmriprep-singularity/input.txt \
 -O code/make/fmriprep-singularity/output.txt \
 -P code/make/fmriprep-singularity/parameter.txt \
---allow-untrusted-execution fmriprep-singularity
+fmriprep-singularity
 ```
 
 ### Final note
