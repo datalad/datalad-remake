@@ -40,7 +40,15 @@ For convenience, a ready-made dataset containing all inputs required for running
 > datalad get -n derivatives/ds001734
 ```
 
-The dataset is organized in a modular way. It contains raw BIDS data (`data/ds001734`), as well as fMRIPrep derivative data (`derivatives/ds001734`). Also, it includes the `resample.py` script, as well as the software container that will be needed for running the script (`code/containers`).
+The dataset is organized in a modular way. It contains raw BIDS data (`data/ds001734`), as well as fMRIPrep derivative data (`derivatives/ds001734`). Also, it includes the software container with fMRIPrep (`code/containers`).
+
+The only thing that's missing is the Python [script](https://hub.datalad.org/mslw/fmriprep-resampling) that selectivly applies fMRIPrep's workflows to deterministically reproduce the BOLD image from the raw image, without the need to run a complete fMRIPrep preprocessing pipeline. The `resample.py` script can be obtained as follows:
+
+```bash
+> curl -o code/resample.py \
+https://hub.datalad.org/mslw/fmriprep-resampling/raw/branch/main/resample.py
+> datalad save -m "Add resampling script"
+```
 
 The resulting dataset structure is as follows:
 
