@@ -36,6 +36,7 @@ For convenience, a ready-made dataset containing all inputs required for running
 > cd $HOME
 > datalad clone https://hub.datalad.org/m-wierzba/ds001734-remake-demo.git my-project
 > cd my-project
+> datalad get -n code/containers
 > datalad get -n data/ds001734
 > datalad get -n derivatives/ds001734
 ```
@@ -56,6 +57,7 @@ The resulting dataset structure is as follows:
 my-project
 ├── code
 │   ├── containers
+│   ├── filter.json
 │   ├── make
 │   └── resample.py
 ├── data
