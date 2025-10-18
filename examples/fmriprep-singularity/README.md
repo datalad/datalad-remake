@@ -107,4 +107,6 @@ fmriprep-singularity
 
 ### Final note
 
-In this example fMRIPrep is invoked with the option `--sloppy` to reduce the runtime. For reproducible results, run fMRIPrep without `--sloppy`.
+In this example, fMRIPrep is invoked with the `--random-seed` and `--skull-strip-fixed-seed` options for reproducible results. However, note that not all of the resulting output files are bit-identical. Please refer to [fMRIPrep's documentation](https://fmriprep.org/en/stable) for more details.
+
+Furthermore, we use `--sloppy` to reduce the runtime. Be advised that this option should only be used for testing.

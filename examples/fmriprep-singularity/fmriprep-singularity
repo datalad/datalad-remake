@@ -31,8 +31,12 @@ command = [
     'participant',
     '--participant-label', '{participant_label}',
     '--bids-filter-file', '{filter_file}',
+    '--omp-nthreads', '1',
+    '--random-seed', '2137',
+    '--skull-strip-fixed-seed',
     '--sloppy',
     '--fs-license-file', '{license_file}',
+    '--skip_bids_validation',
     '--fs-no-reconall',
     '--output-spaces', 'MNI152NLin6Asym:res-2', 'MNI152NLin2009cAsym'
 ]
