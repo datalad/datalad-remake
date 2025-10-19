@@ -68,17 +68,18 @@ my-project
 
 ### Inspect dataset's content
 
-Our goal is to obtain the preprocessed BOLD image: `sub-001_task-MGT_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz`. In fact, this file is already included in the example dataset. However, annexed content for this file is not present.
+Our goal is to obtain the preprocessed BOLD image: `sub-001_task-MGT_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz`. In fact, this file is already included in the example dataset.
 
-Upon running `git annex whereis`, we learn that this file can only be obtained via `datalad-remake-auto` special remote. This is because the file was originally created using DataLad Remake (see [here](https://github.com/datalad/datalad-remake/blob/main/examples/fmriprep-singularity)), but the annexed content was later dropped and never published to any repository.
+Upon running `git annex whereis`, we learn that this file can be obtained via `datalad-remake-auto` special remote. This is because the file was originally created using DataLad Remake (see [here](https://github.com/datalad/datalad-remake/blob/main/examples/fmriprep-singularity)).
 
 ```bash
 > cd derivatives/ds001734
 > git annex whereis **/sub-001_task-MGT_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz
-whereis sub-001/func/sub-001_task-MGT_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz (1 copy)
-    c5de9d85-fa24-4594-a1a0-f9f86ff94de2 -- [datalad-remake-auto]
+whereis sub-001/func/sub-001_task-MGT_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz (2 copies) 
+        65a6107f-fe44-4f6c-9a4f-8a0ab5c17672 -- [datalad-remake-auto]
+        a2dfc37e-9ea6-45b7-9c43-26058c2aa206 -- git@d6951ae9b36f:/var/lib/gitea/git/repositories/m-wierzba/ds001734-derivatives-remake-demo.git [origin]
 
-  datalad-remake-auto: datalad-remake:///?label=fmriprep-singularity&root_version=179e2d9e0b9c0ff5d8feee4b1ba7df80bff16bb9&specification=e85277aa6d05644d13c88e981e8148c2&this=derivatives/ds001734/sub-001/func/sub-001_task-MGT_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz
+  datalad-remake-auto: datalad-remake:///?label=fmriprep-singularity&root_version=c3b4f6bff479fe25b77affa5eb2015a1a831dfa6&specification=e85277aa6d05644d13c88e981e8148c2&this=derivatives/ds001734/sub-001/func/sub-001_task-MGT_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz
 ok
 ```
 
@@ -112,10 +113,10 @@ We can inspect the specification of the method originally used to create this fi
 }
 ```
 
-Upon reviewing the `fmriprep-singularity` method, we learn that the command originally used to create the file was as follows:
+Upon reviewing the `fmriprep-singularity` method, we learn that the command used to create the file was as follows:
 
 ```bash
-> cat .datalad/make/methods/fmriprep-singularity | tail -14
+> cat .datalad/make/methods/fmriprep-singularity | tail -18
 
 command = [
     'singularity',
@@ -125,8 +126,12 @@ command = [
     'participant',
     '--participant-label', '{participant_label}',
     '--bids-filter-file', '{filter_file}',
+    '--omp-nthreads', '1',
+    '--random-seed', '2137',
+    '--skull-strip-fixed-seed',
     '--sloppy',
     '--fs-license-file', '{license_file}',
+    '--skip_bids_validation',
     '--fs-no-reconall',
     '--output-spaces', 'MNI152NLin6Asym:res-2', 'MNI152NLin2009cAsym'
 ]
@@ -134,7 +139,7 @@ command = [
 
 Thus, the file was initially created by running a standard, full fMRIPrep pipeline. In the next steps, we will attempt to recreate this file using a different method that is much less computationally expensive.
 
-### Adjust the cost of using git annex special remotes
+### Adjust the cost of using git-annex special remotes
 
 When determining which remote to transfer annexed files from, ones with lower costs are preferred. The default cost is 100 for local repositories, and 200 for remote repositories. Similarly, the default cost for the `datalad-remake-auto` special remote is 100.
 
