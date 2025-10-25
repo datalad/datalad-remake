@@ -1,0 +1,18 @@
+# Paths are relative to the dataset in which `datalad make` was executed
+derivatives/ds001734/dataset_description.json
+derivatives/ds001734/sub-001/func/sub-001_task-MGT_run-01_space-MNI152NLin2009cAsym_desc-preproc_bold.json
+derivatives/ds001734/sub-001/fmap/sub-001_fmapid-auto00000_desc-preproc_fieldmap.json
+derivatives/ds001734/sub-001/func/sub-001_task-MGT_run-01_desc-confounds_timeseries.tsv
+data/ds001734/task-MGT_bold.json
+data/ds001734/sub-001/func/sub-001_task-MGT_run-01_bold.nii.gz
+derivatives/ds001734/sub-001/func/sub-001_task-MGT_run-01_from-orig_to-boldref_mode-image_desc-hmc_xfm.txt
+derivatives/ds001734/sub-001/func/sub-001_task-MGT_run-01_from-boldref_to-auto00000_mode-image_xfm.txt
+derivatives/ds001734/sub-001/func/sub-001_task-MGT_run-01_from-boldref_to-T1w_mode-image_desc-coreg_xfm.txt
+derivatives/ds001734/sub-001/anat/sub-001_from-T1w_to-MNI152NLin2009cAsym_mode-image_xfm.h5
+derivatives/ds001734/sub-001/func/sub-001_task-MGT_run-01_space-MNI152NLin2009cAsym_boldref.nii.gz
+derivatives/ds001734/sub-001/func/sub-001_task-MGT_run-01_space-MNI152NLin2009cAsym_desc-brain_mask.nii.gz
+derivatives/ds001734/sub-001/func/sub-001_task-MGT_run-01_desc-hmc_boldref.nii.gz
+derivatives/ds001734/sub-001/fmap/sub-001_fmapid-auto00000_desc-magnitude_fieldmap.nii.gz
+derivatives/ds001734/sub-001/fmap/sub-001_fmapid-auto00000_desc-coeff_fieldmap.nii.gz
+code/containers/images/bids/bids-fmriprep--24.1.0.sing
+code/resample.py

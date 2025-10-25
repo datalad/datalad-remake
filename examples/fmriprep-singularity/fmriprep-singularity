@@ -6,6 +6,7 @@
 # - input_dir: the path to the input directory (BIDS dataset)
 # - output_dir: the path to the output directory
 # - participant_label: the label of the participant to be processed, e.g. `001`
+# - filter_file: the path to the BIDS filter file
 # - license_file: the path to the FreeSurfer license file
 #
 # The template assumes that the BIDS dataset referenced in `input_dir` is
@@ -17,7 +18,7 @@
 #
 # `datalad make -I input.txt -O output.txt -P parameter.txt fmriprep-singularity`
 
-parameters = ['container', 'input_dir', 'output_dir', 'participant_label', 'license_file']
+parameters = ['container', 'input_dir', 'output_dir', 'participant_label', 'filter_file', 'license_file']
 
 # Note: `{root_directory}` resolves to the directory of the dataset in which the
 # computation was started with `datalad make`.
@@ -29,8 +30,13 @@ command = [
     '{root_directory}/{output_dir}',
     'participant',
     '--participant-label', '{participant_label}',
+    '--bids-filter-file', '{filter_file}',
+    '--omp-nthreads', '1',
+    '--random-seed', '2137',
+    '--skull-strip-fixed-seed',
     '--sloppy',
     '--fs-license-file', '{license_file}',
+    '--skip_bids_validation',
     '--fs-no-reconall',
     '--output-spaces', 'MNI152NLin6Asym:res-2', 'MNI152NLin2009cAsym'
 ]

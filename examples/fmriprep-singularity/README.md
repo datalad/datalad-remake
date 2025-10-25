@@ -18,7 +18,7 @@ It is assumed that the license file is located in `/tmp`. Make sure to copy it t
 
 ## How to install
 
-Install `datalad-remake` extension, as described [here](https://github.com/datalad/datalad-remake/tree/main?tab=readme-ov-file#installation).
+Install `datalad-remake` extension, as described [here](https://github.com/datalad/datalad-remake/tree/main?tab=readme-ov-file#installation). Make sure that you have a valid GPG key and that you have successfully configured Git for commit signing, as described [here](https://github.com/datalad/datalad-remake/tree/main?tab=readme-ov-file#requirements).
 
 ## How to use
 
@@ -55,20 +55,6 @@ my-project
     └── ds001734
 ```
 
-### Configure special remote
-
-Configure the dataset in which you want to collect the results of the (re)computation, in this case `derivatives/ds001734` subdataset.
-
-```bash
-> cd $HOME/my-project/derivatives/ds001734
-```
-
-Add a `datalad-remake` special remote:
-
-```bash
-> git annex initremote datalad-remake type=external externaltype=datalad-remake encryption=none allow-untrusted-execution=true
-```
-
 ### Add template
 
 Place the `fmriprep-singularity` template in the `.datalad/make/methods` of the root dataset:
@@ -77,6 +63,7 @@ Place the `fmriprep-singularity` template in the `.datalad/make/methods` of the 
 > cd $HOME/my-project
 > mkdir -p .datalad/make/methods
 > cp $EXAMPLE/fmriprep-singularity .datalad/make/methods/fmriprep-singularity
+> echo '{"bold": {"datatype": "func", "run": "01"}}' > code/filter.json
 > datalad save -m "Add a make method"
 ```
 
@@ -85,6 +72,14 @@ Place the `input.txt`, `output.txt` and `parameter.txt` files in the root datase
 ```bash
 > mkdir -p code/make/fmriprep-singularity
 > cp $EXAMPLE/*.txt ./code/make/fmriprep-singularity/
+```
+
+### Configure trusted keys
+
+Configure trusted keys, by executing the command below. Replace `<key-id>` with a GPG key that you have used for signing commits. For more details, please go [here](https://github.com/datalad/datalad-remake#trusted-keys).
+
+```bash
+> git config --global --add datalad.make.trusted-keys <key-id>
 ```
 
 ### Execute (re)computation
@@ -97,7 +92,7 @@ To test the example, run:
 -I code/make/fmriprep-singularity/input.txt \
 -O code/make/fmriprep-singularity/output.txt \
 -P code/make/fmriprep-singularity/parameter.txt \
---allow-untrusted-execution fmriprep-singularity
+fmriprep-singularity
 ```
 
 You can also do that in `debug` mode:
@@ -107,9 +102,11 @@ You can also do that in `debug` mode:
 -I code/make/fmriprep-singularity/input.txt \
 -O code/make/fmriprep-singularity/output.txt \
 -P code/make/fmriprep-singularity/parameter.txt \
---allow-untrusted-execution fmriprep-singularity
+fmriprep-singularity
 ```
 
 ### Final note
 
-In this example fMRIPrep is invoked with the option `--sloppy` to reduce the runtime. For reproducible results, run fMRIPrep without `--sloppy`.
+In this example, fMRIPrep is invoked with the `--random-seed` and `--skull-strip-fixed-seed` options for reproducible results. However, note that not all of the resulting output files are bit-identical. Please refer to [fMRIPrep's documentation](https://fmriprep.org/en/stable) for more details.
+
+Furthermore, we use `--sloppy` to reduce the runtime. Be advised that this option should only be used for testing.
