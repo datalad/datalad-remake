@@ -245,14 +245,15 @@ class RemakeRemote(SpecialRemote):
         start_dir = self._get_dataset_dir()
         current_dir = start_dir
         while current_dir != Path('/'):
-            result = subprocess.run(
-                ['git', 'cat-file', '-t', commit],  # noqa: S607
-                stdout=subprocess.PIPE,
-                cwd=current_dir,
-                check=False,
-            )
-            if result.returncode == 0 and result.stdout.strip() == b'commit':
-                return Dataset(current_dir)
+            if (Path(current_dir) / '.git').is_dir():
+                result = subprocess.run(
+                    ['git', 'cat-file', '-t', commit],  # noqa: S607
+                    stdout=subprocess.PIPE,
+                    cwd=current_dir,
+                    check=False,
+                )
+                if result.returncode == 0 and result.stdout.strip() == b'commit':
+                    return Dataset(current_dir)
             current_dir = current_dir.parent
         msg = (
             f'Could not find dataset with commit {commit!r}, starting from '
