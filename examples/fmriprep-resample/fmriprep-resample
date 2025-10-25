@@ -1,0 +1,24 @@
+# This example template runs a Python script to reproduce fMRIPrep's
+# preprocessed BOLD image (projected onto a target space) from the raw image,
+# ancillary fMRIPrep derivatives, and related metadata. All dependencies for
+# the script are provided by an fMRIPrep singularity container.
+#
+# The template takes the following inputs:
+# - container: the path to fMRIPrep singularity container image
+# - target_file: resampled file (fMRIPrep derivative) to reproduce
+# - raw_dataset: raw BIDS dataset location
+# - out_dir: base output path
+
+parameters = ['container', 'target_file', 'raw_dataset', 'out_dir']
+
+# Note: `{root_directory}` resolves to the directory of the dataset in which the
+# computation was started with `datalad make`.
+
+command = [
+    'singularity',
+    'exec', '{container}',
+    'python', 'code/resample.py',
+    '{target_file}',
+    '{root_directory}/{raw_dataset}',
+    '{root_directory}/{out_dir}'
+]

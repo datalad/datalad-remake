@@ -1,2 +1,2 @@
 # Paths are relative to the dataset in which `datalad make` was executed
-derivatives/ds000102/**
+derivatives/ds001734/**
