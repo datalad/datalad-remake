@@ -146,7 +146,7 @@ When determining which remote to transfer annexed files from, ones with lower co
 As a result, at the time of provisioning inputs for a given computation, recreating them via `datalad-remake-auto` will be preferred over pulling them from a remote repository. To temporarily override this behavior, we modify the cost associated with the `datalad-remake-auto` special remote.
 
 ```bash
-> cd $HOME/my-project
+> cd $HOME/my-project/derivatives/ds001734
 > git config remote.datalad-remake-auto.annex-cost 1000
 ```
 
