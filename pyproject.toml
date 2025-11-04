@@ -47,18 +47,11 @@ classifiers = [
 dependencies = [
   "annexremote",
   "datalad",
-  "datalad-core @ git+https://github.com/datalad/datalad-core",
+  "datalad-core >= 0.1.1",
   "datalad-next",
   "datasalad",
   "toml",
 ]
-
-# This section is required to allow the direct refernces to the `datalad_core`
-# in the project.dependencies section above and in
-# `tool.hatch.envs.hatch-test.extra_dependencies`. Remove the section
-# `tool.hatch.metadata` when `datalad_core` is available on PyPI.
-[tool.hatch.metadata]
-allow-direct-references = true
 
 [project.optional-dependencies]
 test = [
