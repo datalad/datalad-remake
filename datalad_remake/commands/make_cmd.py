@@ -473,7 +473,7 @@ def execute(
     trusted_key_ids: list[str] | None,
 ) -> None:
     lgr.debug(
-        'execute: %s %s %s %s',
+        'execute: %s %s %s %s %s',
         str(worktree),
         template_name,
         repr(parameter),
