@@ -175,6 +175,15 @@ https://git-annex.branchable.com/git-annex/.
 
 Additional examples can be found in the [examples](https://github.com/datalad/datalad-remake/tree/main/examples) directory.
 
+## Debugging
+
+For debugging purposes `datalad-remake` can be instructed to keep temporary
+directories after a computation was performed. To keep temporary directories set
+the environment variable DATALAD_REMAKE_KEEP_TEMP to a non-empty value, e.g.:
+
+```
+> export DATALAD_REMAKE_KEEP_TEMP=True
+```
 
 ## Trusted execution
 

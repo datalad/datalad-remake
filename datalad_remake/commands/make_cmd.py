@@ -105,19 +105,19 @@ class Make(ValidatedInterface):
         'template': Parameter(
             args=('template',),
             doc='Name of the computing template (template should be present '
-            'in $DATASET/.datalad/remake/methods)',
+            'in $DATASET/.datalad/remake/methods/)',
         ),
         'label': Parameter(
             args=('--label',),
             doc='Label of the computation. This is a user defined name that '
             'is used to identify and prioritize computations, if more than one '
             'computation is registered for a file. If no label is provided, '
-            'the template name will be used. (Prioritization is done by '
+            'the template name will be used. Prioritization is done by '
             'reading the git configuration `datalad.make.priority` (which '
             'should contain a comma-separated list of labels). If this '
             'configuration key does not exist, the priority list is read from '
             'the file `$DATASET/.datalad/make/priority`. If that does not '
-            'exist either, a random computation is chosen.)',
+            'exist either, a random computation is chosen.',
         ),
         'branch': Parameter(
             args=(
@@ -217,7 +217,7 @@ class Make(ValidatedInterface):
             default=False,
             doc='Skip commit signature verification before executing code. This '
             'should only be used in a strictly controlled environment with '
-            'fully trusted datasets. Trusted dataset means: every commit '
+            'fully trusted datasets. Fully trusted dataset means: every commit '
             'stems from a trusted entity. This option has no effect when '
             'combined with `--prospective-execution`.  '
             'DO NOT USE THIS OPTION, unless you are sure to understand the '
@@ -439,7 +439,12 @@ def provide(
     branch: str | None,
     input_patterns: list[PatternPath],
 ) -> Path:
-    lgr.debug('provide: %s %s %s', dataset, branch, input_patterns)
+    lgr.debug(
+        'provide: called with %s %s %s',
+        dataset,
+        branch,
+        input_patterns,
+    )
     result = list(
         provision_cmd.provide(
             dataset=dataset,
@@ -456,12 +461,32 @@ def provide_context(
     branch: str | None,
     input_patterns: list[PatternPath],
 ) -> Generator:
+
+    lgr.debug(
+        'provide_context: called with: %s %s %s',
+        dataset,
+        branch,
+        input_patterns
+    )
+
     worktree = provide(dataset, branch=branch, input_patterns=input_patterns)
     try:
+        lgr.debug('provide_context: created worktree: %s', worktree)
         yield worktree
     finally:
-        lgr.debug('un_provide: %s %s', dataset, str(worktree))
-        dataset.provision(delete=worktree, result_renderer='disabled')
+        if os.environ.get('DATALAD_REMAKE_KEEP_TEMP') is not None:
+            lgr.debug(
+                'provide_context: un-provide: DATALAD_REMAKE_KEEP_TEMP set: keeping: %s %s',
+                dataset,
+                str(worktree)
+            )
+        else:
+            lgr.debug(
+                'provide_context: un-provide: %s %s',
+                dataset,
+                str(worktree)
+            )
+            dataset.provision(delete=worktree, result_renderer='disabled')
 
 
 def execute(
@@ -512,9 +537,23 @@ def collect(
     output_pattern: Iterable[PatternPath],
     stdout: PatternPath | None,
 ) -> set[PatternPath]:
+
+    output_pattern = tuple(output_pattern)
+    lgr.debug(
+        'collect: called with: %s %s %s %s',
+        worktree,
+        dataset,
+        output_pattern,
+    )
+
     output = resolve_patterns(root_dir=worktree, patterns=output_pattern)
     if stdout is not None:
         output.add(stdout)
+
+    lgr.debug(
+        'collect: resolved patterns: %s',
+        output,
+    )
 
     # Ensure that all subdatasets that are touched by paths in `output` are
     # installed.
