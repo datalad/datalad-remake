@@ -515,9 +515,23 @@ def collect(
     output_pattern: Iterable[PatternPath],
     stdout: PatternPath | None,
 ) -> set[PatternPath]:
+
+    output_pattern = tuple(output_pattern)
+    lgr.debug(
+        'collect: called with: %s %s %s %s',
+        worktree,
+        dataset,
+        output_pattern,
+    )
+
     output = resolve_patterns(root_dir=worktree, patterns=output_pattern)
     if stdout is not None:
         output.add(stdout)
+
+    lgr.debug(
+        'collect: resolved patterns: %s',
+        output,
+    )
 
     # Ensure that all subdatasets that are touched by paths in `output` are
     # installed.
