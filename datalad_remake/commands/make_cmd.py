@@ -439,7 +439,12 @@ def provide(
     branch: str | None,
     input_patterns: list[PatternPath],
 ) -> Path:
-    lgr.debug('provide: %s %s %s', dataset, branch, input_patterns)
+    lgr.debug(
+        'provide: called with %s %s %s',
+        dataset,
+        branch,
+        input_patterns,
+    )
     result = list(
         provision_cmd.provide(
             dataset=dataset,
@@ -456,14 +461,31 @@ def provide_context(
     branch: str | None,
     input_patterns: list[PatternPath],
 ) -> Generator:
+
+    lgr.debug(
+        'provide_context: called with: %s %s %s',
+        dataset,
+        branch,
+        input_patterns
+    )
+
     worktree = provide(dataset, branch=branch, input_patterns=input_patterns)
     try:
+        lgr.debug('provide_context: created worktree: %s', worktree)
         yield worktree
     finally:
         if os.environ.get('DATALAD_REMAKE_KEEP_TEMP') is not None:
-            lgr.debug('remake debug: keeping: %s %s', dataset, str(worktree))
+            lgr.debug(
+                'provide_context: un-provide: DATALAD_REMAKE_KEEP_TEMP set: keeping: %s %s',
+                dataset,
+                str(worktree)
+            )
         else:
-            lgr.debug('un_provide: %s %s', dataset, str(worktree))
+            lgr.debug(
+                'provide_context: un-provide: %s %s',
+                dataset,
+                str(worktree)
+            )
             dataset.provision(delete=worktree, result_renderer='disabled')
 
 
