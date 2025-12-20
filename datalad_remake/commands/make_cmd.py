@@ -540,7 +540,7 @@ def collect(
 
     output_pattern = tuple(output_pattern)
     lgr.debug(
-        'collect: called with: %s %s %s %s',
+        'collect: called with: %s %s %s',
         worktree,
         dataset,
         output_pattern,
