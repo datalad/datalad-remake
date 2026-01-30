@@ -47,7 +47,7 @@ classifiers = [
 dependencies = [
   "annexremote",
   "datalad",
-  "datalad-core @ git+https://github.com/datalad/datalad-core",
+  "datalad-core @ git+https://hub.datalad.org/datalad/datalad-core",
   "datalad-next",
   "datasalad",
   "toml",
