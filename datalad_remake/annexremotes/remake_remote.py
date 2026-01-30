@@ -56,7 +56,9 @@ if TYPE_CHECKING:
     from annexremote import Master
 
 
+logging.basicConfig(level=10, force=True)
 lgr = logging.getLogger('datalad.remake.annexremotes.remake')
+lgr.setLevel(10)
 
 
 class RemakeRemote(SpecialRemote):
@@ -353,6 +355,10 @@ class RemakeRemote(SpecialRemote):
 
 def main():
     """cmdline entry point"""
+    import sys
+    print('DSFSDFSDFSDFSDFSDF', file=sys.stderr, flush=True)
+    lgr.debug('DEBUG FFFFFFFFFFFF')
+    logging.debug('DEBUG ROOOOOT')
     super_main(
         cls=RemakeRemote,
         remote_name='datalad-remake',

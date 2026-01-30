@@ -51,7 +51,9 @@ from datalad_remake.utils.read_list import read_list
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
 
+logging.basicConfig(level=10, force=True)
 lgr = logging.getLogger('datalad.remake.provision_cmd')
+lgr.setLevel(10)
 
 drive_letter_matcher = re.compile('^[A-Z]:')
 

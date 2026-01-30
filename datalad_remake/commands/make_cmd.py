@@ -57,8 +57,9 @@ if TYPE_CHECKING:
     )
     from typing import ClassVar
 
+logging.basicConfig(level=10, force=True)
 lgr = logging.getLogger('datalad.remake.make_cmd')
-
+lgr.setLevel(10)
 
 # decoration auto-generates standard help
 @build_doc
