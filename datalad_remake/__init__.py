@@ -5,9 +5,11 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from pathlib import Path
 
 from datalad_remake._version import __version__
 from datalad_remake.utils.patternpath import PatternPath
+
 
 __all__ = [
     '__version__',
@@ -72,12 +74,13 @@ def get_logger(
         name: str,
         log_level: int = logging.WARNING,
         stderr_output: bool = True,
+        enforce_log_file: str | Path | None = None,
 ) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(log_level)
     if stderr_output:
         logger.addHandler(logging.StreamHandler(sys.stderr))
-    log_file = os.environ.get(log_file_env_var_name)
+    log_file = enforce_log_file or os.environ.get(log_file_env_var_name)
     if log_file:
-        logger.addHandler(logging.FileHandler(log_file))
+        logger.addHandler(logging.FileHandler(str(log_file)))
     return logger

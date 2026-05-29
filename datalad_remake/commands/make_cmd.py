@@ -37,6 +37,7 @@ from datalad_next.runners import (
 
 from datalad_remake import (
     PatternPath,
+    get_logger,
     specification_dir,
     template_dir,
     url_scheme,
@@ -57,9 +58,12 @@ if TYPE_CHECKING:
     )
     from typing import ClassVar
 
-logging.basicConfig(level=10, force=True)
-lgr = logging.getLogger('datalad.remake.make_cmd')
-lgr.setLevel(10)
+
+lgr = get_logger(
+    name='datalad.remake.make_cmd',
+    log_level=10,
+)
+
 
 # decoration auto-generates standard help
 @build_doc
@@ -461,7 +465,7 @@ def provide_context(
     dataset: Dataset,
     branch: str | None,
     input_patterns: list[PatternPath],
-) -> Generator:
+) -> Generator[Path, None, None]:
 
     lgr.debug(
         'provide_context: called with: %s %s %s',

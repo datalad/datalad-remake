@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import logging
 import shutil
 import subprocess
 from pathlib import Path
@@ -32,6 +31,7 @@ from datalad_next.runners import (
 
 from datalad_remake import (
     PatternPath,
+    get_logger,
     priority_config_key,
     specification_dir,
     template_dir,
@@ -56,9 +56,10 @@ if TYPE_CHECKING:
     from annexremote import Master
 
 
-logging.basicConfig(level=10, force=True)
-lgr = logging.getLogger('datalad.remake.annexremotes.remake')
-lgr.setLevel(10)
+lgr = get_logger(
+    name='datalad.remake.annexremotes.remake',
+    log_level=10,
+)
 
 
 class RemakeRemote(SpecialRemote):
@@ -91,37 +92,41 @@ class RemakeRemote(SpecialRemote):
         return url.startswith((f'URL--{url_scheme}:', f'{url_scheme}:'))
 
     def prepare(self):
-        self.annex.debug('PREPARE')
+        self.debug('PREPARE')
 
     def initremote(self):
-        self.annex.debug('INITREMOTE')
+        self.debug('INITREMOTE')
 
     def remove(self, key: str):
-        self.annex.debug(f'REMOVE {key!r}')
+        self.debug(f'REMOVE {key!r}')
 
     def transfer_store(self, key: str, local_file: str):
-        self.annex.debug(f'TRANSFER STORE {key!r}, {local_file!r}')
+        self.debug(f'TRANSFER STORE {key!r}, {local_file!r}')
 
     def claimurl(self, url: str) -> bool:
-        self.annex.debug(f'CLAIMURL {url!r}')
+        self.debug(f'CLAIMURL {url!r}')
         return self._check_url(url)
 
     def checkurl(self, url: str) -> bool:
-        self.annex.debug(f'CHECKURL {url!r}')
+        self.debug(f'CHECKURL {url!r}')
         return self._check_url(url)
 
     def getcost(self) -> int:
-        self.annex.debug('GETCOST')
+        self.debug('GETCOST')
         return 100
+
+    def debug(self, msg: str):
+        self.annex.debug(msg)
+        lgr.debug(msg)
 
     def get_url_encoded_info(self, url: str) -> list[str]:
         parts = urlparse(url).query.split('&', 3)
-        self.annex.debug(f'get_url_encoded_info: url: {url!r}, parts: {parts!r}')
+        self.debug(f'get_url_encoded_info: url: {url!r}, parts: {parts!r}')
         return parts
 
     def get_urls_for_key(self, key: str) -> list[str]:
         urls = self.annex.geturls(key, f'{url_scheme}:')
-        self.annex.debug(f'get_urls_for_key: key: {key!r}, urls: {urls!r}')
+        self.debug(f'get_urls_for_key: key: {key!r}, urls: {urls!r}')
         return urls
 
     def get_compute_info(
@@ -177,44 +182,42 @@ class RemakeRemote(SpecialRemote):
         }, dataset
 
     def transfer_retrieve(self, key: str, file_name: str) -> None:
-        self.annex.debug(f'TRANSFER RETRIEVE key: {key!r}, file_name: {file_name!r}')
+        self.debug(f'TRANSFER RETRIEVE key: {key!r}, file_name: {file_name!r}')
 
         # Remove any `GIT_DIR` and `GIT_WORK_TREE` environment variables during
         # the computation. This is necessary to avoid interference with the
         # `Dataset.get` implementation in DataLad.
         with patched_env(remove=['GIT_DIR', 'GIT_WORK_TREE']):
             dataset_id = self.config_manager.get('datalad.dataset.id').value
-            self.annex.debug(f'TRANSFER RETRIEVE dataset_id: {dataset_id!r}')
-            self.annex.debug(
+            self.debug(f'TRANSFER RETRIEVE dataset_id: {dataset_id!r}')
+            self.debug(
                 'TRANSFER RETRIEVE get_allow_untrusted_execution: '
                 f'{get_allow_untrusted_execution(dataset_id)}'
             )
             if get_allow_untrusted_execution(dataset_id):
                 trusted_key_ids = None
-                lgr.warning('datalad remake remote performs UNTRUSTED execution')
+                self.debug('datalad remake remote performs UNTRUSTED execution')
             else:
                 trusted_key_ids = get_trusted_keys()
 
             compute_info, dataset = self.get_compute_info(key, trusted_key_ids)
-            self.annex.debug(f'TRANSFER RETRIEVE compute_info: {compute_info!r}')
+            self.debug(f'TRANSFER RETRIEVE compute_info: {compute_info!r}')
 
             # Perform the computation, and collect the results
-            lgr.debug('Starting provision')
-            self.annex.debug('Starting provision')
+            self.debug('Starting provision')
             with provide_context(
                 dataset,
                 compute_info['root_version'],
                 compute_info['input'],
             ) as worktree:
                 # Ensure that the method template is present, in case it is annexed.
-                lgr.debug('Fetching method template')
+                self.debug('Fetching method template')
                 Dataset(worktree).get(
                     PatternPath(template_dir) / compute_info['method'],
                     result_renderer='disabled',
                 )
 
-                lgr.debug('Starting execution')
-                self.annex.debug('Starting execution')
+                self.debug('Starting execution')
                 execute(
                     worktree,
                     compute_info['method'],
@@ -224,8 +227,7 @@ class RemakeRemote(SpecialRemote):
                     trusted_key_ids,
                 )
 
-                lgr.debug('Starting collection')
-                self.annex.debug('Starting collection')
+                self.debug('Starting collection')
                 self._collect(
                     worktree,
                     dataset,
@@ -234,8 +236,7 @@ class RemakeRemote(SpecialRemote):
                     compute_info['this'],
                     file_name,
                 )
-                lgr.debug('Leaving provision context')
-                self.annex.debug('Leaving provision context')
+                self.debug('Leaving provision context')
 
     def checkpresent(self, key: str) -> bool:
         # See if at least one URL with the remake url-scheme is present
@@ -284,11 +285,11 @@ class RemakeRemote(SpecialRemote):
             if output == this:
                 continue
             is_annexed, dataset_path, file_path = self._is_annexed(dataset, output)
-            self.annex.debug(
+            self.debug(
                 f'_collect: _is_annexd({output}): {is_annexed}, {dataset_path}, {file_path}'
             )
             if is_annexed:
-                self.annex.debug(
+                self.debug(
                     f'_collect: reinject: {worktree / output} -> {dataset_path}:{file_path}'
                 )
                 call_git_success(
@@ -301,7 +302,7 @@ class RemakeRemote(SpecialRemote):
         if stdout is not None:
             is_annexed, dataset_path, file_path = self._is_annexed(dataset, stdout)
             if is_annexed:
-                self.annex.debug(
+                self.debug(
                     f'_collect: reinject: {worktree / stdout} -> {dataset_path}:{file_path}'
                 )
                 call_git_success(
@@ -321,14 +322,14 @@ class RemakeRemote(SpecialRemote):
     ) -> tuple[bool, Path, Path]:
         """Check whether file_path is annexed and return the dataset and intra dataset path"""
         dataset_path, in_dataset_path = get_file_dataset(dataset.pathobj / file_path)
-        self.annex.debug(
+        self.debug(
             f'_is_annexed: {dataset}:{file_path} --> dataset_path: {dataset_path}, in_dataset_path: {in_dataset_path}'
         )
         result = call_git_lines(
             ['annex', 'whereis', str(in_dataset_path)],
             cwd=dataset_path,
         )
-        self.annex.debug(f'_is_annexed: result {result}')
+        self.debug(f'_is_annexed: result {result}')
         return result != [], dataset_path, in_dataset_path
 
     def _get_priorities(self) -> list[str]:
@@ -355,10 +356,10 @@ class RemakeRemote(SpecialRemote):
 
 def main():
     """cmdline entry point"""
-    import sys
-    print('DSFSDFSDFSDFSDFSDF', file=sys.stderr, flush=True)
-    lgr.debug('DEBUG FFFFFFFFFFFF')
-    logging.debug('DEBUG ROOOOOT')
+    lgr.error('LOGGER TEST: error')
+    lgr.warning('LOGGER TEST: warning')
+    lgr.info('LOGGER TEST: info')
+    lgr.debug('LOGGER TEST: debug')
     super_main(
         cls=RemakeRemote,
         remote_name='datalad-remake',
