@@ -247,7 +247,8 @@ def provide(
             )
             lgr.debug(f'get({path!r}) -> {result!r}')
             if not result:
-                msg = f'failed to datalad.get({path!r}), provisioning dataset: {dataset} in workspace: {worktree_dir!r}',
+                msg = f'failed to datalad.get({path!r}), provisioning dataset: {dataset} in workspace: {worktree_dir!r}'
+                lgr.error(msg)
                 raise RuntimeError(msg)
                 yield get_status_dict(
                     action='provision',

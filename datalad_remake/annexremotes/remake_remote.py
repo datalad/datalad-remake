@@ -119,6 +119,10 @@ class RemakeRemote(SpecialRemote):
         self.annex.debug(msg)
         lgr.debug(msg)
 
+    def error(self, msg: str):
+        self.annex.error(msg)
+        lgr.error(msg)
+
     def get_url_encoded_info(self, url: str) -> list[str]:
         parts = urlparse(url).query.split('&', 3)
         self.debug(f'get_url_encoded_info: url: {url!r}, parts: {parts!r}')
