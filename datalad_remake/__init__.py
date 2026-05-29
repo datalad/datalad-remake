@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import logging
+import os
+import sys
+
 from datalad_remake._version import __version__
 from datalad_remake.utils.patternpath import PatternPath
 
@@ -60,3 +64,20 @@ allow_untrusted_execution_key = 'datalad.make.allow-untrusted-execution.d-'
 priority_config_key = 'datalad.make.priority'
 auto_remote_name = 'datalad-remake-auto'
 worktree_source_config_key = 'datalad.make.provision-source'
+
+log_file_env_var_name = 'DATALAD_REMAKE_LOG_FILE'
+
+
+def get_logger(
+        name: str,
+        log_level: int = logging.WARNING,
+        stderr_output: bool = True,
+) -> logging.Logger:
+    logger = logging.getLogger(name)
+    logger.setLevel(log_level)
+    if stderr_output:
+        logger.addHandler(logging.StreamHandler(sys.stderr))
+    log_file = os.environ.get(log_file_env_var_name)
+    if log_file:
+        logger.addHandler(logging.FileHandler(log_file))
+    return logger

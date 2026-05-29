@@ -7,6 +7,7 @@ are currently also provisioned, if they match an input pattern.
 from __future__ import annotations
 
 import logging
+import os
 import re
 from contextlib import suppress
 from pathlib import Path
@@ -41,6 +42,7 @@ from datalad_next.runners import call_git_lines, call_git_success
 
 from datalad_remake import (
     PatternPath,
+    get_logger,
     worktree_source_config_key,
 )
 from datalad_remake.utils.chdir import chdir
@@ -51,9 +53,11 @@ from datalad_remake.utils.read_list import read_list
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
 
-logging.basicConfig(level=10, force=True)
-lgr = logging.getLogger('datalad.remake.provision_cmd')
-lgr.setLevel(10)
+lgr = get_logger(
+    name='datalad.remake.provision_cmd',
+    log_level=logging.DEBUG,
+)
+
 
 drive_letter_matcher = re.compile('^[A-Z]:')
 
@@ -235,7 +239,22 @@ def provide(
     # Get all input files in the worktree
     with chdir(worktree_dataset.path):
         for path in resolve_patterns(dataset, worktree_dataset, input_patterns):
-            worktree_dataset.get(path, result_renderer='disabled')
+            result = worktree_dataset.get(
+                path,
+                result_renderer='disabled',
+                on_failure='stop',
+                return_type='item-or-list',
+            )
+            lgr.debug(f'get({path!r}) -> {result!r}')
+            if not result:
+                msg = f'failed to datalad.get({path!r}), provisioning dataset: {dataset} in workspace: {worktree_dir!r}',
+                raise RuntimeError(msg)
+                yield get_status_dict(
+                    action='provision',
+                    path=str(resolved_worktree_dir),
+                    status='error',
+                    message=msg,
+                )
 
     yield get_status_dict(
         action='provision',
