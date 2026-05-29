@@ -82,6 +82,7 @@ def get_logger(
         logger.addHandler(logging.StreamHandler(sys.stderr))
     log_file = enforce_log_file or os.environ.get(log_file_env_var_name)
     if log_file:
-        individual_log_file = f'{log_file}-{os.getpid()}.log'
+        process_image = Path(sys.argv[0])
+        individual_log_file = f'{log_file}-{process_image.name}-{os.getpid()}.log'
         logger.addHandler(logging.FileHandler(individual_log_file))
     return logger
