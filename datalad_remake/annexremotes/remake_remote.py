@@ -209,6 +209,7 @@ class RemakeRemote(SpecialRemote):
                 Dataset(worktree).get(
                     PatternPath(template_dir) / compute_info['method'],
                     result_renderer='disabled',
+                    on_failure='stop',
                 )
 
                 lgr.debug('Starting execution')
