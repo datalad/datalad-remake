@@ -5,7 +5,6 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
-import logging
 import os
 import shutil
 from pathlib import Path
@@ -37,6 +36,7 @@ from datalad_next.runners import (
 
 from datalad_remake import (
     PatternPath,
+    get_logger,
     specification_dir,
     template_dir,
     url_scheme,
@@ -57,7 +57,11 @@ if TYPE_CHECKING:
     )
     from typing import ClassVar
 
-lgr = logging.getLogger('datalad.remake.make_cmd')
+
+lgr = get_logger(
+    name='datalad.remake.make_cmd',
+    log_level=10,
+)
 
 
 # decoration auto-generates standard help
@@ -356,6 +360,7 @@ def write_spec(
         message=f'[DATALAD] saving computation spec\n\nfile name: {digest}',
         recursive=True,
         result_renderer='disabled',
+        on_failure='stop',
     )
     return digest
 
@@ -394,7 +399,7 @@ def add_url(
     url = url_base + f'&this={quote(str(file_path))}'
     dataset_path, path = get_file_dataset(dataset.pathobj / file_path)
 
-    # If the file does not exist and speculative computation is requested, we
+    # If the file does not exist and prospective computation is requested, we
     # can just add the URL.
     if not (dataset.pathobj / path).exists() and url_only:
         can_add = True
@@ -420,6 +425,12 @@ def add_url(
                 f'url: {url!r}\nfile_path: {path!r}'
             )
             raise RuntimeError(msg)
+    else:
+        msg = (
+            f'\naddurl failed: cannot add URL to non-annexed path:\ndataset_path: '
+            f'{dataset_path}\nurl: {url!r}\nfile_path: {path!r}'
+        )
+        raise ValueError(msg)
     return url
 
 
@@ -460,7 +471,7 @@ def provide_context(
     dataset: Dataset,
     branch: str | None,
     input_patterns: list[PatternPath],
-) -> Generator:
+) -> Generator[Path, None, None]:
 
     lgr.debug(
         'provide_context: called with: %s %s %s',
